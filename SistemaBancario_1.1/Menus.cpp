@@ -1,7 +1,16 @@
 #include "Menus.h"
 #include <stdexcept>
+#include <random>
+#include <algorithm>
+#include <iostream>
 using namespace std;
 
+// Función personalizada para pausar la consola
+void pausar_consola() {
+    cout << "Presione Enter para continuar...";
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    cin.get();
+}
 
 void visibilidad_cursor(bool visible) {
     HANDLE manejo_consola = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -77,7 +86,7 @@ int desplegar_menu(const char** opciones, int nopciones) {
 
 void desplegar_menu_principal(Banco& banco) {
     system("chcp 65001 > nul");
-    const int NUM_OPCIONES = 8;
+    const int NUM_OPCIONES = 9;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Abrir cuenta",
         "Realizar depósito",
@@ -86,7 +95,8 @@ void desplegar_menu_principal(Banco& banco) {
         "Consultar cuentas por DNI/nombre",
         "Calcular intereses acumulados",
         "Guardar datos",
-        "Cargar datos"
+        "Cargar datos",
+        "Salir"
     };
 
     int opcion;
@@ -94,86 +104,167 @@ void desplegar_menu_principal(Banco& banco) {
         system("cls");
         opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
         switch (opcion) {
-            case 1:menu_cuenta(banco);break;
-            case 2: realizar_deposito(banco); break;
-            case 3: realizar_retiro(banco); break;
-            case 4: consultar_movimientos(banco); break;
-            case 5: consultar_cuentas(banco); break;
-            case 6: calcular_intereses(banco); break;
-            case 7: guardar_datos(banco); break;
-            case 8: cargar_datos(banco); break;
+            case 1:
+                menu_cuenta(banco);
+                break;
+            case 2:
+                realizar_deposito(banco);
+                break;
+            case 3:
+                realizar_retiro(banco);
+                break;
+            case 4:
+                consultar_movimientos(banco);
+                break;
+            case 5:
+                consultar_cuentas(banco);
+                break;
+            case 6:
+                calcular_intereses(banco);
+                break;
+            case 7:
+                guardar_datos(banco);
+                break;
+            case 8:
+                cargar_datos(banco);
+                break;
+            case 9:
+                cout << "Saliendo del programa...\n";
+                return; // Salir del programa
         }
-    } while (opcion != NUM_OPCIONES + 1);
+    } while (opcion != NUM_OPCIONES);
 }
 
-void abrir_cuenta(Banco& banco,int tipo_cuenta) {
-    string dni,nombre,direccion,telefono,email,fecha;
+void abrir_cuenta(Banco& banco, int tipo_cuenta) {
+    string dni, nombre, apellido, direccion, telefono, email, depositar_inicial;
     Fecha fecha_nacimiento;
-    int saldo_inicial=0;
+    double saldo_inicial = 0;
     visibilidad_cursor(true);
     system("cls");
+    
     try {
-          do {
-            cout << "\r!!!Ingrese el DNI del cliente: "; // Retorno de carro para sobrescribir la línea
-            cout << "                                 "; // Limpia la línea con espacios
-            cout << "\r!!!Ingrese el DNI del cliente: "; // Vuelve al inicio de la línea
-            dni = ingresar_dni("");
-        } while (!validarCedulaEcuatoriana(dni)); 
-        cout<<endl;
+        // Validación de DNI
         do {
-            cout << "\r!!!Ingrese el nombre del cliente:"; // Retorno de carro para sobrescribir la línea
-            cout << "                                    "; // Limpia la línea con espacios
-            cout << "\r!!!Ingrese el nombre del cliente: "; // Vuelve al inicio de la línea
+            cout << "\r!!!Ingrese el DNI del cliente: ";
+            cout << "                                 ";
+            cout << "\r!!!Ingrese el DNI del cliente: ";
+            dni = ingresar_dni("");
+        } while (!validarCedulaEcuatoriana(dni));
+        cout << endl;
+        
+        // Validación de nombre
+        do {
+            cout << "\r!!!Ingrese el nombre del cliente: ";
+            cout << "                                    ";
+            cout << "\r!!!Ingrese el nombre del cliente: ";
             nombre = ingresar_alfabetico("");
         } while (nombre.empty() || nombre.length() < 3);
-        cout<<endl;
+        cout << endl;
+        
+        // Validación de apellido
         do {
-            cout << "\r!!!Ingrese el dirección del cliente: "; // Retorno de carro para sobrescribir la línea
-            cout << "                                       "; // Limpia la línea con espacios
-            cout << "\r!!!Ingrese la dirección del cliente: "; // Vuelve al inicio de la línea
+            cout << "\r!!!Ingrese el apellido del cliente: ";
+            cout << "                                      ";
+            cout << "\r!!!Ingrese el apellido del cliente: ";
+            apellido = ingresar_alfabetico("");
+        } while (apellido.empty() || apellido.length() < 3);
+        cout << endl;
+        
+        // Validación de dirección
+        do {
+            cout << "\r!!!Ingrese la dirección del cliente: ";
+            cout << "                                       ";
+            cout << "\r!!!Ingrese la dirección del cliente: ";
             direccion = ingresar_direccion("");
-        } while (direccion.empty()|| direccion.length() < 5);
-        cout<<endl;
+        } while (direccion.empty() || direccion.length() < 5);
+        cout << endl;
+        
+        // Validación de teléfono
         do {
-            cout << "\r!!!Ingrese la teléfono del cliente: "; // Retorno de carro para sobrescribir la línea
-            cout << "                                      "; // Limpia la línea con espacios
-            cout << "\r!!!Ingrese el teléfono del cliente: "; // Vuelve al inicio de la línea
+            cout << "\r!!!Ingrese el teléfono del cliente: ";
+            cout << "                                      ";
+            cout << "\r!!!Ingrese el teléfono del cliente: ";
             telefono = ingresar_dni("");
         } while (!validar_telefono(telefono));
-        cout<<endl;
+        cout << endl;
+        
+        // Validación de email
         do {
-            cout << "\r!!!Ingrese el email del cliente: "; // Retorno de carro para sobrescribir la línea
-            cout << "                                   "; // Limpia la línea con espacios
-            cout << "\r!!!Ingrese el email del cliente: "; // Vuelve al inicio de la línea
+            cout << "\r!!!Ingrese el email del cliente: ";
+            cout << "                                   ";
+            cout << "\r!!!Ingrese el email del cliente: ";
             email = ingresar_email("");
         } while (!validar_email(email));
-        cout<<endl;
+        cout << endl;
+        
+        // Validación de fecha de nacimiento
         do {
-            cout << "\r!!!Ingrese el año de nacimiento (DD/MM/YYYY): "; // Retorno de carro para sobrescribir la línea
-            cout << "                                                "; // Limpia la línea con espacios
-            cout << "\r!!!Ingrese el año de nacimiento (DD/MM/YYYY): "; // Vuelve al inicio de la línea
+            cout << "\r!!!Ingrese la fecha de nacimiento (DD/MM/YYYY): ";
+            cout << "                                                ";
+            cout << "\r!!!Ingrese la fecha de nacimiento (DD/MM/YYYY): ";
             fecha_nacimiento = validarFecha("");
         } while (fecha_nacimiento.empty());
-        cout<<endl;
-        do{
-            cout << "\r!!!Ingrese el saldo inicial: "; // Retorno de carro para sobrescribir la línea
-            cout << "                               "; // Limpia la línea con espacios
-            cout << "\r!!!Ingrese el saldo inicial: "; // Vuelve al inicio de la línea
-            saldo_inicial = ingresar_reales("");
-        } while (saldo_inicial < 0);
-        cout<<endl;
-        int id_cuenta = ingresar_enteros("Ingrese el ID de la cuenta");
+        cout << endl;
+
+        // Generar ID aleatorio basado en la cédula
+        string id_str = dni.substr(0, 4);
+        random_device rd;
+        mt19937 gen(rd());
+        uniform_int_distribution<> dis(0, 25);
+        for (int i = 0; i < 4; i++) {
+            id_str += char('A' + dis(gen));
+        }
+        int id_cuenta = stoi(id_str.substr(0, 8));
+
+        // Preguntar si desea depositar un monto inicial
+        do {
+            cout << "\r!!!¿Desea depositar un monto inicial? (S/N): ";
+            cout << "                                             ";
+            cout << "\r!!!¿Desea depositar un monto inicial? (S/N): ";
+            depositar_inicial = ingresar_alfabetico("");
+            transform(depositar_inicial.begin(), depositar_inicial.end(), depositar_inicial.begin(), ::toupper);
+        } while (depositar_inicial != "S" && depositar_inicial != "N");
+        cout << endl;
+        
+        if (depositar_inicial == "S") {
+            do {
+                cout << "\r!!!Ingrese el saldo inicial: ";
+                cout << "                               ";
+                cout << "\r!!!Ingrese el saldo inicial: ";
+                saldo_inicial = ingresar_reales("");
+            } while (saldo_inicial < 0);
+            cout << endl;
+        }
+
+        // Crear la cuenta según el tipo
         Fecha fecha_apertura;
-        Cuenta* cuenta;
+        Cuenta* cuenta = nullptr;
+        
         if (tipo_cuenta == 1) {
-            double tasa_interes = ingresar_reales("Ingrese la tasa de interés anual (%)");
+            cout << "La tasa de interés para la cuenta de ahorros es 5%" << endl;
+            double tasa_interes = 5.0;
             cuenta = new Ahorro(id_cuenta, saldo_inicial, fecha_apertura, tasa_interes);
         } else if (tipo_cuenta == 2) {
-            double limite_retiro_diario = ingresar_reales("Ingrese el límite de retiro diario");
+            double limite_retiro_diario;
+            do {
+                cout << "\r!!!Ingrese el límite de retiro diario: ";
+                cout << "                                        ";
+                cout << "\r!!!Ingrese el límite de retiro diario: ";
+                limite_retiro_diario = ingresar_reales("");
+            } while (limite_retiro_diario <= 0);
+            cout << endl;
             cuenta = new Corriente(id_cuenta, saldo_inicial, fecha_apertura, limite_retiro_diario);
-        } 
-        Cliente cliente(dni, nombre, direccion, telefono, email, fecha_nacimiento); //, estado_civil, nif);
+        }
+
+        // Verificar que la cuenta se creó correctamente
+        if (!cuenta) {
+            throw std::runtime_error("Error al crear la cuenta");
+        }
+
+        // Crear cliente y agregar cuenta
+        Cliente cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento);
         Cliente* cliente_existente = banco.buscar_cliente(dni);
+        
         if (cliente_existente) {
             cliente_existente->agregar_cuenta(cuenta);
             delete cliente_existente;
@@ -181,20 +272,33 @@ void abrir_cuenta(Banco& banco,int tipo_cuenta) {
             cliente.agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
         }
-        std::cout << "Cuenta creada exitosamente.\n";
-        system("pause");
+
+        cout << "\n=== CUENTA CREADA EXITOSAMENTE ===" << endl;
+        cout << "ID de cuenta: " << id_cuenta << endl;
+        cout << "Tipo de cuenta: " << (tipo_cuenta == 1 ? "Ahorros" : "Corriente") << endl;
+        cout << "Saldo inicial: $" << saldo_inicial << endl;
+        cout << "\nPresione Enter para regresar al menú principal...";
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.get();
+        
     } catch (const std::exception& e) {
-        std::cerr << "Error al abrir cuenta: " << e.what() << std::endl;
-        system("pause");
+        cout << "\n=== ERROR AL CREAR CUENTA ===" << endl;
+        cout << "Error: " << e.what() << endl;
+        cout << "\nPresione Enter para regresar al menú principal...";
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.get();
     }
+    
+    // Asegurar que regresa al menú principal
+    return;
 }
 
 void realizar_deposito(Banco& banco) {
-    string dni,nombre,direccion,telefono,email;//estado_civil,nif;
+    string dni;
     try {
         system("cls");
         visibilidad_cursor(true);
-         dni = ingresar_dni("Ingrese el DNI del cliente");
+        dni = ingresar_dni("Ingrese el DNI del cliente");
         int id_cuenta = ingresar_enteros("Ingrese el ID de la cuenta");
         double monto = ingresar_reales("Ingrese el monto a depositar");
         Fecha fecha;
@@ -207,11 +311,13 @@ void realizar_deposito(Banco& banco) {
         }
         cuenta->depositar(monto, fecha);
         std::cout << "Depósito realizado exitosamente.\n";
+        std::cout << "Regresando al menú principal...\n";
         delete cliente;
-        system("pause");
+        pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al realizar depósito: " << e.what() << std::endl;
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     }
 }
 
@@ -235,11 +341,13 @@ void realizar_retiro(Banco& banco) {
         } else {
             std::cout << "Fallo en el retiro.\n";
         }
+        std::cout << "Regresando al menú principal...\n";
         delete cliente;
-        system("pause");
+        pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al realizar retiro: " << e.what() << std::endl;
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     }
 }
 
@@ -255,10 +363,12 @@ void consultar_movimientos(Banco& banco) {
         fecha_inicio.string_to_fecha(fecha_inicio_str);
         fecha_fin.string_to_fecha(fecha_fin_str);
         banco.consultar_movimientos_rango(dni, fecha_inicio, fecha_fin);
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar movimientos: " << e.what() << std::endl;
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     }
 }
 
@@ -269,10 +379,12 @@ void consultar_cuentas(Banco& banco) {
         std::string dni = ingresar_dni("Ingrese el DNI del cliente (o deje vacío)");
         std::string nombre = ingresar_alfabetico("Ingrese el nombre del cliente (o deje vacío)");
         banco.consultar_cuentas_cliente(dni, nombre);
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar cuentas: " << e.what() << std::endl;
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     }
 }
 
@@ -285,10 +397,12 @@ void calcular_intereses(Banco& banco) {
         Fecha fecha_hasta;
         fecha_hasta.string_to_fecha(fecha_hasta_str);
         banco.calcular_intereses_cuenta(id_cuenta, fecha_hasta);
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al calcular intereses: " << e.what() << std::endl;
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     }
 }
 
@@ -299,10 +413,12 @@ void guardar_datos(Banco& banco) {
         std::string archivo = ingresar_alfabetico("Ingrese el nombre del archivo para guardar");
         banco.guardar_datos_binario(archivo);
         std::cout << "Datos guardados exitosamente.\n";
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al guardar datos: " << e.what() << std::endl;
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     }
 }
 
@@ -313,19 +429,22 @@ void cargar_datos(Banco& banco) {
         std::string archivo = ingresar_alfabetico("Ingrese el nombre del archivo para cargar");
         banco.cargar_datos_binario(archivo);
         std::cout << "Datos cargados exitosamente.\n";
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al cargar datos: " << e.what() << std::endl;
-        system("pause");
+        std::cout << "Regresando al menú principal...\n";
+        pausar_consola();
     }
 }
 
 void menu_cuenta(Banco& banco) {
     system("chcp 65001 > nul");
-    const int NUM_OPCIONES = 2;
+    const int NUM_OPCIONES = 3;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Cuenta de Ahorros",
-        "Cuenta Corriente"
+        "Cuenta Corriente",
+        "Menú Principal"
     };
     int opcion;
     do {
@@ -334,6 +453,7 @@ void menu_cuenta(Banco& banco) {
         switch (opcion) {
             case 1: abrir_cuenta(banco,1); break;
             case 2: abrir_cuenta(banco,2); break;
+            case 3: desplegar_menu_principal(banco); break;
         }
     } while (opcion != NUM_OPCIONES + 1);
 }
