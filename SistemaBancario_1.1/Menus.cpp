@@ -106,7 +106,7 @@ void desplegar_menu_principal(Banco& banco) {
     } while (opcion != NUM_OPCIONES + 1);
 }
 
-void abrir_cuenta(Banco& banco,int& tipo_cuenta) {
+void abrir_cuenta(Banco& banco,int tipo_cuenta) {
     string dni,nombre,direccion,telefono,email,fecha;
     Fecha fecha_nacimiento;
     int saldo_inicial=0;
@@ -155,20 +155,20 @@ void abrir_cuenta(Banco& banco,int& tipo_cuenta) {
             fecha_nacimiento = validarFecha("");
         } while (fecha_nacimiento.empty());
         cout<<endl;
-        int id_cuenta = ingresar_enteros("Ingrese el ID de la cuenta");}
         do{
             cout << "\r!!!Ingrese el saldo inicial: "; // Retorno de carro para sobrescribir la línea
             cout << "                               "; // Limpia la línea con espacios
             cout << "\r!!!Ingrese el saldo inicial: "; // Vuelve al inicio de la línea
             saldo_inicial = ingresar_reales("");
-        } while (tipo_cuenta != 1 && tipo_cuenta != 2);
+        } while (saldo_inicial < 0);
         cout<<endl;
+        int id_cuenta = ingresar_enteros("Ingrese el ID de la cuenta");
         Fecha fecha_apertura;
         Cuenta* cuenta;
-        if (tipo == 1) {
+        if (tipo_cuenta == 1) {
             double tasa_interes = ingresar_reales("Ingrese la tasa de interés anual (%)");
             cuenta = new Ahorro(id_cuenta, saldo_inicial, fecha_apertura, tasa_interes);
-        } else if (tipo == 2) {
+        } else if (tipo_cuenta == 2) {
             double limite_retiro_diario = ingresar_reales("Ingrese el límite de retiro diario");
             cuenta = new Corriente(id_cuenta, saldo_inicial, fecha_apertura, limite_retiro_diario);
         } 
@@ -327,7 +327,6 @@ void menu_cuenta(Banco& banco) {
         "Cuenta de Ahorros",
         "Cuenta Corriente"
     };
-
     int opcion;
     do {
         system("cls");

@@ -11,7 +11,7 @@ void visibilidad_cursor(bool);
 void mover_cursor(int x, int y);
 int desplegar_menu(const char** opciones, int nopciones);
 void desplegar_menu_principal(Banco& banco);
-void abrir_cuenta(Banco& banco, int& tipo_cuenta);
+void abrir_cuenta(Banco& banco, int tipo_cuenta);
 void realizar_deposito(Banco& banco);
 void realizar_retiro(Banco& banco);
 void consultar_movimientos(Banco& banco);

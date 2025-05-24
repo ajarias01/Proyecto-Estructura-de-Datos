@@ -207,16 +207,16 @@ int ingresar_enteros(const string& mensaje) {
 double ingresar_reales(const string& mensaje) {
     double numero;
     bool valido = false;
+    cout << mensaje ;
     do {
-        cout << mensaje << ": ";
-        if (std::cin >> numero) {
+        if (cin >> numero) {
             valido = true;
         } else {
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            cin.clear();
+            cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
     } while (!valido);
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     return numero;
 }
 bool validarCedulaEcuatoriana(const string& cedula) {
