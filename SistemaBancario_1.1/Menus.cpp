@@ -85,13 +85,18 @@ int desplegar_menu(const char** opciones, int nopciones) {
 
 void menu_administrador(Banco& banco) {
     system("chcp 65001 > nul");
+<<<<<<< HEAD
     const int NUM_OPCIONES = 6;
+=======
+    const int NUM_OPCIONES = 10;
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
     const char* OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
         "Calcular intereses acumulados",
         "Guardar datos",
         "Cargar datos",
+        "Ayuda Técnica",
         "Salir"
     };
 
@@ -115,12 +120,20 @@ void menu_administrador(Banco& banco) {
             case 5: 
                 cargar_datos(banco);
                 break;
+<<<<<<< HEAD
             case 6:
+=======
+            case 9: 
+                mostrar_ayuda_tecnica(); 
+                break;
+            case 10: 
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
                 return;
         }
     } while (opcion != NUM_OPCIONES);
 }
 
+<<<<<<< HEAD
 void menu_cliente(Banco& banco) {
     system("chcp 65001 > nul");
     const int NUM_OPCIONES = 3;
@@ -181,6 +194,8 @@ void menu_principal(Banco& banco) {
     } while (opcion != NUM_OPCIONES);
 }
 
+=======
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
 void mostrar_ayuda_tecnica() {
     system("cls");
     std::cout << "Abriendo el Manual de Ayuda Técnica...\n";
@@ -367,6 +382,10 @@ void realizar_deposito(Banco& banco) {
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
         
+<<<<<<< HEAD
+=======
+        int id_cuenta;
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         do {
             cout << "\r!!!Ingrese el ID de la cuenta: ";
             cout << "                                 ";
@@ -375,13 +394,22 @@ void realizar_deposito(Banco& banco) {
         } while (id_cuenta <= 0);
         cout << endl;
         
+<<<<<<< HEAD
+=======
+        double monto;
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         do {
             cout << "\r!!!Ingrese el monto a depositar: ";
             cout << "                                   ";
             cout << "\r!!!Ingrese el monto a depositar: ";
+<<<<<<< HEAD
             salario = ingresar_decimales("");
         } while (!validar_monto(salario));
         monto = stod(salario);
+=======
+            monto = ingresar_reales("");
+        } while (monto <= 0);
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         cout << endl;
 
         Fecha fecha;
@@ -405,8 +433,12 @@ void realizar_retiro(Banco& banco) {
     try {
         system("cls");
         visibilidad_cursor(true);
+<<<<<<< HEAD
         std::string dni,salario;
         int id_cuenta = 0, monto = 0;
+=======
+        std::string dni;
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         do {
             cout << "\r!!!Ingrese el DNI del cliente: ";
             cout << "                                 ";
@@ -414,6 +446,11 @@ void realizar_retiro(Banco& banco) {
             dni = ingresar_dni("");
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
+<<<<<<< HEAD
+=======
+        
+        int id_cuenta;
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         do {
             cout << "\r!!!Ingrese el ID de la cuenta: ";
             cout << "                                 ";
@@ -421,13 +458,23 @@ void realizar_retiro(Banco& banco) {
             id_cuenta = ingresar_enteros("");
         } while (id_cuenta <= 0);
         cout << endl;
+<<<<<<< HEAD
+=======
+        
+        double monto;
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         do {
             cout << "\r!!!Ingrese el monto a retirar: ";
             cout << "                                 ";
             cout << "\r!!!Ingrese el monto a retirar: ";
+<<<<<<< HEAD
             salario = ingresar_decimales("");
         } while (!validar_monto(salario));
         monto = stod(salario);
+=======
+            monto = ingresar_reales("");
+        } while (monto <= 0);
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         cout << endl;
 
         Fecha fecha;
@@ -467,7 +514,11 @@ void consultar_movimientos(Banco& banco) {
             cout << "                                              ";
             cout << "\r!!!Ingrese la fecha de inicio (YYYY-MM-DD): ";
             fecha_inicio_str = ingresar_alfabetico("");
+<<<<<<< HEAD
         } while (fecha_inicio_str.empty());
+=======
+        } while (fecha_inicio_str.length() != 10);
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         cout << endl;
         
         std::string fecha_fin_str;
@@ -476,7 +527,11 @@ void consultar_movimientos(Banco& banco) {
             cout << "                                            ";
             cout << "\r!!!Ingrese la fecha de fin (YYYY-MM-DD): ";
             fecha_fin_str = ingresar_alfabetico("");
+<<<<<<< HEAD
         } while (fecha_fin_str.empty());
+=======
+        } while (fecha_fin_str.length() != 10);
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         cout << endl;
 
         Fecha fecha_inicio;
@@ -545,7 +600,11 @@ void calcular_intereses(Banco& banco) {
             cout << "                                          ";
             cout << "\r!!!Ingrese la fecha hasta (YYYY-MM-DD): ";
             fecha_hasta_str = ingresar_alfabetico("");
+<<<<<<< HEAD
         } while (fecha_hasta_str.empty());
+=======
+        } while (fecha_hasta_str.length() != 10);
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
         cout << endl;
 
         Fecha fecha_hasta;
@@ -570,9 +629,15 @@ void guardar_datos(Banco& banco) {
         visibilidad_cursor(true);
         std::string archivo_base;
         do {
+<<<<<<< HEAD
             cout << "\r!!!Ingrese el nombre del archivo para cargar (sin .bin): ";
             cout << "                                                           ";
             cout << "\r!!!Ingrese el nombre del archivo para cargar (sin .bin): ";
+=======
+            cout << "\r!!!Ingrese el nombre del archivo para guardar (sin .bin): ";
+            cout << "                                                           ";
+            cout << "\r!!!Ingrese el nombre del archivo para guardar (sin .bin): ";
+>>>>>>> 1efd29c14ea18daa5db905c385920be29e81f4a5
             archivo_base = ingresar_alfabetico("");
         } while (archivo_base.empty() || archivo_base.length() < 1);
         cout << endl;
