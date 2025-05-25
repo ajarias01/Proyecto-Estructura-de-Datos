@@ -12,7 +12,7 @@ class Cliente {
 public:
     Cliente();
     Cliente(std::string dni, std::string nombre, std::string apellido, std::string direccion, std::string telefono, 
-            std::string email, Fecha fecha_nacimiento);
+            std::string email, Fecha fecha_nacimiento, std::string contrasenia);
     ~Cliente();
     Cliente(const Cliente& otro);
     Cliente& operator=(const Cliente& otro);
@@ -23,6 +23,7 @@ public:
     std::string get_telefono();
     std::string get_email();
     Fecha get_fecha_nacimiento();
+    std::string get_contrasenia();
     ListaDoble<Cuenta*>* get_cuentas();
     void set_dni(std::string);
     void set_nombre(std::string);
@@ -31,8 +32,9 @@ public:
     void set_telefono(std::string);
     void set_email(std::string);
     void set_fecha_nacimiento(Fecha);
+    void set_contrasenia(std::string);
     void agregar_cuenta(Cuenta* cuenta);
-    Cuenta* buscar_cuenta(int id_cuenta);
+    Cuenta* buscar_cuenta(std::string id_cuenta);
     std::string to_string() const;
     void guardar_binario(FILE* archivo);
     void cargar_binario(FILE* archivo);
@@ -45,6 +47,7 @@ private:
     std::string telefono;
     std::string email;
     Fecha fecha_nacimiento;
+    std::string contrasenia;
     ListaDoble<Cuenta*>* cuentas;
 };
 

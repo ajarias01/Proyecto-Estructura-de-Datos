@@ -3,14 +3,14 @@
 #include <functional>
 
 Cuenta::Cuenta() {
-    id_cuenta = 0;
+    id_cuenta = "";
     saldo = 0;
     movimientos = new ListaDoble<Movimiento>();
 }
 
-Cuenta::Cuenta(int id, double saldo_inicial, Fecha fecha) {
+Cuenta::Cuenta(std::string id, double saldo_inicial, Fecha fecha) {
     try {
-        if (id <= 0) throw std::invalid_argument("ID de cuenta inválido");
+        if (id.empty()) throw std::invalid_argument("ID de cuenta inválido");
         if (saldo_inicial < 0) throw std::invalid_argument("Saldo inicial no puede ser negativo");
         id_cuenta = id;
         saldo = saldo_inicial;
@@ -26,12 +26,12 @@ Cuenta::~Cuenta() {
     delete movimientos;
 }
 
-int Cuenta::get_id_cuenta() { return id_cuenta; }
+std::string Cuenta::get_id_cuenta() { return id_cuenta; }
 double Cuenta::get_saldo() { return saldo; }
 Fecha Cuenta::get_fecha_apertura() { return fecha_apertura; }
 ListaDoble<Movimiento>* Cuenta::get_movimientos() { return movimientos; }
 
-void Cuenta::set_id_cuenta(int id) { id_cuenta = id; }
+void Cuenta::set_id_cuenta(std::string id) { id_cuenta = id; }
 void Cuenta::set_saldo(double _saldo) { saldo = _saldo; }
 void Cuenta::set_fecha_apertura(Fecha fecha) { fecha_apertura = fecha; }
 

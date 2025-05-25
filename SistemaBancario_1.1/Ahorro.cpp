@@ -6,7 +6,7 @@ Ahorro::Ahorro() : Cuenta() {
     tasa_interes = 0;
 }
 
-Ahorro::Ahorro(int id, double saldo_inicial, Fecha fecha, double _tasa_interes) : Cuenta(id, saldo_inicial, fecha) {
+Ahorro::Ahorro(std::string id, double saldo_inicial, Fecha fecha, double _tasa_interes) : Cuenta(id, saldo_inicial, fecha) {
     try {
         if (_tasa_interes < 0 || _tasa_interes > 100) throw std::invalid_argument("Tasa de interés inválida");
         tasa_interes = _tasa_interes;
@@ -47,15 +47,15 @@ double Ahorro::calcular_intereses(Fecha hasta) {
 }
 
 std::string Ahorro::to_string() {
-    return "Cuenta Ahorros: ID=" + std::to_string(id_cuenta) + ", Saldo=" + std::to_string(saldo) +
+    return "Cuenta Ahorros: ID=" + id_cuenta + ", Saldo=" + std::to_string(saldo) +
            ", Fecha Apertura=" + fecha_apertura.to_string() + ", Tasa Interés=" + std::to_string(tasa_interes) + "%";
 }
 
 void Ahorro::guardar_binario(FILE* archivo) {
     try {
-        char tipo = 'A'; // Identificador para Ahorro
+        char tipo = 'A';
         fwrite(&tipo, sizeof(char), 1, archivo);
-        fwrite(&id_cuenta, sizeof(int), 1, archivo);
+        fwrite(id_cuenta.c_str(), sizeof(char), id_cuenta.length() + 1, archivo);
         fwrite(&saldo, sizeof(double), 1, archivo);
         fwrite(&tasa_interes, sizeof(double), 1, archivo);
         fwrite(&fecha_apertura, sizeof(Fecha), 1, archivo);
@@ -70,7 +70,9 @@ void Ahorro::guardar_binario(FILE* archivo) {
 
 void Ahorro::cargar_binario(FILE* archivo) {
     try {
-        fread(&id_cuenta, sizeof(int), 1, archivo);
+        char buffer[50];
+        fread(buffer, sizeof(char), 50, archivo);
+        id_cuenta = std::string(buffer);
         fread(&saldo, sizeof(double), 1, archivo);
         fread(&tasa_interes, sizeof(double), 1, archivo);
         fread(&fecha_apertura, sizeof(Fecha), 1, archivo);

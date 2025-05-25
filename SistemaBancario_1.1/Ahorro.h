@@ -7,7 +7,7 @@
 class Ahorro : public Cuenta {
 public:
     Ahorro();
-    Ahorro(int id, double saldo_inicial, Fecha fecha, double tasa_interes);
+    Ahorro(std::string id, double saldo_inicial, Fecha fecha, double tasa_interes);
     std::string get_tipo() override;
     double get_tasa_interes();
     void set_tasa_interes(double);

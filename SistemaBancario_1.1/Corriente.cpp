@@ -6,7 +6,7 @@ Corriente::Corriente() : Cuenta() {
     monto_retirado_hoy = 0;
 }
 
-Corriente::Corriente(int id, double saldo_inicial, Fecha fecha, double _limite_retiro_diario) : Cuenta(id, saldo_inicial, fecha) {
+Corriente::Corriente(std::string id, double saldo_inicial, Fecha fecha, double _limite_retiro_diario) : Cuenta(id, saldo_inicial, fecha) {
     try {
         if (_limite_retiro_diario <= 0) throw std::invalid_argument("Límite de retiro diario inválido");
         limite_retiro_diario = _limite_retiro_diario;
@@ -31,19 +31,19 @@ void Corriente::set_limite_retiro_diario(double _limite) {
 }
 
 double Corriente::calcular_intereses(Fecha hasta) {
-    return 0; // Las cuentas corrientes no generan intereses
+    return 0;
 }
 
 std::string Corriente::to_string() {
-    return "Cuenta Corriente: ID=" + std::to_string(id_cuenta) + ", Saldo=" + std::to_string(saldo) +
+    return "Cuenta Corriente: ID=" + id_cuenta + ", Saldo=" + std::to_string(saldo) +
            ", Fecha Apertura=" + fecha_apertura.to_string() + ", Límite Retiro Diario=" + std::to_string(limite_retiro_diario);
 }
 
 void Corriente::guardar_binario(FILE* archivo) {
     try {
-        char tipo = 'C'; // Identificador para Corriente
+        char tipo = 'C';
         fwrite(&tipo, sizeof(char), 1, archivo);
-        fwrite(&id_cuenta, sizeof(int), 1, archivo);
+        fwrite(id_cuenta.c_str(), sizeof(char), id_cuenta.length() + 1, archivo);
         fwrite(&saldo, sizeof(double), 1, archivo);
         fwrite(&limite_retiro_diario, sizeof(double), 1, archivo);
         fwrite(&monto_retirado_hoy, sizeof(double), 1, archivo);
@@ -60,7 +60,9 @@ void Corriente::guardar_binario(FILE* archivo) {
 
 void Corriente::cargar_binario(FILE* archivo) {
     try {
-        fread(&id_cuenta, sizeof(int), 1, archivo);
+        char buffer[50];
+        fread(buffer, sizeof(char), 50, archivo);
+        id_cuenta = std::string(buffer);
         fread(&saldo, sizeof(double), 1, archivo);
         fread(&limite_retiro_diario, sizeof(double), 1, archivo);
         fread(&monto_retirado_hoy, sizeof(double), 1, archivo);
@@ -84,14 +86,12 @@ bool Corriente::retirar(double monto, Fecha fecha) {
         if (monto <= 0) throw std::invalid_argument("Monto de retiro debe ser mayor a 0");
         if (saldo < monto) throw std::invalid_argument("Saldo insuficiente");
         if (!fecha.es_dia_habil()) throw std::invalid_argument("Retiro no permitido en día no hábil");
-        // Verificar si es un nuevo día
         if (fecha.get_anuario() != ultimo_dia_retiro.get_anuario() ||
             fecha.get_mes() != ultimo_dia_retiro.get_mes() ||
             fecha.get_dia() != ultimo_dia_retiro.get_dia()) {
             monto_retirado_hoy = 0;
             ultimo_dia_retiro = fecha;
         }
-        // Verificar límite diario
         if (monto_retirado_hoy + monto > limite_retiro_diario) {
             throw std::invalid_argument("Excede el límite de retiro diario");
         }

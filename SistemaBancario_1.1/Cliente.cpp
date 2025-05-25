@@ -7,11 +7,12 @@ Cliente::Cliente() {
 }
 
 Cliente::Cliente(std::string _dni, std::string _nombre, std::string _apellido, std::string _direccion, std::string _telefono,
-                std::string _email, Fecha _fecha_nacimiento) {
+                std::string _email, Fecha _fecha_nacimiento, std::string _contrasenia) {
     try {
         if (_dni.empty()) throw std::invalid_argument("DNI no puede estar vacío");
         if (_nombre.empty()) throw std::invalid_argument("Nombre no puede estar vacío");
         if (_apellido.empty()) throw std::invalid_argument("Apellido no puede estar vacío");
+        if (_contrasenia.empty()) throw std::invalid_argument("Contraseña no puede estar vacía");
         dni = _dni;
         nombre = _nombre;
         apellido = _apellido;
@@ -19,12 +20,14 @@ Cliente::Cliente(std::string _dni, std::string _nombre, std::string _apellido, s
         telefono = _telefono;
         email = _email;
         fecha_nacimiento = _fecha_nacimiento;
+        contrasenia = _contrasenia;
         cuentas = new ListaDoble<Cuenta*>();
     } catch (const std::exception& e) {
         std::cerr << "Error al crear Cliente: " << e.what() << std::endl;
         throw;
     }
 }
+
 Cliente::Cliente(const Cliente& otro) {
     dni = otro.dni;
     nombre = otro.nombre;
@@ -33,6 +36,7 @@ Cliente::Cliente(const Cliente& otro) {
     telefono = otro.telefono;
     email = otro.email;
     fecha_nacimiento = otro.fecha_nacimiento;
+    contrasenia = otro.contrasenia;
     cuentas = new ListaDoble<Cuenta*>();
     otro.cuentas->recorrer([this](Cuenta* c) {
         if (auto ahorro = dynamic_cast<Ahorro*>(c)) {
@@ -45,9 +49,23 @@ Cliente::Cliente(const Cliente& otro) {
 
 Cliente& Cliente::operator=(const Cliente& otro) {
     if (this != &otro) {
-        // Liberar recursos actuales
         delete cuentas;
-        // ... similar al constructor de copia
+        dni = otro.dni;
+        nombre = otro.nombre;
+        apellido = otro.apellido;
+        direccion = otro.direccion;
+        telefono = otro.telefono;
+        email = otro.email;
+        fecha_nacimiento = otro.fecha_nacimiento;
+        contrasenia = otro.contrasenia;
+        cuentas = new ListaDoble<Cuenta*>();
+        otro.cuentas->recorrer([this](Cuenta* c) {
+            if (auto ahorro = dynamic_cast<Ahorro*>(c)) {
+                cuentas->insertar_cola(new Ahorro(*ahorro));
+            } else if (auto corriente = dynamic_cast<Corriente*>(c)) {
+                cuentas->insertar_cola(new Corriente(*corriente));
+            }
+        });
     }
     return *this;
 }
@@ -66,6 +84,7 @@ std::string Cliente::get_direccion() { return direccion; }
 std::string Cliente::get_telefono() { return telefono; }
 std::string Cliente::get_email() { return email; }
 Fecha Cliente::get_fecha_nacimiento() { return fecha_nacimiento; }
+std::string Cliente::get_contrasenia() { return contrasenia; }
 ListaDoble<Cuenta*>* Cliente::get_cuentas() { return cuentas; }
 
 void Cliente::set_dni(std::string _dni) { dni = _dni; }
@@ -75,17 +94,18 @@ void Cliente::set_direccion(std::string _direccion) { direccion = _direccion; }
 void Cliente::set_telefono(std::string _telefono) { telefono = _telefono; }
 void Cliente::set_email(std::string _email) { email = _email; }
 void Cliente::set_fecha_nacimiento(Fecha _fecha) { fecha_nacimiento = _fecha; }
+void Cliente::set_contrasenia(std::string _contrasenia) { contrasenia = _contrasenia; }
 
 void Cliente::agregar_cuenta(Cuenta* cuenta) {
     try {
-        if (cuenta->get_id_cuenta() <= 0) throw std::invalid_argument("ID de cuenta inválido");
+        if (cuenta->get_id_cuenta().empty()) throw std::invalid_argument("ID de cuenta inválido");
         cuentas->insertar_cola(cuenta);
     } catch (const std::exception& e) {
         std::cerr << "Error en agregar_cuenta: " << e.what() << std::endl;
     }
 }
 
-Cuenta* Cliente::buscar_cuenta(int id_cuenta) {
+Cuenta* Cliente::buscar_cuenta(std::string id_cuenta) {
     try {
         Cuenta* resultaat = nullptr;
         cuentas->filtrar(
@@ -115,6 +135,7 @@ void Cliente::guardar_binario(FILE* archivo) {
         fwrite(direccion.c_str(), sizeof(char), direccion.length() + 1, archivo);
         fwrite(telefono.c_str(), sizeof(char), telefono.length() + 1, archivo);
         fwrite(email.c_str(), sizeof(char), email.length() + 1, archivo);
+        fwrite(contrasenia.c_str(), sizeof(char), contrasenia.length() + 1, archivo);
         fwrite(&fecha_nacimiento, sizeof(Fecha), 1, archivo);
         int num_cuentas = 0;
         cuentas->recorrer([&](Cuenta*) { num_cuentas++; });
@@ -140,6 +161,8 @@ void Cliente::cargar_binario(FILE* archivo) {
         telefono = std::string(buffer);
         fread(buffer, sizeof(char), 100, archivo);
         email = std::string(buffer);
+        fread(buffer, sizeof(char), 100, archivo);
+        contrasenia = std::string(buffer);
         fread(&fecha_nacimiento, sizeof(Fecha), 1, archivo);
         int num_cuentas;
         fread(&num_cuentas, sizeof(int), 1, archivo);

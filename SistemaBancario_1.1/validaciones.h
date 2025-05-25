@@ -18,5 +18,7 @@ bool validarCedulaEcuatoriana(const std::string& cedula);
 bool validar_telefono(const string& telefono);
 bool validar_estado_civil(const string& estado_civil);
 bool validar_email(const string& email);
+std::string ingresar_contrasenia(const std::string& mensaje);
+bool validar_contrasenia(const std::string& contrasenia);
 bool validar_monto(const string& montoStr);
 #endif

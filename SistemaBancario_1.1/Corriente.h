@@ -7,7 +7,7 @@
 class Corriente : public Cuenta {
 public:
     Corriente();
-    Corriente(int id, double saldo_inicial, Fecha fecha, double limite_retiro_diario = 1000.0);
+    Corriente(std::string id, double saldo_inicial, Fecha fecha, double limite_retiro_diario = 1000.0);
     std::string get_tipo() override;
     double get_limite_retiro_diario();
     void set_limite_retiro_diario(double);

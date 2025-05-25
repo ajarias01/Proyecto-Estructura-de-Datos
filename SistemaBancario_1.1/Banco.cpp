@@ -60,13 +60,12 @@ void Banco::consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin
         cliente->get_cuentas()->recorrer([&](Cuenta* cuenta) {
             cuenta->consultar_movimientos_rango(inicio, fin);
         });
-        // Eliminamos delete cliente para evitar fuga de memoria
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar movimientos: " << e.what() << std::endl;
     }
 }
 
-void Banco::calcular_intereses_cuenta(int id_cuenta, Fecha hasta) {
+void Banco::calcular_intereses_cuenta(std::string id_cuenta, Fecha hasta) {
     try {
         bool encontrada = false;
         clientes->recorrer([&](Cliente* c) {
@@ -101,17 +100,15 @@ void Banco::guardar_datos_binario(std::string archivo) {
 
 void Banco::cargar_datos_binario(std::string archivo) {
     try {
-        // Verificar si el archivo existe
         std::ifstream check_file(archivo, std::ios::binary);
         if (!check_file.good()) {
-            // Si no existe, crear un archivo vacío
             std::ofstream create_file(archivo, std::ios::binary);
             if (!create_file.good()) {
                 throw std::runtime_error("No se pudo crear el archivo");
             }
             create_file.close();
             std::cout << "Archivo " << archivo << " no existía, se creó uno nuevo.\n";
-            return; // No hay datos que cargar en un archivo nuevo
+            return;
         }
         check_file.close();
 
@@ -124,7 +121,6 @@ void Banco::cargar_datos_binario(std::string archivo) {
             throw std::runtime_error("Error al leer el número de clientes");
         }
         
-        // Liberar la lista de clientes actual
         if (clientes) {
             clientes->recorrer([](Cliente* c) { delete c; });
             delete clientes;

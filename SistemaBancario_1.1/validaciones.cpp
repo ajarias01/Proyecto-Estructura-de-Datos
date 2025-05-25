@@ -287,6 +287,52 @@ bool validar_telefono(const string& telefono) {
     
     return true;
 }
+string ingresar_contrasenia(const string& mensaje) {
+    char c;
+    string palabra;
+    cout << mensaje;
+    while (true) {
+        c = getch();
+        if ((isalnum(c) || ispunct(c)) && palabra.length() < 20) { // Límite de 20 caracteres
+            palabra += c;
+            printf("%c", '*'); // Mostrar asterisco
+        } else if (c == 13) { // Enter, contraseña válida
+            return palabra;
+        } else if (c == 8 && !palabra.empty()) { // Backspace
+            palabra.pop_back();
+            printf("\b \b");
+        }
+    }
+}
+bool validar_contrasenia(const string& contrasenia) {
+    // Verificar longitud mínima
+    if (contrasenia.length() < 8) {
+        return false;
+    }
+
+    // Verificar al menos una letra mayúscula
+    bool tieneMayuscula = false;
+    // Verificar al menos una letra minúscula
+    bool tieneMinuscula = false;
+    // Verificar al menos un dígito
+    bool tieneDigito = false;
+    // Verificar al menos un carácter especial
+    bool tieneEspecial = false;
+
+    for (char c : contrasenia) {
+        if (isupper(c)) {
+            tieneMayuscula = true;
+        } else if (islower(c)) {
+            tieneMinuscula = true;
+        } else if (isdigit(c)) {
+            tieneDigito = true;
+        } else if (ispunct(c)) {
+            tieneEspecial = true;
+        }
+    }
+
+    return tieneMayuscula && tieneMinuscula && tieneDigito && tieneEspecial;
+}
 bool validar_email(const string& email) {
     size_t at_pos = email.find('@');
     size_t dot_pos = email.find('.', at_pos);
