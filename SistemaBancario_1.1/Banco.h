@@ -10,7 +10,8 @@
 class Banco {
 public:
     Banco();
-    void agregar_cliente(Cliente cliente);
+    ~Banco();
+    void agregar_cliente(Cliente* cliente);
     Cliente* buscar_cliente(std::string dni);
     void consultar_cuentas_cliente(std::string dni, std::string nombre);
     void consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin);
@@ -18,7 +19,7 @@ public:
     void guardar_datos_binario(std::string archivo);
     void cargar_datos_binario(std::string archivo);
 private:
-    ListaDoble<Cliente>* clientes;
+    ListaDoble<Cliente*>* clientes;
 };
 
 #endif

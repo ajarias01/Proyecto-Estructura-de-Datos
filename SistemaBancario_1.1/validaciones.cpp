@@ -189,35 +189,38 @@ string ingresar_email(const std::string& mensaje) {
     }
 }
 int ingresar_enteros(const string& mensaje) {
-    int numero;
-    bool valido = false;
-    cout << mensaje ;
-    do {
-        if (std::cin >> numero) {
-            valido = true;
-        } else {
-            std::cout << "Error: Ingrese un número entero válido.\n";
-            std::cin.clear();
-            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    char c;
+    string palabra;
+    cout << mensaje;
+    while (true) {
+        c = getch();
+        if ((c>='0'&& c<='9') ) {
+            palabra += c;
+            printf("%c", c);
+        } else if (c == 13) {
+            return stoi(palabra);
+        } else if (c == 8 && !palabra.empty()) { // Backspace
+            palabra.pop_back();
+            printf("\b \b");
         }
-    } while (!valido);
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    return numero;
+    }
 }
-double ingresar_reales(const string& mensaje) {
-    double numero;
-    bool valido = false;
-    cout << mensaje ;
-    do {
-        if (cin >> numero) {
-            valido = true;
-        } else {
-            cin.clear();
-            cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+string ingresar_decimales(const string& mensaje) {
+    char c;
+    string palabra;
+    cout << mensaje;
+    while (true) {
+        c = getch();
+        if ((c>='0'&& c<='9') || c == '.') {
+            palabra += c;
+            printf("%c", c);
+        } else if (c == 13) {
+            return palabra;
+        } else if (c == 8 && !palabra.empty()) { // Backspace
+            palabra.pop_back();
+            printf("\b \b");
         }
-    } while (!valido);
-    cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    return numero;
+    }
 }
 bool validarCedulaEcuatoriana(const string& cedula) {
     // Verificar longitud
@@ -309,4 +312,64 @@ bool validar_estado_civil(const string& estado_civil) {
         }
     }
     return false;
+}
+bool validar_monto(const string& montoStr) {
+    if (montoStr.empty()) {
+        return false;
+    }
+
+    // Rechazar números negativos
+    if (montoStr[0] == '-') {
+        return false;
+    }
+
+    // Rechazar puntos iniciales (ej: ".12")
+    if (montoStr[0] == '.') {
+        return false;
+    }
+
+    // Validar ceros iniciales (ej: "012" es inválido, "0.12" es válido)
+    if (montoStr.size() > 1 && montoStr[0] == '0' && montoStr[1] != '.') {
+        return false;
+    }
+
+    int puntoCount = 0;
+    int digitosAntesPunto = 0;
+    int digitosDespuesPunto = 0;
+    bool tienePunto = false;
+
+    for (size_t i = 0; i < montoStr.size(); ++i) {
+        char c = montoStr[i];
+        if (c == '.') {
+            puntoCount++;
+            // Más de un punto
+            if (puntoCount > 1) return false; 
+            tienePunto = true;
+            continue;
+        }
+
+        // Caracteres no numéricos
+        if (!isdigit(c)) return false; 
+
+        if (tienePunto) {
+            digitosDespuesPunto++;
+            // Más de 2 decimales
+            if (digitosDespuesPunto > 2) return false; 
+        } else {
+            digitosAntesPunto++;
+            // Más de 10 dígitos antes del punto
+            if (digitosAntesPunto > 10) return false; 
+        }
+    }
+
+    // Validar que no termine en punto (ej: "12.")
+    if (montoStr.back() == '.') return false;
+
+    // Validar que si hay punto, tenga al menos 1 decimal
+    if (tienePunto && digitosDespuesPunto == 0) return false;
+
+    // Validar máximo 10 dígitos en total
+    if (digitosAntesPunto + digitosDespuesPunto > 10) return false;
+
+    return true;
 }

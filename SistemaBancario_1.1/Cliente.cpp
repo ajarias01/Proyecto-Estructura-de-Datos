@@ -25,6 +25,32 @@ Cliente::Cliente(std::string _dni, std::string _nombre, std::string _apellido, s
         throw;
     }
 }
+Cliente::Cliente(const Cliente& otro) {
+    dni = otro.dni;
+    nombre = otro.nombre;
+    apellido = otro.apellido;
+    direccion = otro.direccion;
+    telefono = otro.telefono;
+    email = otro.email;
+    fecha_nacimiento = otro.fecha_nacimiento;
+    cuentas = new ListaDoble<Cuenta*>();
+    otro.cuentas->recorrer([this](Cuenta* c) {
+        if (auto ahorro = dynamic_cast<Ahorro*>(c)) {
+            cuentas->insertar_cola(new Ahorro(*ahorro));
+        } else if (auto corriente = dynamic_cast<Corriente*>(c)) {
+            cuentas->insertar_cola(new Corriente(*corriente));
+        }
+    });
+}
+
+Cliente& Cliente::operator=(const Cliente& otro) {
+    if (this != &otro) {
+        // Liberar recursos actuales
+        delete cuentas;
+        // ... similar al constructor de copia
+    }
+    return *this;
+}
 
 Cliente::~Cliente() {
     if (cuentas) {

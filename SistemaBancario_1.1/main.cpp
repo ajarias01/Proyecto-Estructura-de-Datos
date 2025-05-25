@@ -3,6 +3,6 @@
 
 int main() {
     Banco banco;
-    desplegar_menu_principal(banco);
+    menu_principal(banco);
     return 0;
 }

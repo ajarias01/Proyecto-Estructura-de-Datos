@@ -66,3 +66,4 @@ template class Nodo<Fecha>;
 template class Nodo<Cuenta*>;
 template class Nodo<Movimiento>;
 template class Nodo<Cliente>;
+template class Nodo<Cliente*>;
