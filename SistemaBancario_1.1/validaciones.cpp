@@ -7,7 +7,9 @@
 #include <algorithm>
 
 using namespace std;
-
+void limpiar_linea(const string& mensaje) {
+    cout << "\r\033[K" << mensaje;
+}
 string ingresar_alfabetico(const string& mensaje) {
     char c;
     string palabra;
@@ -301,6 +303,33 @@ string ingresar_contrasenia(const string& mensaje) {
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             printf("\b \b");
+        }
+    }
+}
+string ingresar_contrasenia_administrador(const string& mensaje) {
+    char buffer[26] = {0}; // 25 caracteres + terminador nulo
+    char* palabra = buffer;  // puntero al inicio
+    int index = 0;
+    cout<<mensaje;
+    while (true) {
+        char c = getch();
+        if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) && index < 25) {
+            *(palabra + index) = c;
+            printf("%c", c);
+            index++;
+            if (index % 5 == 0 && index < 25) {
+                cout << "-";
+            }
+        } else if (c == 13) { // ENTER
+            *(palabra + index) = '\0';  // Termina cadena manualmente
+            return string(palabra);
+        } else if (c == 8 && index > 0) { // BACKSPACE
+            *(palabra + index) = '\0'; // borrar último carácter
+            printf("\b \b");
+            if (index % 5 == 0 && index < 25 ) {
+                printf("\b \b"); // Borrar guion si era uno
+            }
+            index--;
         }
     }
 }

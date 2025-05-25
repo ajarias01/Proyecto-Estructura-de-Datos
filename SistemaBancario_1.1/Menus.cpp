@@ -3,6 +3,7 @@
 #include "Ahorro.h"
 #include "Corriente.h"
 #include "validaciones.h"
+#include "RespaldoDatos.h"
 #include <stdexcept>
 #include <random>
 #include <algorithm>
@@ -105,10 +106,9 @@ int desplegar_menu(const char** opciones, int nopciones)
     return opcion;
 }
 
-bool validar_credenciales_administrador(const std::string& usuario, const std::string& contrasenia)
-{
-    const std::string USUARIO_ADMIN = "admin";
-    const std::string CONTRASENIA_ADMIN = "Admin123!";
+bool validar_credenciales_administrador(const string& usuario, const string& contrasenia) {
+    const string USUARIO_ADMIN = "admin";
+    const string CONTRASENIA_ADMIN = "1234567890123456789012345";
     return usuario == USUARIO_ADMIN && contrasenia == CONTRASENIA_ADMIN;
 }
 
@@ -127,22 +127,15 @@ void menu_administrador(Banco& banco)
     std::string usuario, contrasenia;
     try
     {
-        do
-        {
-            cout << "\r!!!Ingrese el usuario del administrador: ";
-            cout << "                                         ";
-            cout << "\r!!!Ingrese el usuario del administrador: ";
+       do {
+            limpiar_linea("!!!Ingrese el usuario del administrador: ");
             usuario = ingresar_alfabetico("");
         } while (usuario.empty() || usuario.length() < 4);
         cout << endl;
-
-        do
-        {
-            cout << "\r!!!Ingrese la contraseña del administrador: ";
-            cout << "                                             ";
-            cout << "\r!!!Ingrese la contraseña del administrador: ";
-            contrasenia = ingresar_contrasenia("");
-        } while (!validar_contrasenia(contrasenia));
+        do {
+            limpiar_linea("!!!Ingrese la contraseña del administrador: ");
+            contrasenia = ingresar_contrasenia_administrador("");
+        } while (contrasenia.empty());
         cout << endl;
 
         if (!validar_credenciales_administrador(usuario, contrasenia))
@@ -200,11 +193,8 @@ void menu_cliente(Banco& banco)
         banco.cargar_datos_binario("datos.bin");
 
         // Validación de DNI
-        do
-        {
-            cout << "\r!!!Ingrese su DNI: ";
-            cout << "                     ";
-            cout << "\r!!!Ingrese su DNI: ";
+        do{
+            limpiar_linea("!!!Ingrese su DNI: ");
             dni = ingresar_dni("");
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
@@ -212,9 +202,7 @@ void menu_cliente(Banco& banco)
         // Validación de contraseña
         do
         {
-            cout << "\r!!!Ingrese su contraseña: ";
-            cout << "                            ";
-            cout << "\r!!!Ingrese su contraseña: ";
+            limpiar_linea("!!!Ingrese su contraseña: ");
             contrasenia = ingresar_contrasenia("");
         } while (!validar_contrasenia(contrasenia));
         cout << endl;
@@ -335,84 +323,60 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta)
         banco.cargar_datos_binario("datos.bin");
 
         // Validación de DNI
-        do
-        {
-            cout << "\r!!!Ingrese el DNI del cliente: ";
-            cout << "                                 ";
-            cout << "\r!!!Ingrese el DNI del cliente: ";
+       do {
+            limpiar_linea("!!!Ingrese el DNI del cliente: ");
             dni = ingresar_dni("");
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
         
         // Validación de nombre
-        do
-        {
-            cout << "\r!!!Ingrese el nombre del cliente: ";
-            cout << "                                    ";
-            cout << "\r!!!Ingrese el nombre del cliente: ";
+        do {
+            limpiar_linea("!!!Ingrese el nombre del cliente: ");
             nombre = ingresar_alfabetico("");
         } while (nombre.empty() || nombre.length() < 3);
         cout << endl;
         
         // Validación de apellido
-        do
-        {
-            cout << "\r!!!Ingrese el apellido del cliente: ";
-            cout << "                                      ";
-            cout << "\r!!!Ingrese el apellido del cliente: ";
+        do {
+            limpiar_linea("!!!Ingrese el apellido del cliente: ");
             apellido = ingresar_alfabetico("");
         } while (apellido.empty() || apellido.length() < 3);
         cout << endl;
         
         // Validación de dirección
-        do
-        {
-            cout << "\r!!!Ingrese la dirección del cliente: ";
-            cout << "                                       ";
-            cout << "\r!!!Ingrese la dirección del cliente: ";
+        do {
+            limpiar_linea("!!!Ingrese la dirección del cliente: ");
             direccion = ingresar_direccion("");
         } while (direccion.empty() || direccion.length() < 5);
         cout << endl;
-        
         // Validación de teléfono
-        do
-        {
-            cout << "\r!!!Ingrese el teléfono del cliente: ";
-            cout << "                                      ";
-            cout << "\r!!!Ingrese el teléfono del cliente: ";
+        do {
+            limpiar_linea("!!!Ingrese el teléfono del cliente: ");
             telefono = ingresar_dni("");
         } while (!validar_telefono(telefono));
         cout << endl;
         
         // Validación de email
-        do
-        {
-            cout << "\r!!!Ingrese el email del cliente: ";
-            cout << "                                   ";
-            cout << "\r!!!Ingrese el email del cliente: ";
+        do {
+            limpiar_linea("!!!Ingrese el email del cliente: ");
             email = ingresar_email("");
         } while (!validar_email(email));
         cout << endl;
         
         // Validación de fecha de nacimiento
-        do
-        {
-            cout << "\r!!!Ingrese la fecha de nacimiento (DD/MM/YYYY): ";
-            cout << "                                                ";
-            cout << "\r!!!Ingrese la fecha de nacimiento (DD/MM/YYYY): ";
+        do {
+            limpiar_linea("!!!Ingrese la fecha de nacimiento (DD/MM/YYYY): ");
             fecha_nacimiento = validarFecha("");
         } while (fecha_nacimiento.empty());
         cout << endl;
 
         // Validación de contraseña
-        do
-        {
-            cout << "\r!!!Ingrese la contraseña (Debe tener almenos 9 caracteres, un numero, mayuscula, minusculas y un caracter especial): ";
-            cout << "                             ";
-            cout << "\r!!!Ingrese la contraseña(Debe tener almenos 9 caracteres, un numero, mayuscula, minusculas y un caracter especial): ";
+        do {
+            limpiar_linea("!!!Ingrese la contraseña (mínimo 20 caracteres, al menos una mayúscula, minúscula, dígito y carácter especial): ");
             contrasenia = ingresar_contrasenia("");
         } while (!validar_contrasenia(contrasenia));
         cout << endl;
+
 
         // Generar ID de cuenta
         std::string id_cuenta_base = nombre.substr(0, 1) + apellido.substr(0, 1);
@@ -439,23 +403,16 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta)
         } while (id_exists);
 
         // Preguntar si desea depositar un monto inicial
-        do
-        {
-            cout << "\r!!!¿Desea depositar un monto inicial? (S/N): ";
-            cout << "                                             ";
-            cout << "\r!!!¿Desea depositar un monto inicial? (S/N): ";
+        do {
+            limpiar_linea("!!!¿Desea depositar un monto inicial? (S/N): ");
             depositar_inicial = ingresar_alfabetico("");
             transform(depositar_inicial.begin(), depositar_inicial.end(), depositar_inicial.begin(), ::toupper);
         } while (depositar_inicial != "S" && depositar_inicial != "N");
         cout << endl;
 
-        if (depositar_inicial == "S")
-        {
-            do
-            {
-                cout << "\r!!!Ingrese el saldo inicial: ";
-                cout << "                               ";
-                cout << "\r!!!Ingrese el saldo inicial: ";
+        if (depositar_inicial == "S") {
+            do {
+                limpiar_linea("!!!Ingrese el saldo inicial: ");
                 saldo_inicial1 = ingresar_decimales("");
             } while (!validar_monto(saldo_inicial1));
             saldo_inicial = stod(saldo_inicial1);
@@ -475,11 +432,8 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta)
         else if (tipo_cuenta == 2)
         {
             int limite_retiro_diario;
-            do
-            {
-                cout << "\r!!!Ingrese el límite de retiro diario: ";
-                cout << "                                        ";
-                cout << "\r!!!Ingrese el límite de retiro diario: ";
+             do {
+                limpiar_linea("!!!Ingrese el límite de retiro diario: ");
                 limite_retiro_diario = ingresar_enteros("");
             } while (limite_retiro_diario <= 0);
             cout << endl;
@@ -546,33 +500,16 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         bool cuenta_valida = false;
         do
         {
-            cout << "\r!!!Ingrese el ID de la cuenta: ";
-            cout << "                                 ";
-            cout << "\r!!!Ingrese el ID de la cuenta: ";
+            limpiar_linea("!!!Ingrese el ID de la cuenta: ");
             id_cuenta = ingresar_alfabetico("");
-            if (id_cuenta.length() < 8)
-            {
-                cout << "El ID de cuenta debe tener al menos 8 caracteres.\n";
-                continue;
-            }
-            Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
-            if (cuenta)
-            {
-                cuenta_valida = true;
-            }
-            else
-            {
-                cout << "ID de cuenta no encontrado. Intente de nuevo.\n";
-            }
-        } while (!cuenta_valida);
+        } while (id_cuenta.length() < 8);
+        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         cout << endl;
         
         // Validación de monto
         do
         {
-            cout << "\r!!!Ingrese el monto a depositar: ";
-            cout << "                                   ";
-            cout << "\r!!!Ingrese el monto a depositar: ";
+            limpiar_linea("!!!Ingrese el monto a depositar: ");
             salario = ingresar_decimales("");
         } while (!validar_monto(salario));
         monto = stod(salario);
@@ -617,35 +554,17 @@ void realizar_retiro(Banco& banco, const std::string& dni)
 
         // Validación de ID de cuenta
         bool cuenta_valida = false;
-        do
-        {
-            cout << "\r!!!Ingrese el ID de la cuenta: ";
-            cout << "                                 ";
-            cout << "\r!!!Ingrese el ID de la cuenta: ";
+        do{
+            limpiar_linea("!!!Ingrese el ID de la cuenta: ");
             id_cuenta = ingresar_alfabetico("");
-            if (id_cuenta.length() < 8)
-            {
-                cout << "El ID de cuenta debe tener al menos 8 caracteres.\n";
-                continue;
-            }
-            Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
-            if (cuenta)
-            {
-                cuenta_valida = true;
-            }
-            else
-            {
-                cout << "ID de cuenta no encontrado. Intente de nuevo.\n";
-            }
-        } while (!cuenta_valida);
+        } while (id_cuenta.length() < 8);
         cout << endl;
+        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         
         // Validación de monto
         do
         {
-            cout << "\r!!!Ingrese el monto a retirar: ";
-            cout << "                                 ";
-            cout << "\r!!!Ingrese el monto a retirar: ";
+            limpiar_linea("!!!Ingrese el monto a retirar: ");
             salario = ingresar_decimales("");
         } while (!validar_monto(salario));
         monto = stod(salario);
@@ -691,9 +610,7 @@ void consultar_movimientos(Banco& banco)
         // Validación de DNI (obligatorio)
         do
         {
-            cout << "\r!!!Ingrese el DNI del cliente: ";
-            cout << "                                 ";
-            cout << "\r!!!Ingrese el DNI del cliente: ";
+            limpiar_linea("!!!Ingrese el DNI del cliente: ");
             dni = ingresar_dni("");
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
@@ -705,9 +622,7 @@ void consultar_movimientos(Banco& banco)
         // Validación de fecha de inicio
         do
         {
-            cout << "\r!!!Ingrese la fecha de inicio (YYYY-MM-DD): ";
-            cout << "                                              ";
-            cout << "\r!!!Ingrese la fecha de inicio (YYYY-MM-DD): ";
+            limpiar_linea("!!!Ingrese la fecha de inicio (YYYY-MM-DD): ");
             fecha_inicio = validarFecha("");
         } while (fecha_inicio.empty());
         cout << endl;
@@ -715,9 +630,7 @@ void consultar_movimientos(Banco& banco)
         // Validación de fecha de fin
         do
         {
-            cout << "\r!!!Ingrese la fecha de fin (YYYY-MM-DD): ";
-            cout << "                                            ";
-            cout << "\r!!!Ingrese la fecha de fin (YYYY-MM-DD): ";
+            limpiar_linea("!!!Ingrese la fecha de fin (YYYY-MM-DD): ");
             fecha_fin = validarFecha("");
         } while (fecha_fin.empty() || fecha_inicio > fecha_fin);
         cout << endl;
@@ -747,25 +660,19 @@ void consultar_cuentas(Banco& banco)
         bool criterio_valido = false;
 
         // Validación de DNI (opcional)
-        cout << "\r!!!Ingrese el DNI del cliente (o deje vacío): ";
-        cout << "                                               ";
-        cout << "\r!!!Ingrese el DNI del cliente (o deje vacío): ";
+        limpiar_linea("!!!Ingrese el DNI del cliente (o deje vacío): ");
         dni = ingresar_dni("");
         if (!dni.empty() && validarCedulaEcuatoriana(dni)) criterio_valido = true;
         cout << endl;
 
         // Validación de nombre (opcional)
-        cout << "\r!!!Ingrese el nombre del cliente (o deje vacío): ";
-        cout << "                                                  ";
-        cout << "\r!!!Ingrese el nombre del cliente (o deje vacío): ";
+        limpiar_linea("!!!Ingrese el nombre del cliente (o deje vacío): ");
         nombre = ingresar_alfabetico("");
         if (!nombre.empty()) criterio_valido = true;
         cout << endl;
 
         // Validación de apellido (opcional)
-        cout << "\r!!!Ingrese el apellido del cliente (o deje vacío): ";
-        cout << "                                                    ";
-        cout << "\r!!!Ingrese el apellido del cliente (o deje vacío): ";
+        limpiar_linea("!!!Ingrese el apellido del cliente (o deje vacío): ");
         apellido = ingresar_alfabetico("");
         if (!apellido.empty()) criterio_valido = true;
         cout << endl;
