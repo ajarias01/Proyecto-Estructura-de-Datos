@@ -38,14 +38,32 @@ Cliente* Banco::buscar_cliente(std::string dni) {
 
 void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre) {
     try {
-        std::cout << "Cuentas para DNI=" << dni << " o Nombre=" << nombre << ":\n";
+        bool encontrado = false;
         clientes->filtrar(
-            [&](Cliente* c) { return c->get_dni() == dni || c->get_nombre() == nombre; },
+            [&](Cliente* c) { 
+                return (dni.empty() || c->get_dni() == dni) ||
+                       (nombre.empty() || c->get_nombre() == nombre || c->get_apellido() == nombre); 
+            },
             [&](Cliente* c) {
-                std::cout << c->to_string() << "\nCuentas:\n";
-                c->get_cuentas()->recorrer([](Cuenta* cuenta) { std::cout << cuenta->to_string() << std::endl; });
+                encontrado = true;
+                std::cout << "\n=== DATOS DEL CLIENTE ===" << std::endl;
+                std::cout << "DNI: " << c->get_dni() << std::endl;
+                std::cout << "Nombre: " << c->get_nombre() << std::endl;
+                std::cout << "Apellido: " << c->get_apellido() << std::endl;
+                std::cout << "Dirección: " << c->get_direccion() << std::endl;
+                std::cout << "Teléfono: " << c->get_telefono() << std::endl;
+                std::cout << "Email: " << c->get_email() << std::endl;
+                std::cout << "Fecha de Nacimiento: " << c->get_fecha_nacimiento().to_string() << std::endl;
+                std::cout << "\nCuentas asociadas:" << std::endl;
+                c->get_cuentas()->recorrer([](Cuenta* cuenta) {
+                    std::cout << cuenta->to_string() << std::endl;
+                });
             }
         );
+        if (!encontrado) {
+            std::cout << "\n=== NO SE ENCONTRARON CLIENTES ===" << std::endl;
+            std::cout << "No se encontraron clientes con DNI=" << dni << " o Nombre/Apellido=" << nombre << std::endl;
+        }
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar cuentas: " << e.what() << std::endl;
     }
@@ -62,24 +80,6 @@ void Banco::consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin
         });
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar movimientos: " << e.what() << std::endl;
-    }
-}
-
-void Banco::calcular_intereses_cuenta(std::string id_cuenta, Fecha hasta) {
-    try {
-        bool encontrada = false;
-        clientes->recorrer([&](Cliente* c) {
-            Cuenta* cuenta = c->buscar_cuenta(id_cuenta);
-            if (cuenta) {
-                encontrada = true;
-                double intereses = cuenta->calcular_intereses(hasta);
-                std::cout << "Intereses acumulados para cuenta " << id_cuenta << " (" << cuenta->get_tipo() << ") hasta "
-                          << hasta.to_string() << ": " << intereses << std::endl;
-            }
-        });
-        if (!encontrada) throw std::runtime_error("Cuenta no encontrada");
-    } catch (const std::exception& e) {
-        std::cerr << "Error al calcular intereses: " << e.what() << std::endl;
     }
 }
 
@@ -136,5 +136,6 @@ void Banco::cargar_datos_binario(std::string archivo) {
         std::cout << "Datos cargados exitosamente desde " << archivo << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error al cargar datos: " << e.what() << std::endl;
+        throw;
     }
 }

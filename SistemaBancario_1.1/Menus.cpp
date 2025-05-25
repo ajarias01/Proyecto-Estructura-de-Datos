@@ -85,43 +85,75 @@ int desplegar_menu(const char** opciones, int nopciones) {
     return opcion;
 }
 
+bool validar_credenciales_administrador(const std::string& usuario, const std::string& contrasenia) {
+    const std::string USUARIO_ADMIN = "admin";
+    const std::string CONTRASENIA_ADMIN = "Admin123!";
+    return usuario == USUARIO_ADMIN && contrasenia == CONTRASENIA_ADMIN;
+}
+
 void menu_administrador(Banco& banco) {
     system("chcp 65001 > nul");
-    const int NUM_OPCIONES = 6;
-
+    const int NUM_OPCIONES = 5;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
-        "Calcular intereses acumulados",
         "Guardar datos",
         "Cargar datos",
         "Salir"
     };
 
-    int opcion;
-    do {
-        system("cls");
-        opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
-        switch (opcion) {
-            case 1:
-                consultar_movimientos(banco);
-                break;
-            case 2:
-                consultar_cuentas(banco);
-                break;
-            case 3:
-                calcular_intereses(banco);
-                break;
-            case 4:
-                guardar_datos(banco);
-                break;
-            case 5: 
-                cargar_datos(banco);
-                break;
-            case 6:
-                return;
+    system("cls");
+    visibilidad_cursor(true);
+    std::string usuario, contrasenia;
+    try {
+        do {
+            cout << "\r!!!Ingrese el usuario del administrador: ";
+            cout << "                                         ";
+            cout << "\r!!!Ingrese el usuario del administrador: ";
+            usuario = ingresar_alfabetico("");
+        } while (usuario.empty() || usuario.length() < 4);
+        cout << endl;
+
+        do {
+            cout << "\r!!!Ingrese la contraseña del administrador: ";
+            cout << "                                             ";
+            cout << "\r!!!Ingrese la contraseña del administrador: ";
+            contrasenia = ingresar_contrasenia("");
+        } while (!validar_contrasenia(contrasenia));
+        cout << endl;
+
+        if (!validar_credenciales_administrador(usuario, contrasenia)) {
+            throw std::runtime_error("Usuario o contraseña incorrectos");
         }
-    } while (opcion != NUM_OPCIONES);
+
+        int opcion;
+        do {
+            system("cls");
+            opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
+            switch (opcion) {
+                case 1:
+                    consultar_movimientos(banco);
+                    break;
+                case 2:
+                    consultar_cuentas(banco);
+                    break;
+                case 3:
+                    guardar_datos(banco);
+                    break;
+                case 4: 
+                    cargar_datos(banco);
+                    break;
+                case 5:
+                    return;
+            }
+        } while (opcion != NUM_OPCIONES);
+    } catch (const std::exception& e) {
+        std::cerr << "Error en autenticación: " << e.what() << std::endl;
+        std::cout << "\n=== ERROR AL ACCEDER AL MENÚ DE ADMINISTRADOR ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
+        pausar_consola();
+    }
 }
 
 void menu_cliente(Banco& banco) {
@@ -186,12 +218,19 @@ void menu_principal(Banco& banco) {
 
 void mostrar_ayuda_tecnica() {
     system("cls");
-    std::cout << "Abriendo el Manual de Ayuda Técnica...\n";
-    HINSTANCE result = ShellExecute(NULL, "open", "AyudaTecnicaBanco.chm", NULL, NULL, SW_SHOWNORMAL);
-    if (result <= (HINSTANCE)32) {
-        std::cerr << "Error: No se pudo abrir el archivo de ayuda. Asegúrese de que 'AyudaTecnicaBanco.chm' esté en el directorio del programa.\n";
-    } else {
+    visibilidad_cursor(true);
+    try {
+        std::cout << "Abriendo el Manual de Ayuda Técnica...\n";
+        HINSTANCE result = ShellExecute(NULL, "open", "AyudaTecnicaBanco.chm", NULL, NULL, SW_SHOWNORMAL);
+        if (result <= (HINSTANCE)32) {
+            throw std::runtime_error("No se pudo abrir el archivo de ayuda. Asegúrese de que 'AyudaTecnicaBanco.chm' esté en el directorio del programa.");
+        }
         std::cout << "Manual de Ayuda Técnica abierto exitosamente.\n";
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        std::cout << "\n=== ERROR AL ABRIR AYUDA TÉCNICA ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
     }
     pausar_consola();
 }
@@ -360,9 +399,10 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta) {
 void realizar_deposito(Banco& banco) {
     string dni, salario, id_cuenta;
     double monto = 0;
+    system("cls");
+    visibilidad_cursor(true);
     try {
-        system("cls");
-        visibilidad_cursor(true);
+        // Validación de DNI
         do {
             cout << "\r!!!Ingrese el DNI del cliente: ";
             cout << "                                 ";
@@ -371,6 +411,7 @@ void realizar_deposito(Banco& banco) {
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
         
+        // Validación de ID de cuenta
         do {
             cout << "\r!!!Ingrese el ID de la cuenta: ";
             cout << "                                 ";
@@ -379,6 +420,7 @@ void realizar_deposito(Banco& banco) {
         } while (id_cuenta.length() < 9);
         cout << endl;
         
+        // Validación de monto
         do {
             cout << "\r!!!Ingrese el monto a depositar: ";
             cout << "                                   ";
@@ -395,23 +437,29 @@ void realizar_deposito(Banco& banco) {
         if (!cuenta) throw std::runtime_error("Cuenta no encontrada");
         cuenta->depositar(monto, fecha);
         banco.guardar_datos_binario("datos.bin");
-        std::cout << "\n=== DEPÓSITO REALIZADO EXITOSAMENTE ===\n";
-        std::cout << "Regresando al menú principal...\n";
+
+        std::cout << "\n=== DEPÓSITO REALIZADO EXITOSAMENTE ===" << endl;
+        std::cout << "Monto depositado: $" << monto << endl;
+        std::cout << "Cuenta: " << id_cuenta << endl;
+        std::cout << "Datos guardados en datos.bin" << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al realizar depósito: " << e.what() << std::endl;
-        std::cout << "\n=== ERROR AL REALIZAR DEPÓSITO ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== ERROR AL REALIZAR DEPÓSITO ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     }
 }
 
 void realizar_retiro(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
+    std::string dni, salario, id_cuenta;
+    double monto = 0;
     try {
-        system("cls");
-        visibilidad_cursor(true);
-        std::string dni, salario, id_cuenta;
-        double monto = 0;
+        // Validación de DNI
         do {
             cout << "\r!!!Ingrese el DNI del cliente: ";
             cout << "                                 ";
@@ -419,6 +467,8 @@ void realizar_retiro(Banco& banco) {
             dni = ingresar_dni("");
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
+        
+        // Validación de ID de cuenta
         do {
             cout << "\r!!!Ingrese el ID de la cuenta: ";
             cout << "                                 ";
@@ -426,6 +476,8 @@ void realizar_retiro(Banco& banco) {
             id_cuenta = ingresar_alfabetico("");
         } while (id_cuenta.length() < 9);
         cout << endl;
+        
+        // Validación de monto
         do {
             cout << "\r!!!Ingrese el monto a retirar: ";
             cout << "                                 ";
@@ -442,32 +494,40 @@ void realizar_retiro(Banco& banco) {
         if (!cuenta) throw std::runtime_error("Cuenta no encontrada");
         if (cuenta->retirar(monto, fecha)) {
             banco.guardar_datos_binario("datos.bin");
-            std::cout << "\n=== RETIRO REALIZADO EXITOSAMENTE ===\n";
+            std::cout << "\n=== RETIRO REALIZADO EXITOSAMENTE ===" << endl;
+            std::cout << "Monto retirado: $" << monto << endl;
+            std::cout << "Cuenta: " << id_cuenta << endl;
+            std::cout << "Datos guardados en datos.bin" << endl;
         } else {
-            std::cout << "\n=== FALLO EN EL RETIRO ===\n";
+            std::cout << "\n=== FALLO EN EL RETIRO ===" << endl;
+            std::cout << "Verifique el saldo o el límite de retiro diario." << endl;
         }
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al realizar retiro: " << e.what() << std::endl;
-        std::cout << "\n=== ERROR AL REALIZAR RETIRO ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== ERROR AL REALIZAR RETIRO ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     }
 }
 
 void consultar_movimientos(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
     try {
-        system("cls");
-        visibilidad_cursor(true);
         std::string dni;
         Fecha fecha_inicio, fecha_fin;
+        
+        // Validación de DNI (puede estar vacío)
         cout << "\r!!!Ingrese el DNI del cliente (o deje vacío): ";
         cout << "                                               ";
         cout << "\r!!!Ingrese el DNI del cliente (o deje vacío): ";
         dni = ingresar_dni("");
         cout << endl;
         
+        // Validación de fecha de inicio
         do {
             cout << "\r!!!Ingrese la fecha de inicio (YYYY-MM-DD): ";
             cout << "                                              ";
@@ -476,98 +536,77 @@ void consultar_movimientos(Banco& banco) {
         } while (fecha_inicio.empty());
         cout << endl;
         
+        // Validación de fecha de fin
         do {
             cout << "\r!!!Ingrese la fecha de fin (YYYY-MM-DD): ";
             cout << "                                            ";
             cout << "\r!!!Ingrese la fecha de fin (YYYY-MM-DD): ";
             fecha_fin = validarFecha("");
-        } while (fecha_fin.empty());
+        } while (fecha_fin.empty() || fecha_inicio > fecha_fin);
         cout << endl;
 
         banco.consultar_movimientos_rango(dni, fecha_inicio, fecha_fin);
-        std::cout << "\n=== CONSULTA FINALIZADA ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== CONSULTA FINALIZADA ===" << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar movimientos: " << e.what() << std::endl;
-        std::cout << "\n=== ERROR AL CONSULTAR MOVIMIENTOS ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== ERROR AL CONSULTAR MOVIMIENTOS ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     }
 }
 
 void consultar_cuentas(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
     try {
-        system("cls");
-        visibilidad_cursor(true);
-        std::string dni, nombre;
+        std::string dni, nombre, apellido;
+        
+        // Validación de DNI (puede estar vacío)
         cout << "\r!!!Ingrese el DNI del cliente (o deje vacío): ";
         cout << "                                               ";
         cout << "\r!!!Ingrese el DNI del cliente (o deje vacío): ";
         dni = ingresar_dni("");
         cout << endl;
 
+        // Validación de nombre (puede estar vacío)
         cout << "\r!!!Ingrese el nombre del cliente (o deje vacío): ";
         cout << "                                                  ";
         cout << "\r!!!Ingrese el nombre del cliente (o deje vacío): ";
         nombre = ingresar_alfabetico("");
         cout << endl;
 
-        banco.consultar_cuentas_cliente(dni, nombre);
-        std::cout << "\n=== CONSULTA FINALIZADA ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        // Validación de apellido (puede estar vacío)
+        cout << "\r!!!Ingrese el apellido del cliente (o deje vacío): ";
+        cout << "                                                    ";
+        cout << "\r!!!Ingrese el apellido del cliente (o deje vacío): ";
+        apellido = ingresar_alfabetico("");
+        cout << endl;
+
+        // Combinar nombre y apellido para la búsqueda
+        std::string criterio = nombre.empty() ? apellido : nombre;
+        banco.consultar_cuentas_cliente(dni, criterio);
+        std::cout << "\n=== CONSULTA FINALIZADA ===" << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar cuentas: " << e.what() << std::endl;
-        std::cout << "\n=== ERROR AL CONSULTAR CUENTAS ===\n";
-        std::cout << "Regresando al menú principal...\n";
-        pausar_consola();
-    }
-}
-
-void calcular_intereses(Banco& banco) {
-    try {
-        system("cls");
-        visibilidad_cursor(true);
-        std::string id_cuenta;
-        do {
-            cout << "\r!!!Ingrese el ID de la cuenta: ";
-            cout << "                                 ";
-            cout << "\r!!!Ingrese el ID de la cuenta: ";
-            id_cuenta = ingresar_alfabetico("");
-        } while (id_cuenta.length() < 9);
-        cout << endl;
-        
-        std::string fecha_hasta_str;
-        do {
-            cout << "\r!!!Ingrese la fecha hasta (YYYY-MM-DD): ";
-            cout << "                                          ";
-            cout << "\r!!!Ingrese la fecha hasta (YYYY-MM-DD): ";
-            fecha_hasta_str = ingresar_alfabetico("");
-        } while (fecha_hasta_str.length() != 10);
-        cout << endl;
-
-        Fecha fecha_hasta;
-        if (fecha_hasta.string_to_fecha(fecha_hasta_str) == -1) {
-            throw std::runtime_error("Formato de fecha inválido");
-        }
-        banco.calcular_intereses_cuenta(id_cuenta, fecha_hasta);
-        std::cout << "\n=== CÁLCULO DE INTERESES FINALIZADO ===\n";
-        std::cout << "Regresando al menú principal...\n";
-        pausar_consola();
-    } catch (const std::exception& e) {
-        std::cerr << "Error al calcular intereses: " << e.what() << std::endl;
-        std::cout << "\n=== ERROR AL CALCULAR INTERESES ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== ERROR AL CONSULTAR CUENTAS ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     }
 }
 
 void guardar_datos(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
     try {
-        system("cls");
-        visibilidad_cursor(true);
         std::string archivo_base;
+        
+        // Validación del nombre del archivo
         do {
             cout << "\r!!!Ingrese el nombre del archivo para guardar (sin .bin): ";
             cout << "                                                           ";
@@ -578,22 +617,25 @@ void guardar_datos(Banco& banco) {
 
         std::string archivo = archivo_base + ".bin";
         banco.guardar_datos_binario(archivo);
-        std::cout << "\n=== DATOS GUARDADOS EXITOSAMENTE EN " << archivo << " ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== DATOS GUARDADOS EXITOSAMENTE EN " << archivo << " ===" << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al guardar datos: " << e.what() << std::endl;
-        std::cout << "\n=== ERROR AL GUARDAR DATOS ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== ERROR AL GUARDAR DATOS ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     }
 }
 
 void cargar_datos(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
     try {
-        system("cls");
-        visibilidad_cursor(true);
         std::string archivo_base;
+        
+        // Validación del nombre del archivo
         do {
             cout << "\r!!!Ingrese el nombre del archivo para cargar (sin .bin): ";
             cout << "                                                           ";
@@ -604,13 +646,14 @@ void cargar_datos(Banco& banco) {
 
         std::string archivo = archivo_base + ".bin";
         banco.cargar_datos_binario(archivo);
-        std::cout << "\n=== DATOS CARGADOS EXITOSAMENTE DESDE " << archivo << " ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== DATOS CARGADOS EXITOSAMENTE DESDE " << archivo << " ===" << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     } catch (const std::exception& e) {
         std::cerr << "Error al cargar datos: " << e.what() << std::endl;
-        std::cout << "\n=== ERROR AL CARGAR DATOS ===\n";
-        std::cout << "Regresando al menú principal...\n";
+        std::cout << "\n=== ERROR AL CARGAR DATOS ===" << endl;
+        std::cout << "Error: " << e.what() << endl;
+        std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     }
 }

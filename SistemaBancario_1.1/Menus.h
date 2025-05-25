@@ -20,9 +20,9 @@ void realizar_deposito(Banco& banco);
 void realizar_retiro(Banco& banco);
 void consultar_movimientos(Banco& banco);
 void consultar_cuentas(Banco& banco);
-void calcular_intereses(Banco& banco);
 void guardar_datos(Banco& banco);
 void cargar_datos(Banco& banco);
 void mostrar_ayuda_tecnica();
+bool validar_credenciales_administrador(const std::string& usuario, const std::string& contrasenia);
 
 #endif

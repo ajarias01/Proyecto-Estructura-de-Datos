@@ -53,9 +53,12 @@ std::string Ahorro::to_string() {
 
 void Ahorro::guardar_binario(FILE* archivo) {
     try {
+        if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
         char tipo = 'A';
         fwrite(&tipo, sizeof(char), 1, archivo);
-        fwrite(id_cuenta.c_str(), sizeof(char), id_cuenta.length() + 1, archivo);
+        size_t len = id_cuenta.length();
+        fwrite(&len, sizeof(size_t), 1, archivo);
+        fwrite(id_cuenta.c_str(), sizeof(char), len + 1, archivo);
         fwrite(&saldo, sizeof(double), 1, archivo);
         fwrite(&tasa_interes, sizeof(double), 1, archivo);
         fwrite(&fecha_apertura, sizeof(Fecha), 1, archivo);
@@ -70,14 +73,25 @@ void Ahorro::guardar_binario(FILE* archivo) {
 
 void Ahorro::cargar_binario(FILE* archivo) {
     try {
-        char buffer[50];
-        fread(buffer, sizeof(char), 50, archivo);
+        if (!archivo) throw std::runtime_error("Archivo no válido para lectura");
+        size_t len;
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de id_cuenta");
+        char* buffer = new char[len + 1];
+        if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
+            delete[] buffer;
+            throw std::runtime_error("Error al leer id_cuenta");
+        }
         id_cuenta = std::string(buffer);
-        fread(&saldo, sizeof(double), 1, archivo);
-        fread(&tasa_interes, sizeof(double), 1, archivo);
-        fread(&fecha_apertura, sizeof(Fecha), 1, archivo);
+        delete[] buffer;
+        if (fread(&saldo, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer saldo");
+        if (fread(&tasa_interes, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer tasa_interes");
+        if (fread(&fecha_apertura, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer fecha_apertura");
         int num_movimientos;
-        fread(&num_movimientos, sizeof(int), 1, archivo);
+        if (fread(&num_movimientos, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer número de movimientos");
+        if (movimientos) {
+            movimientos->recorrer([](Movimiento) {});
+            delete movimientos;
+        }
         movimientos = new ListaDoble<Movimiento>();
         for (int i = 0; i < num_movimientos; i++) {
             Movimiento movimiento;
@@ -86,5 +100,6 @@ void Ahorro::cargar_binario(FILE* archivo) {
         }
     } catch (const std::exception& e) {
         std::cerr << "Error en cargar_binario: " << e.what() << std::endl;
+        throw;
     }
 }
