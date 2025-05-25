@@ -86,7 +86,7 @@ int desplegar_menu(const char** opciones, int nopciones) {
 
 void desplegar_menu_principal(Banco& banco) {
     system("chcp 65001 > nul");
-    const int NUM_OPCIONES = 9;
+    const int NUM_OPCIONES = 10;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Abrir cuenta",
         "Realizar depósito",
@@ -96,6 +96,7 @@ void desplegar_menu_principal(Banco& banco) {
         "Calcular intereses acumulados",
         "Guardar datos",
         "Cargar datos",
+        "Ayuda Técnica",
         "Salir"
     };
 
@@ -128,11 +129,26 @@ void desplegar_menu_principal(Banco& banco) {
             case 8:
                 cargar_datos(banco);
                 break;
-            case 9:
-                cout << "Saliendo del programa...\n";
-                return; // Salir del programa
+            case 9: 
+                mostrar_ayuda_tecnica(); 
+                break;
+            case 10: 
+                return;
         }
     } while (opcion != NUM_OPCIONES);
+}
+
+void mostrar_ayuda_tecnica() {
+    system("cls");
+    std::cout << "Abriendo el Manual de Ayuda Técnica...\n";
+    HINSTANCE result = ShellExecute(NULL, "open", "AyudaTecnicaBanco.chm", NULL, NULL, SW_SHOWNORMAL);
+    if (result <= (HINSTANCE)32) {
+        std::cerr << "Error: No se pudo abrir el archivo de ayuda. Asegúrese de que 'AyudaTecnicaBanco.chm' esté en el directorio del programa.\n";
+    } else {
+        std::cout << "Manual de Ayuda Técnica abierto exitosamente.\n";
+    }
+    std::cout << "Regresando al menú principal...\n";
+    pausar_consola();
 }
 
 void abrir_cuenta(Banco& banco, int tipo_cuenta) {
@@ -262,14 +278,13 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta) {
         }
 
         // Crear cliente y agregar cuenta
-        Cliente cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento);
+        Cliente* cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento);
         Cliente* cliente_existente = banco.buscar_cliente(dni);
         
         if (cliente_existente) {
             cliente_existente->agregar_cuenta(cuenta);
-            delete cliente_existente;
         } else {
-            cliente.agregar_cuenta(cuenta);
+            cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
         }
 
@@ -288,8 +303,7 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta) {
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
     }
-    
-    // Asegurar que regresa al menú principal
+   
     return;
 }
 

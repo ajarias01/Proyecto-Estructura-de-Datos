@@ -14,6 +14,8 @@ public:
     Cliente(std::string dni, std::string nombre, std::string apellido, std::string direccion, std::string telefono, 
             std::string email, Fecha fecha_nacimiento);
     ~Cliente();
+    Cliente(const Cliente& otro);
+    Cliente& operator=(const Cliente& otro);
     std::string get_dni();
     std::string get_nombre();
     std::string get_apellido();

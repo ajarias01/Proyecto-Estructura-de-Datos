@@ -12,6 +12,7 @@ void mover_cursor(int x, int y);
 int desplegar_menu(const char** opciones, int nopciones);
 void desplegar_menu_principal(Banco& banco);
 void abrir_cuenta(Banco& banco, int tipo_cuenta);
+void pausar_consola();
 void realizar_deposito(Banco& banco);
 void realizar_retiro(Banco& banco);
 void consultar_movimientos(Banco& banco);
@@ -20,5 +21,6 @@ void calcular_intereses(Banco& banco);
 void guardar_datos(Banco& banco);
 void menu_cuenta(Banco& banco);
 void cargar_datos(Banco& banco);
+void mostrar_ayuda_tecnica();
 
 #endif

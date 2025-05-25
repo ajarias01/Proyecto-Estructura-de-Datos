@@ -29,8 +29,9 @@ ListaDoble<T>::~ListaDoble() {
         Nodo<T>* siguiente;
         do {
             siguiente = actual->get_siguiente();
-            if constexpr (std::is_pointer<T>::value) {
-                delete actual->get_valor(); // Solo para punteros (como Cuenta*)
+            // Solo elimina si T es un puntero
+            if constexpr (std::is_pointer_v<T>) {
+                delete actual->get_valor();
             }
             delete actual;
             actual = siguiente;
@@ -167,4 +168,4 @@ template class ListaDoble<double>;
 template class ListaDoble<Fecha>;
 template class ListaDoble<Cuenta*>;
 template class ListaDoble<Movimiento>;
-template class ListaDoble<Cliente>;
+template class ListaDoble<Cliente*>;
