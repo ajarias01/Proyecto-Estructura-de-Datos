@@ -36,26 +36,44 @@ std::string Movimiento::to_string() const {
 }
 
 void Movimiento::guardar_binario(FILE* archivo) {
+    if (!archivo) {
+        std::cerr << "Error: Archivo no válido para escritura" << std::endl;
+        return;
+    }
     try {
         fwrite(tipo.c_str(), sizeof(char), tipo.length() + 1, archivo);
         fwrite(&monto, sizeof(double), 1, archivo);
         fwrite(&fecha, sizeof(Fecha), 1, archivo);
         fwrite(&saldo_post_movimiento, sizeof(double), 1, archivo);
     } catch (const std::exception& e) {
-        std::cerr << "Error en guardar_binario: " << e.what() << std::endl;
+        std::cerr << "Error al guardar movimiento en archivo binario: " << e.what() << std::endl;
     }
 }
 
 void Movimiento::cargar_binario(FILE* archivo) {
+    if (!archivo) {
+        std::cerr << "Error: Archivo no válido para lectura" << std::endl;
+        return;
+    }
     try {
-        char buffer[50];
-        fread(buffer, sizeof(char), 50, archivo);
+        char buffer[50] = {0};
+        size_t bytes_leidos = fread(buffer, sizeof(char), 50, archivo);
+        if (bytes_leidos == 0) {
+            throw std::runtime_error("Error al leer el tipo de movimiento");
+        }
         tipo = std::string(buffer);
-        fread(&monto, sizeof(double), 1, archivo);
-        fread(&fecha, sizeof(Fecha), 1, archivo);
-        fread(&saldo_post_movimiento, sizeof(double), 1, archivo);
+        
+        if (fread(&monto, sizeof(double), 1, archivo) != 1) {
+            throw std::runtime_error("Error al leer el monto");
+        }
+        if (fread(&fecha, sizeof(Fecha), 1, archivo) != 1) {
+            throw std::runtime_error("Error al leer la fecha");
+        }
+        if (fread(&saldo_post_movimiento, sizeof(double), 1, archivo) != 1) {
+            throw std::runtime_error("Error al leer el saldo posterior");
+        }
     } catch (const std::exception& e) {
-        std::cerr << "Error en cargar_binario: " << e.what() << std::endl;
+        std::cerr << "Error al cargar movimiento desde archivo binario: " << e.what() << std::endl;
     }
 }
 
