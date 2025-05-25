@@ -19,7 +19,6 @@ public:
     void set_saldo(double);
     void set_fecha_apertura(Fecha);
     virtual std::string get_tipo() = 0;
-    virtual double calcular_intereses(Fecha hasta) = 0;
     virtual std::string to_string() = 0;
     virtual void guardar_binario(FILE* archivo) = 0;
     virtual void cargar_binario(FILE* archivo) = 0;

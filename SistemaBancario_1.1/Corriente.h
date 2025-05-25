@@ -11,7 +11,6 @@ public:
     std::string get_tipo() override;
     double get_limite_retiro_diario();
     void set_limite_retiro_diario(double);
-    double calcular_intereses(Fecha hasta) override;
     std::string to_string() override;
     void guardar_binario(FILE* archivo) override;
     void cargar_binario(FILE* archivo) override;

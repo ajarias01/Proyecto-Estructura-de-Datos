@@ -3,9 +3,11 @@
 #include <functional>
 #include <stdio.h>
 #include <fstream>
+#include <algorithm>
 
 Banco::Banco() {
     clientes = new ListaDoble<Cliente*>();
+    datos_cargados = false; // Inicializar bandera
 }
 
 Banco::~Banco() {
@@ -36,20 +38,41 @@ Cliente* Banco::buscar_cliente(std::string dni) {
     }
 }
 
-void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre) {
+void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido) {
     try {
+        // Verificar que al menos un criterio de búsqueda esté presente
+        if (dni.empty() && nombre.empty() && apellido.empty()) {
+            throw std::invalid_argument("Debe proporcionar al menos un criterio de búsqueda (DNI, nombre o apellido)");
+        }
+
         bool encontrado = false;
         clientes->filtrar(
-            [&](Cliente* c) { 
-                return (dni.empty() || c->get_dni() == dni) ||
-                       (nombre.empty() || c->get_nombre() == nombre || c->get_apellido() == nombre); 
+            [&](Cliente* c) {
+                bool dni_match = !dni.empty() && c->get_dni() == dni;
+                bool nombre_match = !nombre.empty();
+                if (nombre_match) {
+                    std::string nombre_c = c->get_nombres();
+                    std::transform(nombre_c.begin(), nombre_c.end(), nombre_c.begin(), ::tolower);
+                    std::string nombre_search = nombre;
+                    std::transform(nombre_search.begin(), nombre_search.end(), nombre_search.begin(), ::tolower);
+                    nombre_match = nombre_c.find(nombre_search) != std::string::npos;
+                }
+                bool apellido_match = !apellido.empty();
+                if (apellido_match) {
+                    std::string apellido_c = c->get_apellidos();
+                    std::transform(apellido_c.begin(), apellido_c.end(), apellido_c.begin(), ::tolower);
+                    std::string apellido_search = apellido;
+                    std::transform(apellido_search.begin(), apellido_search.end(), apellido_search.begin(), ::tolower);
+                    apellido_match = apellido_c.find(apellido_search) != std::string::npos;
+                }
+                return dni_match || nombre_match || apellido_match;
             },
             [&](Cliente* c) {
                 encontrado = true;
                 std::cout << "\n=== DATOS DEL CLIENTE ===" << std::endl;
                 std::cout << "DNI: " << c->get_dni() << std::endl;
-                std::cout << "Nombre: " << c->get_nombre() << std::endl;
-                std::cout << "Apellido: " << c->get_apellido() << std::endl;
+                std::cout << "Nombre: " << c->get_nombres() << std::endl;
+                std::cout << "Apellido: " << c->get_apellidos() << std::endl;
                 std::cout << "Dirección: " << c->get_direccion() << std::endl;
                 std::cout << "Teléfono: " << c->get_telefono() << std::endl;
                 std::cout << "Email: " << c->get_email() << std::endl;
@@ -62,7 +85,10 @@ void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre) {
         );
         if (!encontrado) {
             std::cout << "\n=== NO SE ENCONTRARON CLIENTES ===" << std::endl;
-            std::cout << "No se encontraron clientes con DNI=" << dni << " o Nombre/Apellido=" << nombre << std::endl;
+            std::cout << "No se encontraron clientes con DNI=" << dni;
+            if (!nombre.empty()) std::cout << ", Nombre=" << nombre;
+            if (!apellido.empty()) std::cout << ", Apellido=" << apellido;
+            std::cout << std::endl;
         }
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar cuentas: " << e.what() << std::endl;
@@ -71,15 +97,17 @@ void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre) {
 
 void Banco::consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin) {
     try {
+        if (dni.empty()) throw std::invalid_argument("El DNI no puede estar vacío");
         if (inicio > fin) throw std::invalid_argument("Rango de fechas inválido");
         Cliente* cliente = buscar_cliente(dni);
-        if (!cliente) throw std::runtime_error("Cliente no encontrado");
+        if (!cliente) throw std::runtime_error("Cliente con DNI " + dni + " no encontrado");
         std::cout << "Movimientos para DNI=" << dni << " entre " << inicio.to_string() << " y " << fin.to_string() << ":\n";
         cliente->get_cuentas()->recorrer([&](Cuenta* cuenta) {
             cuenta->consultar_movimientos_rango(inicio, fin);
         });
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar movimientos: " << e.what() << std::endl;
+        throw;
     }
 }
 
@@ -100,6 +128,11 @@ void Banco::guardar_datos_binario(std::string archivo) {
 
 void Banco::cargar_datos_binario(std::string archivo) {
     try {
+        // Omitir carga si los datos ya están cargados
+        if (datos_cargados) {
+            return;
+        }
+
         std::ifstream check_file(archivo, std::ios::binary);
         if (!check_file.good()) {
             std::ofstream create_file(archivo, std::ios::binary);
@@ -108,6 +141,7 @@ void Banco::cargar_datos_binario(std::string archivo) {
             }
             create_file.close();
             std::cout << "Archivo " << archivo << " no existía, se creó uno nuevo.\n";
+            datos_cargados = true;
             return;
         }
         check_file.close();
@@ -129,10 +163,17 @@ void Banco::cargar_datos_binario(std::string archivo) {
         clientes = new ListaDoble<Cliente*>();
         for (int i = 0; i < num_clientes; i++) {
             Cliente* cliente = new Cliente();
-            cliente->cargar_binario(file);
-            clientes->insertar_cola(cliente);
+            try {
+                cliente->cargar_binario(file);
+                clientes->insertar_cola(cliente);
+            } catch (...) {
+                delete cliente;
+                fclose(file);
+                throw std::runtime_error("Error al cargar cliente desde el archivo");
+            }
         }
         fclose(file);
+        datos_cargados = true; // Marcar datos como cargados
         std::cout << "Datos cargados exitosamente desde " << archivo << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error al cargar datos: " << e.what() << std::endl;

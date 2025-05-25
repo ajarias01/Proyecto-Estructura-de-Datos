@@ -13,13 +13,13 @@ public:
     ~Banco();
     void agregar_cliente(Cliente* cliente);
     Cliente* buscar_cliente(std::string dni);
-    void consultar_cuentas_cliente(std::string dni, std::string nombre);
+    void consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido);
     void consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin);
-    void calcular_intereses_cuenta(std::string id_cuenta, Fecha hasta);
     void guardar_datos_binario(std::string archivo);
     void cargar_datos_binario(std::string archivo);
 private:
     ListaDoble<Cliente*>* clientes;
+    bool datos_cargados;
 };
 
 #endif

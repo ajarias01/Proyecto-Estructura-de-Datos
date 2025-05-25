@@ -1,4 +1,6 @@
 #include "Cliente.h"
+#include "Ahorro.h"
+#include "Corriente.h"
 #include <stdexcept>
 #include <functional>
 
@@ -14,8 +16,8 @@ Cliente::Cliente(std::string _dni, std::string _nombre, std::string _apellido, s
         if (_apellido.empty()) throw std::invalid_argument("Apellido no puede estar vacío");
         if (_contrasenia.empty()) throw std::invalid_argument("Contraseña no puede estar vacía");
         dni = _dni;
-        nombre = _nombre;
-        apellido = _apellido;
+        nombres = _nombre;
+        apellidos = _apellido;
         direccion = _direccion;
         telefono = _telefono;
         email = _email;
@@ -30,8 +32,8 @@ Cliente::Cliente(std::string _dni, std::string _nombre, std::string _apellido, s
 
 Cliente::Cliente(const Cliente& otro) {
     dni = otro.dni;
-    nombre = otro.nombre;
-    apellido = otro.apellido;
+    nombres = otro.nombres;
+    apellidos = otro.apellidos;
     direccion = otro.direccion;
     telefono = otro.telefono;
     email = otro.email;
@@ -51,8 +53,8 @@ Cliente& Cliente::operator=(const Cliente& otro) {
     if (this != &otro) {
         delete cuentas;
         dni = otro.dni;
-        nombre = otro.nombre;
-        apellido = otro.apellido;
+        nombres = otro.nombres;
+        apellidos = otro.apellidos;
         direccion = otro.direccion;
         telefono = otro.telefono;
         email = otro.email;
@@ -77,19 +79,19 @@ Cliente::~Cliente() {
     }
 }
 
-std::string Cliente::get_dni() { return dni; }
-std::string Cliente::get_nombre() { return nombre; }
-std::string Cliente::get_apellido() { return apellido; }
-std::string Cliente::get_direccion() { return direccion; }
-std::string Cliente::get_telefono() { return telefono; }
-std::string Cliente::get_email() { return email; }
-Fecha Cliente::get_fecha_nacimiento() { return fecha_nacimiento; }
-std::string Cliente::get_contrasenia() { return contrasenia; }
-ListaDoble<Cuenta*>* Cliente::get_cuentas() { return cuentas; }
+std::string Cliente::get_dni() const { return dni; }
+std::string Cliente::get_nombres() const { return nombres; }
+std::string Cliente::get_apellidos() const { return apellidos; }
+std::string Cliente::get_direccion() const { return direccion; }
+std::string Cliente::get_telefono() const { return telefono; }
+std::string Cliente::get_email() const { return email; }
+Fecha Cliente::get_fecha_nacimiento() const { return fecha_nacimiento; }
+std::string Cliente::get_contrasenia() const { return contrasenia; }
+ListaDoble<Cuenta*>* Cliente::get_cuentas() const { return cuentas; }
 
 void Cliente::set_dni(std::string _dni) { dni = _dni; }
-void Cliente::set_nombre(std::string _nombre) { nombre = _nombre; }
-void Cliente::set_apellido(std::string _apellido) { apellido = _apellido; }
+void Cliente::set_nombres(std::string _nombres) { nombres = _nombres; }
+void Cliente::set_apellidos(std::string _apellidos) { apellidos = _apellidos; }
 void Cliente::set_direccion(std::string _direccion) { direccion = _direccion; }
 void Cliente::set_telefono(std::string _telefono) { telefono = _telefono; }
 void Cliente::set_email(std::string _email) { email = _email; }
@@ -121,7 +123,7 @@ Cuenta* Cliente::buscar_cuenta(std::string id_cuenta) {
 }
 
 std::string Cliente::to_string() const {
-    std::string result = "Cliente: DNI=" + dni + ", Nombre=" + nombre + ", Apellido=" + apellido +
+    std::string result = "Cliente: DNI=" + dni + ", Nombre=" + nombres + ", Apellido=" + apellidos +
                          ", Dirección=" + direccion + ", Teléfono=" + telefono + ", Email=" + email +
                          ", Fecha Nacimiento=" + fecha_nacimiento.to_string();
     return result;
@@ -135,12 +137,12 @@ void Cliente::guardar_binario(FILE* archivo) {
         len = dni.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(dni.c_str(), sizeof(char), len + 1, archivo);
-        len = nombre.length();
+        len = nombres.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
-        fwrite(nombre.c_str(), sizeof(char), len + 1, archivo);
-        len = apellido.length();
+        fwrite(nombres.c_str(), sizeof(char), len + 1, archivo);
+        len = apellidos.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
-        fwrite(apellido.c_str(), sizeof(char), len + 1, archivo);
+        fwrite(apellidos.c_str(), sizeof(char), len + 1, archivo);
         len = direccion.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(direccion.c_str(), sizeof(char), len + 1, archivo);
@@ -179,24 +181,24 @@ void Cliente::cargar_binario(FILE* archivo) {
         dni = std::string(buffer);
         delete[] buffer;
 
-        // Leer nombre
-        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de nombre");
+        // Leer nombres
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de nombres");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
             delete[] buffer;
-            throw std::runtime_error("Error al leer nombre");
+            throw std::runtime_error("Error al leer nombres");
         }
-        nombre = std::string(buffer);
+        nombres = std::string(buffer);
         delete[] buffer;
 
-        // Leer apellido
-        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de apellido");
+        // Leer apellidos
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de apellidos");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
             delete[] buffer;
-            throw std::runtime_error("Error al leer apellido");
+            throw std::runtime_error("Error al leer apellidos");
         }
-        apellido = std::string(buffer);
+        apellidos = std::string(buffer);
         delete[] buffer;
 
         // Leer dirección

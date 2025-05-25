@@ -11,7 +11,6 @@ public:
     std::string get_tipo() override;
     double get_tasa_interes();
     void set_tasa_interes(double);
-    double calcular_intereses(Fecha hasta) override;
     std::string to_string() override;
     void guardar_binario(FILE* archivo) override;
     void cargar_binario(FILE* archivo) override;

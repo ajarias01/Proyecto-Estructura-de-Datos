@@ -30,10 +30,6 @@ void Corriente::set_limite_retiro_diario(double _limite) {
     limite_retiro_diario = _limite;
 }
 
-double Corriente::calcular_intereses(Fecha hasta) {
-    return 0;
-}
-
 std::string Corriente::to_string() {
     return "Cuenta Corriente: ID=" + id_cuenta + ", Saldo=" + std::to_string(saldo) +
            ", Fecha Apertura=" + fecha_apertura.to_string() + ", Límite Retiro Diario=" + std::to_string(limite_retiro_diario);

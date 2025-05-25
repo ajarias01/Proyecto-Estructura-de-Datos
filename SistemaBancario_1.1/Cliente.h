@@ -1,48 +1,52 @@
-#ifndef CLIENTE_H_INCLUDED
-#define CLIENTE_H_INCLUDED
+#ifndef CLIENTE_H
+#define CLIENTE_H
 
-#include "Cuenta.h"
-#include "Ahorro.h"
-#include "Corriente.h"
+#include <string>
 #include "Fecha.h"
 #include "ListaDoble.h"
-#include <string>
+#include "Cuenta.h"
 
-class Cliente {
+class Cliente
+{
 public:
     Cliente();
-    Cliente(std::string dni, std::string nombre, std::string apellido, std::string direccion, std::string telefono, 
-            std::string email, Fecha fecha_nacimiento, std::string contrasenia);
+    Cliente(std::string dni, std::string nombres, std::string apellidos, std::string direccion,
+            std::string telefono, std::string email, Fecha fecha_nacimiento, std::string contrasenia);
+    Cliente(const Cliente& otro); // Constructor de copia
+    Cliente& operator=(const Cliente& otro); // Operador de asignación
     ~Cliente();
-    Cliente(const Cliente& otro);
-    Cliente& operator=(const Cliente& otro);
-    std::string get_dni();
-    std::string get_nombre();
-    std::string get_apellido();
-    std::string get_direccion();
-    std::string get_telefono();
-    std::string get_email();
-    Fecha get_fecha_nacimiento();
-    std::string get_contrasenia();
-    ListaDoble<Cuenta*>* get_cuentas();
-    void set_dni(std::string);
-    void set_nombre(std::string);
-    void set_apellido(std::string);
-    void set_direccion(std::string);
-    void set_telefono(std::string);
-    void set_email(std::string);
-    void set_fecha_nacimiento(Fecha);
-    void set_contrasenia(std::string);
+    
+    std::string get_dni() const;
+    std::string get_nombres() const;
+    std::string get_apellidos() const;
+    std::string get_direccion() const;
+    std::string get_telefono() const;
+    std::string get_email() const;
+    Fecha get_fecha_nacimiento() const;
+    std::string get_contrasenia() const;
+    ListaDoble<Cuenta*>* get_cuentas() const;
+    
+    void set_dni(std::string dni);
+    void set_nombres(std::string nombres);
+    void set_apellidos(std::string apellidos);
+    void set_direccion(std::string direccion);
+    void set_telefono(std::string telefono);
+    void set_email(std::string email);
+    void set_fecha_nacimiento(Fecha fecha_nacimiento);
+    void set_contrasenia(std::string contrasenia);
+    
     void agregar_cuenta(Cuenta* cuenta);
     Cuenta* buscar_cuenta(std::string id_cuenta);
-    std::string to_string() const;
-    void guardar_binario(FILE* archivo);
-    void cargar_binario(FILE* archivo);
-    friend std::ostream& operator<<(std::ostream& os, const Cliente& cliente);
+    
+    std::string to_string() const; // Declaración de to_string
+    
+    void guardar_binario(FILE* file);
+    void cargar_binario(FILE* file);
+    
 private:
     std::string dni;
-    std::string nombre;
-    std::string apellido;
+    std::string nombres;
+    std::string apellidos;
     std::string direccion;
     std::string telefono;
     std::string email;
