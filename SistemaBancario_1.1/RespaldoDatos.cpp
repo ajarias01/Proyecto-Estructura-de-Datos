@@ -1,7 +1,16 @@
 #include "RespaldoDatos.h"
+#include "Ahorro.h"
+#include "Corriente.h"
+#include "ListaDoble.h"
+#include <nlohmann/json.hpp>
 #include <fstream>
 #include <iomanip>
 #include <ctime>
+#include <filesystem>
+#include <algorithm>
+#include <vector>
+namespace fs = std::filesystem;
+using json = nlohmann::json;
 using namespace std;
 
 void RespaldoDatos::respaldoClientes(const string& nombreArchivo, const ListaDoble<Cliente*>& clientes) {
@@ -10,12 +19,15 @@ void RespaldoDatos::respaldoClientes(const string& nombreArchivo, const ListaDob
         json clienteJson;
         // Serializar datos básicos del cliente
         clienteJson["dni"] = cliente->get_dni();
-        clienteJson["nombre"] = cliente->get_nombre();
-        clienteJson["apellido"] = cliente->get_apellido();
+        clienteJson["nombre"] = cliente->get_nombres();
+        clienteJson["apellido"] = cliente->get_apellidos();
         clienteJson["direccion"] = cliente->get_direccion();
         clienteJson["telefono"] = cliente->get_telefono();
         clienteJson["email"] = cliente->get_email();
         clienteJson["contrasenia"] = cliente->get_contrasenia();
+        std::string contraseniaCifrada = cliente->get_contrasenia();
+        CifradoCesar(contraseniaCifrada, 3); // Usa el desplazamiento que prefieras
+        clienteJson["Cifrado Cesar contrasenia"] = contraseniaCifrada;
 
         // Serializar fecha de nacimiento
         Fecha fechaNacimiento = cliente->get_fecha_nacimiento();
@@ -30,13 +42,13 @@ void RespaldoDatos::respaldoClientes(const string& nombreArchivo, const ListaDob
 
         // Serializar cuentas con todos sus parámetros
         json cuentasJson;
-        cliente->get_cuentas().recorrer([&cuentasJson](Cuenta* cuenta) {
+        cliente->get_cuentas()->recorrer([&cuentasJson](Cuenta* cuenta) { 
             json cuentaJson;
             cuentaJson["id"] = cuenta->get_id_cuenta();
             cuentaJson["saldo"] = cuenta->get_saldo();
             
             // Serializar tipo específico y sus parámetros
-            if (auto ahorro = dynamic_cast<Ahorro*>(cuenta)) {
+            if (Ahorro* ahorro = dynamic_cast<Ahorro*>(cuenta)) {
                 cuentaJson["tipo"] = "Ahorro";
                 cuentaJson["tasa_interes"] = ahorro->get_tasa_interes();
                 cuentaJson["fecha_apertura"] = {
@@ -45,7 +57,7 @@ void RespaldoDatos::respaldoClientes(const string& nombreArchivo, const ListaDob
                     {"dia", ahorro->get_fecha_apertura().get_dia()}
                 };
             } 
-            else if (auto corriente = dynamic_cast<Corriente*>(cuenta)) {
+            else if (Corriente* corriente = dynamic_cast<Corriente*>(cuenta)) {
                 cuentaJson["tipo"] = "Corriente";
                 cuentaJson["limite_retiro"] = corriente->get_limite_retiro_diario();
                 cuentaJson["fecha_apertura"] = {
@@ -67,8 +79,8 @@ void RespaldoDatos::respaldoClientes(const string& nombreArchivo, const ListaDob
     archivo.close();
 }
 
-ListaDoble<Cliente*> RespaldoDatos::restaurarClientes(const string& nombreArchivo) {
-    ListaDoble<Cliente*> clientes;
+ListaDoble<Cliente*>* RespaldoDatos::restaurarClientes(const std::string& nombreArchivo) {
+    ListaDoble<Cliente*>* clientes = new ListaDoble<Cliente*>();
     std::ifstream archivo(nombreArchivo);
     
     if (!archivo.is_open()) {
@@ -91,6 +103,7 @@ ListaDoble<Cliente*> RespaldoDatos::restaurarClientes(const string& nombreArchiv
         );
 
         // Crear cliente
+        
         Cliente* cliente = new Cliente(
             item["dni"].get<std::string>(),
             item["nombre"].get<std::string>(),
@@ -100,6 +113,7 @@ ListaDoble<Cliente*> RespaldoDatos::restaurarClientes(const string& nombreArchiv
             item["email"].get<std::string>(),
             fechaNacimiento,
             item["contrasenia"].get<std::string>()
+            
         );
 
         // Restaurar cuentas con todos sus parámetros
@@ -135,7 +149,7 @@ ListaDoble<Cliente*> RespaldoDatos::restaurarClientes(const string& nombreArchiv
                 cliente->agregar_cuenta(cuenta);
             }
         }
-        clientes.insertar_cola(cliente);
+        clientes->insertar_cola(cliente);
     }
     
     archivo.close();
@@ -153,37 +167,55 @@ void RespaldoDatos::guardarRespaldoClientesConFecha(const ListaDoble<Cliente*>& 
     // Llamar al método de respaldo
     respaldoClientes(nombreArchivo, clientes);
 }
+std::string RespaldoDatos::obtenerUltimoRespaldo() {
+    std::vector<std::pair<std::string, std::time_t>> backups;
 
- void RespaldoDatos::CifradoCesar(string CifradoCesar,int numCesar){
-    for (int i = 0; i < cifradoCesar.length(); i++) {
-    char currentChar = cifradoCesar[i];
-    if (isdigit(currentChar)) { // Verifica si es un dígito
-        numCesar = currentChar - '0'; // Convierte el carácter a número
-        cifradoCesar[i] = currentChar; // Mantén el carácter numérico
-    } else if (currentChar == ' ') { // Si es un espacio
-        cifradoCesar[i] = ' ';
-    } else { // Para otros caracteres
-        nuevoCesar = currentChar + index;
-        if (isalpha(currentChar)) { // Asegúrate de que sea una letra
-            char base = islower(currentChar) ? 'a' : 'A';
-            cifradoCesar[i] = base + (nuevoCesar - base) % 26; // Aplica el cifrado César
+    for (const auto& entry : fs::directory_iterator(".")) {
+        std::string nombre = entry.path().filename().string();
+        if (nombre.find("backup_clientes_") == 0 && nombre.substr(nombre.size() - 5) == ".json") {
+            // ¡Corregir aquí!
+            std::string timestampStr = nombre.substr(16, nombre.size() - 21);
+            
+            std::tm tm = {};
+            std::istringstream ss(timestampStr);
+            ss >> std::get_time(&tm, "%Y%m%d_%H%M%S");
+            if (ss.fail()) continue;
+            std::time_t tiempo = std::mktime(&tm);
+            
+            backups.emplace_back(nombre, tiempo);
         }
     }
+
+    if (!backups.empty()) {
+        std::sort(backups.begin(), backups.end(), 
+            [](const auto& a, const auto& b) { return a.second > b.second; });
+        return backups[0].first;
+    }
+    if (fs::exists("respaldo_clientes.json")) {
+        return "respaldo_clientes.json";
+    }
+    return "";
+}
+void RespaldoDatos::CifradoCesar(std::string& cifradoCesar, int numCesar) {
+    for (int i = 0; i < cifradoCesar.length(); i++) {
+        char currentChar = cifradoCesar[i];
+        if (isdigit(currentChar)) {
+            numCesar = currentChar - '0';
+        } else if (isalpha(currentChar)) {
+            char base = islower(currentChar) ? 'a' : 'A';
+            cifradoCesar[i] = base + (currentChar - base + numCesar) % 26;
+        }
     }
 }
-void RespaldoDatos::DecifradoCesar(string decifradoCesar,int numCesar){
-for (int i = 0; i < decifradoCesar.length(); i++){
-    char currentChar = decifradoCesar[i];
-    if (isdigit(currentChar)) { // Verifica si es un dígito
-        numCesar = currentChar - '0'; // Convierte el carácter a número
-        decifradoCesar[i] = currentChar; // Mantén el carácter numérico
-    } else if (currentChar == ' ') { // Si es un espacio
-        decifradoCesar[i] = ' ';
-    } else { // Para otros caracteres
-        if (isalpha(currentChar)) { // Asegúrate de que sea una letra
+
+void RespaldoDatos::DecifradoCesar(std::string& decifradoCesar, int numCesar) {
+    for (int i = 0; i < decifradoCesar.length(); i++) {
+        char currentChar = decifradoCesar[i];
+        if (isdigit(currentChar)) {
+            numCesar = currentChar - '0';
+        } else if (isalpha(currentChar)) {
             char base = islower(currentChar) ? 'a' : 'A';
-            decifradoCesar[i] = base + (currentChar - base - index + 26) % 26; // Aplica el cifrado César
+            decifradoCesar[i] = base + (currentChar - base - numCesar + 26) % 26;
         }
-    }
     }
 }

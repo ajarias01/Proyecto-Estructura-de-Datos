@@ -1,6 +1,7 @@
 #ifndef VALIDACIONES_H
 #define VALIDACIONES_H
 #include <iostream>
+#include "Cliente.h"
 #include "Fecha.h"
 #include <string>
 using namespace std;
@@ -9,12 +10,13 @@ Fecha validarFecha(const std::string& mensaje);
 string ingresar_alfabetico(const string& mensaje);
 string ingresar_dni(const string& mensaje); // Nueva función
 string validarOpcion(string& estado);
-string ingresar_opcion(const string& mensaje);
 string normalizarDireccion(string direccion);
 string ingresar_direccion(const string& mensaje);
 string ingresar_email(const string& mensaje);
 string ingresar_contrasenia(const std::string& mensaje);
 string ingresar_decimales(const string& mensaje);
+string ingresar_id(const string& mensaje);
+string generar_cadena_aleatoria(int n);
 string ingresar_contrasenia_administrador(const string& mensaje);
 int ingresar_enteros(const string& mensaje);
 bool validarCedulaEcuatoriana(const std::string& cedula);
@@ -23,4 +25,6 @@ bool validar_estado_civil(const string& estado_civil);
 bool validar_email(const string& email);
 bool validar_contrasenia(const std::string& contrasenia);
 bool validar_monto(const string& montoStr);
+bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta);
+
 #endif

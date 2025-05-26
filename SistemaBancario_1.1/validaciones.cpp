@@ -3,6 +3,7 @@
 #include <iostream>
 #include <limits>
 #include <cctype>
+#include <random>
 #include <conio.h>
 #include <algorithm>
 
@@ -50,23 +51,6 @@ string validarOpcion(string& opcion) {
         opcion[i] = toupper(opcion[i]);
     }
     return opcion;
-}
-string ingresar_opcion(const string& mensaje){
-    char c;
-    string palabra;
-    cout << mensaje;
-    while (true) {
-        c = getch();
-        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')) {
-            palabra += c;
-            printf("%c", c);
-        } else if (c == 13) { 
-            return validarOpcion(palabra);
-        } else if (c == 8 && !palabra.empty()) { // Backspace
-            palabra.pop_back();
-            printf("\b \b");
-        }
-    }
 }
 string normalizarDireccion(string direccion) {
     bool nuevaPalabra = true;
@@ -190,6 +174,16 @@ string ingresar_email(const std::string& mensaje) {
         } 
     }
 }
+string generar_cadena_aleatoria(int n) {
+    static const char alfabeto[] =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    static std::mt19937 rng(std::random_device{}());
+    static std::uniform_int_distribution<> dist(0, sizeof(alfabeto) - 2);
+    std::string s;
+    for (int i = 0; i < n; ++i)
+        s += alfabeto[dist(rng)];
+    return s;
+}
 int ingresar_enteros(const string& mensaje) {
     char c;
     string palabra;
@@ -218,6 +212,27 @@ string ingresar_decimales(const string& mensaje) {
             printf("%c", c);
         } else if (c == 13) {
             return palabra;
+        } else if (c == 8 && !palabra.empty()) { // Backspace
+            palabra.pop_back();
+            printf("\b \b");
+        }
+    }
+}
+string ingresar_id(const string& mensaje) {
+    char c;
+    string palabra;
+    cout << mensaje;
+    while (true) {
+        c = getch();
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') && palabra.length() < 12) {  
+            palabra += c;
+            cout << c; // Mostrar asterisco
+        } else if (c == 13 && !palabra.empty()) { 
+            string resultado = palabra;
+            for (char& ch : resultado) {
+                ch = toupper(ch);
+            }
+            return resultado;
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             printf("\b \b");
@@ -447,4 +462,10 @@ bool validar_monto(const string& montoStr) {
     if (digitosAntesPunto + digitosDespuesPunto > 10) return false;
 
     return true;
+}
+bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta) {
+    if (id_cuenta.empty() || cliente == nullptr) return false;
+
+    Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
+    return cuenta != nullptr;
 }

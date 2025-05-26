@@ -7,7 +7,6 @@ Cuenta::Cuenta() {
     saldo = 0;
     movimientos = new ListaDoble<Movimiento>();
 }
-
 Cuenta::Cuenta(std::string id, double saldo_inicial, Fecha fecha) {
     try {
         if (id.empty()) throw std::invalid_argument("ID de cuenta inválido");

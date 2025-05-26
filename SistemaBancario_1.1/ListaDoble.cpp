@@ -2,7 +2,6 @@
 #include "Fecha.h"
 #include "Movimiento.h"
 #include "Cliente.h"
-
 #include <iostream>
 #include <stdexcept>
 
@@ -100,7 +99,7 @@ bool ListaDoble<T>::esta_vacia() {
 }
 
 template <typename T>
-void ListaDoble<T>::recorrer(std::function<void(T)> func) {
+void ListaDoble<T>::recorrer(std::function<void(T)> func)const {
     if (esta_vacia()) return;
     Nodo<T>* aux = cabeza;
     do {
@@ -160,6 +159,10 @@ void ListaDoble<T>::eliminar(Nodo<T>* nodo) {
     } catch (const std::exception& e) {
         std::cerr << "Error en eliminar: " << e.what() << std::endl;
     }
+}
+template <typename T>
+bool ListaDoble<T>::esta_vacia() const { // Añadir const aquí
+    return (cabeza == nullptr);
 }
 
 // Instanciaciones explícitas

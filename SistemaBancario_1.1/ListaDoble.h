@@ -18,10 +18,11 @@ public:
     void insertar_cola(T valor);
     void imprimir();
     bool esta_vacia();
-    void recorrer(std::function<void(T)> func);
+    void recorrer(std::function<void(T)> func) const;
     void filtrar(std::function<bool(T)> criterio, std::function<void(T)> accion);
     Nodo<T>* buscar(std::function<bool(T)> criterio);
     void eliminar(Nodo<T>* nodo);
+    bool esta_vacia() const;
 private:
     Nodo<T>* cabeza;
     Nodo<T>* cola;

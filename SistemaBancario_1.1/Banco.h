@@ -11,6 +11,7 @@ class Banco {
 public:
     Banco();
     ~Banco();
+    ListaDoble<Cliente*>* getClientes() const { return clientes; } 
     void agregar_cliente(Cliente* cliente);
     Cliente* buscar_cliente(std::string dni);
     void consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido);

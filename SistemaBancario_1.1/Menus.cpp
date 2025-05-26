@@ -379,9 +379,19 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta)
 
 
         // Generar ID de cuenta
-        std::string id_cuenta_base = nombre.substr(0, 1) + apellido.substr(0, 1);
+        std::string id_cuenta_base = "";
+        id_cuenta_base += toupper(nombre[0]);
+        id_cuenta_base += toupper(apellido[0]);
         id_cuenta_base += (tipo_cuenta == 1) ? "A" : "C";
-        id_cuenta_base += dni.substr(dni.length() - 6, 6);
+
+        // Tomar los últimos 6 dígitos del DNI y convertirlos a mayúsculas (por si acaso)
+        std::string ultimos_dni = dni.substr(dni.length() - 6, 6);
+        std::transform(ultimos_dni.begin(), ultimos_dni.end(), ultimos_dni.begin(), ::toupper);
+        id_cuenta_base += ultimos_dni;
+
+        // Agregar 3 caracteres aleatorios para hacerlo indetectable
+        id_cuenta_base += generar_cadena_aleatoria(3);
+
         std::string id_cuenta = id_cuenta_base;
 
         // Verificar si el ID de cuenta ya existe
@@ -497,14 +507,13 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         if (!cliente) throw std::runtime_error("Cliente no encontrado");
 
         // Validación de ID de cuenta
-        bool cuenta_valida = false;
-        do
-        {
+        do{
             limpiar_linea("!!!Ingrese el ID de la cuenta: ");
-            id_cuenta = ingresar_alfabetico("");
-        } while (id_cuenta.length() < 8);
-        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
+            id_cuenta = ingresar_id("");
+            cout << id_cuenta ;
+        } while (!validar_id_cuenta(cliente, id_cuenta));
         cout << endl;
+        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         
         // Validación de monto
         do
@@ -516,9 +525,9 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         cout << endl;
 
         Fecha fecha;
-        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         cuenta->depositar(monto, fecha);
         banco.guardar_datos_binario("datos.bin");
+        RespaldoDatos::respaldoClientes("respaldo_clientes.json", *banco.getClientes());
 
         std::cout << "\n=== DEPÓSITO REALIZADO EXITOSAMENTE ===" << endl;
         std::cout << "Monto depositado: $" << monto << endl;
@@ -547,17 +556,16 @@ void realizar_retiro(Banco& banco, const std::string& dni)
     {
         // Cargar datos existentes desde datos.bin
         banco.cargar_datos_binario("datos.bin");
-
+        
         // Obtener cliente autenticado
         Cliente* cliente = banco.buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente no encontrado");
-
+        
         // Validación de ID de cuenta
-        bool cuenta_valida = false;
         do{
             limpiar_linea("!!!Ingrese el ID de la cuenta: ");
-            id_cuenta = ingresar_alfabetico("");
-        } while (id_cuenta.length() < 8);
+            id_cuenta = ingresar_id("");
+        } while (!validar_id_cuenta(cliente, id_cuenta));
         cout << endl;
         Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         
@@ -571,7 +579,6 @@ void realizar_retiro(Banco& banco, const std::string& dni)
         cout << endl;
 
         Fecha fecha;
-        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         if (cuenta->retirar(monto, fecha))
         {
             banco.guardar_datos_binario("datos.bin");
@@ -670,13 +677,14 @@ void consultar_cuentas(Banco& banco)
         nombre = ingresar_alfabetico("");
         if (!nombre.empty()) criterio_valido = true;
         cout << endl;
+        validarOpcion(nombre);
 
         // Validación de apellido (opcional)
         limpiar_linea("!!!Ingrese el apellido del cliente (o deje vacío): ");
         apellido = ingresar_alfabetico("");
         if (!apellido.empty()) criterio_valido = true;
         cout << endl;
-
+        validarOpcion(apellido);
         // Verificar que al menos un criterio sea válido
         if (!criterio_valido)
         {

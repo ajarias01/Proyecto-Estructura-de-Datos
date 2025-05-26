@@ -1,0 +1,92 @@
+[
+    {
+        "apellido": "sisalema",
+        "contrasenia": "Yo$tin2004",
+        "cuentas": [
+            {
+                "fecha_apertura": {
+                    "anio": 2025,
+                    "dia": 26,
+                    "mes": 5
+                },
+                "id": "ysA961968",
+                "saldo": 100040.23,
+                "tasa_interes": 5.0,
+                "tipo": "Ahorro"
+            }
+        ],
+        "direccion": "Av.Lascano",
+        "dni": "1753961968",
+        "email": "yostinsisalema@gamil.com",
+        "fecha_nacimiento": {
+            "anio": 2012,
+            "dia": 12,
+            "hora": 0,
+            "mes": 12,
+            "minutos": 0,
+            "segundos": 1
+        },
+        "nombre": "yostin",
+        "telefono": "0998828790"
+    },
+    {
+        "apellido": "JIMENEZ",
+        "contrasenia": "Paol@2004",
+        "cuentas": [
+            {
+                "fecha_apertura": {
+                    "anio": 2025,
+                    "dia": 26,
+                    "mes": 5
+                },
+                "id": "PJA475837",
+                "saldo": 1011.1,
+                "tasa_interes": 5.0,
+                "tipo": "Ahorro"
+            }
+        ],
+        "direccion": "Av.San Roque",
+        "dni": "1720475837",
+        "email": "pao23@gamil.com",
+        "fecha_nacimiento": {
+            "anio": 1984,
+            "dia": 31,
+            "hora": 0,
+            "mes": 1,
+            "minutos": 0,
+            "segundos": 1
+        },
+        "nombre": "Paola",
+        "telefono": "0984856123"
+    },
+    {
+        "apellido": "arias",
+        "contrasenia": "Alasdepollo12!",
+        "cuentas": [
+            {
+                "fecha_apertura": {
+                    "anio": 2025,
+                    "dia": 26,
+                    "mes": 5
+                },
+                "id": "aaA392515",
+                "saldo": 2000.0,
+                "tasa_interes": 5.0,
+                "tipo": "Ahorro"
+            }
+        ],
+        "direccion": "Turubamba Bajo",
+        "dni": "1726392515",
+        "email": "ariasalan633@gamil.com",
+        "fecha_nacimiento": {
+            "anio": 2025,
+            "dia": 25,
+            "hora": 0,
+            "mes": 5,
+            "minutos": 0,
+            "segundos": 1
+        },
+        "nombre": "alan",
+        "telefono": "0991541777"
+    }
+]

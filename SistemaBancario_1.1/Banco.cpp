@@ -1,4 +1,5 @@
 #include "Banco.h"
+#include "RespaldoDatos.h"
 #include <stdexcept>
 #include <functional>
 #include <stdio.h>
@@ -119,32 +120,42 @@ void Banco::guardar_datos_binario(std::string archivo) {
         clientes->recorrer([&](Cliente* c) { num_clientes++; });
         fwrite(&num_clientes, sizeof(int), 1, file);
         clientes->recorrer([&](Cliente* c) { c->guardar_binario(file); });
+        RespaldoDatos::guardarRespaldoClientesConFecha(*clientes);
         fclose(file);
         std::cout << "Datos guardados exitosamente en " << archivo << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error al guardar datos: " << e.what() << std::endl;
     }
 }
-
 void Banco::cargar_datos_binario(std::string archivo) {
     try {
-        // Omitir carga si los datos ya están cargados
-        if (datos_cargados) {
-            return;
-        }
+        if (datos_cargados) return;
 
         std::ifstream check_file(archivo, std::ios::binary);
         if (!check_file.good()) {
-            std::ofstream create_file(archivo, std::ios::binary);
-            if (!create_file.good()) {
-                throw std::runtime_error("No se pudo crear el archivo");
+            std::string backupFile = RespaldoDatos::obtenerUltimoRespaldo();
+            if (!backupFile.empty()) {
+                ListaDoble<Cliente*>* clientesRestaurados = RespaldoDatos::restaurarClientes(backupFile);
+                
+                if (clientes) {
+                    clientes->recorrer([](Cliente* c) { delete c; });
+                    delete clientes;
+                }
+                clientes = clientesRestaurados;
+                
+                guardar_datos_binario(archivo);
+                datos_cargados = true;
+                std::cout << "Datos restaurados desde el respaldo: " << backupFile << std::endl;
+                return;
+            } else {
+                std::ofstream create_file(archivo, std::ios::binary);
+                if (!create_file.good()) throw std::runtime_error("No se pudo crear el archivo");
+                create_file.close();
+                std::cout << "Archivo " << archivo << " creado. No hay respaldos JSON disponibles.\n";
+                datos_cargados = true;
+                return;
             }
-            create_file.close();
-            std::cout << "Archivo " << archivo << " no existía, se creó uno nuevo.\n";
-            datos_cargados = true;
-            return;
         }
-        check_file.close();
 
         FILE* file = fopen(archivo.c_str(), "rb");
         if (!file) throw std::runtime_error("No se pudo abrir el archivo para lectura");
