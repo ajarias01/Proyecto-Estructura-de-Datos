@@ -9,6 +9,7 @@
 class Fecha {
 public:
     Fecha();
+    Fecha(const Fecha& otro);
     Fecha(int _anuario, int _mes, int _dia);
     Fecha(int _anuario, int _mes, int _dia, int _hora, int _minutos, int _segundos);
     static bool es_fecha_valida(int anio, int mes, int dia);
@@ -30,6 +31,7 @@ public:
     bool es_finde();
     bool validar() const;
     bool empty() const;
+    void set_hora_completa(int _hora, int _minutos, int _segundos);
     std::string to_string() const; // Añadido const
     std::string to_string_documento();
     std::time_t string_to_fecha(const std::string& dateTime);

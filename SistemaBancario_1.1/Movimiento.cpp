@@ -81,3 +81,8 @@ std::ostream& operator<<(std::ostream& os, const Movimiento& mov) {
     os << mov.to_string();
     return os;
 }
+Movimiento::Movimiento(const Movimiento& otro)
+    : tipo(otro.tipo),
+      monto(otro.monto),
+      fecha(otro.fecha),
+      saldo_post_movimiento(otro.saldo_post_movimiento) {}

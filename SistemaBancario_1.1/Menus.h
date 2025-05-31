@@ -6,6 +6,9 @@
 #include <windows.h>
 #include "Validaciones.h"
 #include "Banco.h"
+#define TECLA_ARRIBA 72
+#define TECLA_ABAJO 80
+#define ENTER 13
 
 void visibilidad_cursor(bool);
 void mover_cursor(int x, int y);
@@ -20,7 +23,9 @@ void realizar_deposito(Banco& banco, const std::string& dni);
 void realizar_retiro(Banco& banco, const std::string& dni);
 void consultar_movimientos(Banco& banco);
 void consultar_cuentas(Banco& banco);
+void recuperar_backup_por_fecha(Banco& banco);
 void mostrar_ayuda_tecnica();
+void cargar_base_datos(Banco& banco);
 bool validar_credenciales_administrador(const std::string& usuario, const std::string& contrasenia);
 
 #endif

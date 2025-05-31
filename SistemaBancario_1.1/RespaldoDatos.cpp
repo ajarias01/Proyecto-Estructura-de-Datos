@@ -2,7 +2,6 @@
 #include "Ahorro.h"
 #include "Corriente.h"
 #include "ListaDoble.h"
-#include <nlohmann/json.hpp>
 #include <fstream>
 #include <iomanip>
 #include <ctime>
@@ -10,148 +9,149 @@
 #include <algorithm>
 #include <vector>
 namespace fs = std::filesystem;
-using json = nlohmann::json;
 using namespace std;
 
-void RespaldoDatos::respaldoClientes(const string& nombreArchivo, const ListaDoble<Cliente*>& clientes) {
-    json j;
-    clientes.recorrer([&j](Cliente* cliente) {
-        json clienteJson;
-        // Serializar datos básicos del cliente
-        clienteJson["dni"] = cliente->get_dni();
-        clienteJson["nombre"] = cliente->get_nombres();
-        clienteJson["apellido"] = cliente->get_apellidos();
-        clienteJson["direccion"] = cliente->get_direccion();
-        clienteJson["telefono"] = cliente->get_telefono();
-        clienteJson["email"] = cliente->get_email();
-        clienteJson["contrasenia"] = cliente->get_contrasenia();
-        std::string contraseniaCifrada = cliente->get_contrasenia();
-        CifradoCesar(contraseniaCifrada, 3); // Usa el desplazamiento que prefieras
-        clienteJson["Cifrado Cesar contrasenia"] = contraseniaCifrada;
+void RespaldoDatos::respaldoClientesBinario(const std::string& nombreArchivo, const ListaDoble<Cliente*>& clientes) {
+    ofstream archivo(nombreArchivo, ios::binary);
+    if (!archivo) return;
 
-        // Serializar fecha de nacimiento
-        Fecha fechaNacimiento = cliente->get_fecha_nacimiento();
-        clienteJson["fecha_nacimiento"] = {
-            {"anio", fechaNacimiento.get_anuario()},
-            {"mes", fechaNacimiento.get_mes()},
-            {"dia", fechaNacimiento.get_dia()},
-            {"hora", fechaNacimiento.get_hora()},
-            {"minutos", fechaNacimiento.get_minutos()},
-            {"segundos", fechaNacimiento.get_segundos()}
+    int totalClientes = 0;
+    clientes.recorrer([&](Cliente*) { totalClientes++; });
+    archivo.write(reinterpret_cast<char*>(&totalClientes), sizeof(int));
+
+    clientes.recorrer([&](Cliente* cliente) {
+        auto escribir_string = [&](const string& s) {
+            size_t len = s.size();
+            archivo.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
+            archivo.write(s.c_str(), len);
         };
 
-        // Serializar cuentas con todos sus parámetros
-        json cuentasJson;
-        cliente->get_cuentas()->recorrer([&cuentasJson](Cuenta* cuenta) { 
-            json cuentaJson;
-            cuentaJson["id"] = cuenta->get_id_cuenta();
-            cuentaJson["saldo"] = cuenta->get_saldo();
-            
-            // Serializar tipo específico y sus parámetros
-            if (Ahorro* ahorro = dynamic_cast<Ahorro*>(cuenta)) {
-                cuentaJson["tipo"] = "Ahorro";
-                cuentaJson["tasa_interes"] = ahorro->get_tasa_interes();
-                cuentaJson["fecha_apertura"] = {
-                    {"anio", ahorro->get_fecha_apertura().get_anuario()},
-                    {"mes", ahorro->get_fecha_apertura().get_mes()},
-                    {"dia", ahorro->get_fecha_apertura().get_dia()}
-                };
-            } 
-            else if (Corriente* corriente = dynamic_cast<Corriente*>(cuenta)) {
-                cuentaJson["tipo"] = "Corriente";
-                cuentaJson["limite_retiro"] = corriente->get_limite_retiro_diario();
-                cuentaJson["fecha_apertura"] = {
-                    {"anio", corriente->get_fecha_apertura().get_anuario()},
-                    {"mes", corriente->get_fecha_apertura().get_mes()},
-                    {"dia", corriente->get_fecha_apertura().get_dia()}
-                };
+        escribir_string(cliente->get_dni());
+        escribir_string(cliente->get_nombres());
+        escribir_string(cliente->get_apellidos());
+        escribir_string(cliente->get_direccion());
+        escribir_string(cliente->get_telefono());
+        escribir_string(cliente->get_email());
+        escribir_string(cliente->get_contrasenia());
+        Fecha fechaNac = cliente->get_fecha_nacimiento();
+        archivo.write(reinterpret_cast<const char*>(&fechaNac), sizeof(Fecha));
+
+        // Cuentas
+        int totalCuentas = 0;
+        cliente->get_cuentas()->recorrer([&](Cuenta*) { totalCuentas++; });
+        archivo.write(reinterpret_cast<char*>(&totalCuentas), sizeof(int));
+
+        cliente->get_cuentas()->recorrer([&](Cuenta* cuenta) {
+            escribir_string(cuenta->get_tipo());
+            escribir_string(cuenta->get_id_cuenta());
+            double saldo = cuenta->get_saldo();
+            archivo.write(reinterpret_cast<const char*>(&saldo), sizeof(double));
+            Fecha fechaApertura = cuenta->get_fecha_apertura();
+            archivo.write(reinterpret_cast<const char*>(&fechaApertura), sizeof(Fecha));
+
+            if (cuenta->get_tipo() == "Ahorros") {
+                double tasa = static_cast<Ahorro*>(cuenta)->get_tasa_interes();
+                archivo.write(reinterpret_cast<const char*>(&tasa), sizeof(double));
+            } else if (cuenta->get_tipo() == "Corriente") {
+                double limite = static_cast<Corriente*>(cuenta)->get_limite_retiro_diario();
+                archivo.write(reinterpret_cast<const char*>(&limite), sizeof(double));
             }
-            cuentasJson.push_back(cuentaJson);
+
+            // Movimientos
+            int totalMovimientos = 0;
+            cuenta->get_movimientos()->recorrer([&](Movimiento) { totalMovimientos++; });
+            archivo.write(reinterpret_cast<char*>(&totalMovimientos), sizeof(int));
+            cuenta->get_movimientos()->recorrer([&](Movimiento m) {
+                std::string tipo = m.get_tipo();
+                size_t len = tipo.size();
+                archivo.write(reinterpret_cast<const char*>(&len), sizeof(size_t));
+                archivo.write(tipo.c_str(), len);
+
+                double monto = m.get_monto();
+                archivo.write(reinterpret_cast<const char*>(&monto), sizeof(double));
+                Fecha fecha = m.get_fecha();
+                archivo.write(reinterpret_cast<const char*>(&fecha), sizeof(Fecha));
+                double saldo_post = m.get_saldo_post_movimiento();
+                archivo.write(reinterpret_cast<const char*>(&saldo_post), sizeof(double));
+            });
         });
-        
-        clienteJson["cuentas"] = cuentasJson;
-        j.push_back(clienteJson);
     });
 
-    // Guardar en archivo con formato bonito
-    std::ofstream archivo(nombreArchivo);
-    archivo << j.dump(4);
     archivo.close();
 }
-
-ListaDoble<Cliente*>* RespaldoDatos::restaurarClientes(const std::string& nombreArchivo) {
+ListaDoble<Cliente*>* RespaldoDatos::restaurarClientesBinario(const std::string& nombreArchivo) {
     ListaDoble<Cliente*>* clientes = new ListaDoble<Cliente*>();
-    std::ifstream archivo(nombreArchivo);
+    ifstream archivo(nombreArchivo, ios::binary);
+    if (!archivo) return clientes;
+
+    int totalClientes = 0;
+    archivo.read(reinterpret_cast<char*>(&totalClientes), sizeof(int));
     
-    if (!archivo.is_open()) {
-        std::cerr << "Error al abrir archivo: " << nombreArchivo << std::endl;
-        return clientes;
-    }
+    auto leer_string = [&](string& s) {
+        size_t len = 0;
+        archivo.read(reinterpret_cast<char*>(&len), sizeof(size_t));
+        s.resize(len);
+        archivo.read(&s[0], len);
+    };
 
-    json j;
-    archivo >> j;
+    for (int i = 0; i < totalClientes; ++i) {
+        string dni, nombre, apellido, direccion, telefono, email, contrasenia;
+        leer_string(dni);
+        leer_string(nombre);
+        leer_string(apellido);
+        leer_string(direccion);
+        leer_string(telefono);
+        leer_string(email);
+        leer_string(contrasenia);
 
-    for (const auto& item : j) {
-        // Reconstruir fecha de nacimiento
-        Fecha fechaNacimiento(
-            item["fecha_nacimiento"]["anio"],
-            item["fecha_nacimiento"]["mes"],
-            item["fecha_nacimiento"]["dia"],
-            item["fecha_nacimiento"]["hora"],
-            item["fecha_nacimiento"]["minutos"],
-            item["fecha_nacimiento"]["segundos"]
-        );
+        Fecha fechaNacimiento;
+        archivo.read(reinterpret_cast<char*>(&fechaNacimiento), sizeof(Fecha));
 
-        // Crear cliente
-        
-        Cliente* cliente = new Cliente(
-            item["dni"].get<std::string>(),
-            item["nombre"].get<std::string>(),
-            item["apellido"].get<std::string>(),
-            item["direccion"].get<std::string>(),
-            item["telefono"].get<std::string>(),
-            item["email"].get<std::string>(),
-            fechaNacimiento,
-            item["contrasenia"].get<std::string>()
-            
-        );
+        Cliente* cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fechaNacimiento, contrasenia);
 
-        // Restaurar cuentas con todos sus parámetros
-        for (const auto& cuentaItem : item["cuentas"]) {
+        int totalCuentas = 0;
+        archivo.read(reinterpret_cast<char*>(&totalCuentas), sizeof(int));
+        for (int j = 0; j < totalCuentas; ++j) {
+            string tipo, id;
+            leer_string(tipo);
+            leer_string(id);
+            double saldo;
+            archivo.read(reinterpret_cast<char*>(&saldo), sizeof(double));
+            Fecha fechaApertura;
+            archivo.read(reinterpret_cast<char*>(&fechaApertura), sizeof(Fecha));
+
             Cuenta* cuenta = nullptr;
-            std::string tipo = cuentaItem["tipo"];
-            
-            // Reconstruir fecha de apertura
-            Fecha fechaApertura(
-                cuentaItem["fecha_apertura"]["anio"],
-                cuentaItem["fecha_apertura"]["mes"],
-                cuentaItem["fecha_apertura"]["dia"]
-            );
+            if (tipo == "Ahorros") {
+                double tasa;
+                archivo.read(reinterpret_cast<char*>(&tasa), sizeof(double));
+                cuenta = new Ahorro(id, saldo, fechaApertura, tasa);
+            } else if (tipo == "Corriente") {
+                double limite;
+                archivo.read(reinterpret_cast<char*>(&limite), sizeof(double));
+                cuenta = new Corriente(id, saldo, fechaApertura, limite);
+            }
 
-            if (tipo == "Ahorro") {
-                cuenta = new Ahorro(
-                    cuentaItem["id"].get<std::string>(),
-                    cuentaItem["saldo"].get<double>(),
-                    fechaApertura,
-                    cuentaItem.value("tasa_interes", 5.0)  // Valor por defecto si no existe
-                );
+            // Restaurar movimientos
+            int totalMovimientos = 0;
+            archivo.read(reinterpret_cast<char*>(&totalMovimientos), sizeof(int));
+            for (int k = 0; k < totalMovimientos; ++k) {
+                string tipoMov;
+                leer_string(tipoMov);
+                double monto;
+                archivo.read(reinterpret_cast<char*>(&monto), sizeof(double));
+                Fecha fecha;
+                archivo.read(reinterpret_cast<char*>(&fecha), sizeof(Fecha));
+                double saldo_post;
+                archivo.read(reinterpret_cast<char*>(&saldo_post), sizeof(double));
+
+                Movimiento mov(tipoMov, monto, fecha, saldo_post);
+                cuenta->get_movimientos()->insertar_cola(mov);
             }
-            else if (tipo == "Corriente") {
-                cuenta = new Corriente(
-                    cuentaItem["id"].get<std::string>(),
-                    cuentaItem["saldo"].get<double>(),
-                    fechaApertura,
-                    cuentaItem.value("limite_retiro", 1000.0)  // Valor por defecto si no existe
-                );
-            }
-            
-            if (cuenta) {
-                cliente->agregar_cuenta(cuenta);
-            }
+
+            if (cuenta) cliente->agregar_cuenta(cuenta);
         }
         clientes->insertar_cola(cliente);
     }
-    
     archivo.close();
     return clientes;
 }
@@ -162,26 +162,36 @@ void RespaldoDatos::guardarRespaldoClientesConFecha(const ListaDoble<Cliente*>& 
     auto tm = *std::localtime(&t);
     std::ostringstream oss;
     oss << std::put_time(&tm, "%Y%m%d_%H%M%S");
-    std::string nombreArchivo = "backup_clientes_" + oss.str() + ".json";
+    std::string nombreArchivo = "backup_clientes_" + oss.str() + ".bak";
     
-    // Llamar al método de respaldo
-    respaldoClientes(nombreArchivo, clientes);
+    // Llamar al método de respaldo binario
+    respaldoClientesBinario(nombreArchivo, clientes);
+    int numCesar = 3; // Puedes cambiar el número de desplazamiento
+    cifrarArchivoABaseTxt(nombreArchivo, numCesar);
 }
+ListaDoble<Cliente*>* RespaldoDatos::restaurarClientesDesdeTxt(const std::string& archivoTxt, int numCesar) {
+    // Decifrar el .txt cifrado y crear un .bin temporal
+    decifrarTxtABinario(archivoTxt, numCesar);
+
+    // El nombre del binario decifrado
+    std::string archivoBin = archivoTxt.substr(0, archivoTxt.find("_cifrado.txt")) + "_decifrado.bin";
+
+    // Restaurar normalmente desde el binario decifrado
+    return restaurarClientesBinario(archivoBin);
+}
+
 std::string RespaldoDatos::obtenerUltimoRespaldo() {
     std::vector<std::pair<std::string, std::time_t>> backups;
 
     for (const auto& entry : fs::directory_iterator(".")) {
         std::string nombre = entry.path().filename().string();
-        if (nombre.find("backup_clientes_") == 0 && nombre.substr(nombre.size() - 5) == ".json") {
-            // ¡Corregir aquí!
-            std::string timestampStr = nombre.substr(16, nombre.size() - 21);
-            
+        if (nombre.find("backup_clientes_") == 0 && nombre.substr(nombre.size() - 4) == ".bin") {
+            std::string timestampStr = nombre.substr(16, nombre.size() - 20);
             std::tm tm = {};
             std::istringstream ss(timestampStr);
             ss >> std::get_time(&tm, "%Y%m%d_%H%M%S");
             if (ss.fail()) continue;
             std::time_t tiempo = std::mktime(&tm);
-            
             backups.emplace_back(nombre, tiempo);
         }
     }
@@ -191,11 +201,12 @@ std::string RespaldoDatos::obtenerUltimoRespaldo() {
             [](const auto& a, const auto& b) { return a.second > b.second; });
         return backups[0].first;
     }
-    if (fs::exists("respaldo_clientes.json")) {
-        return "respaldo_clientes.json";
+    if (fs::exists("respaldo_clientes.bin")) {
+        return "respaldo_clientes.bin";
     }
     return "";
 }
+// Las funciones de cifrado y decifrado pueden quedarse igual:
 void RespaldoDatos::CifradoCesar(std::string& cifradoCesar, int numCesar) {
     for (int i = 0; i < cifradoCesar.length(); i++) {
         char currentChar = cifradoCesar[i];
@@ -218,4 +229,35 @@ void RespaldoDatos::DecifradoCesar(std::string& decifradoCesar, int numCesar) {
             decifradoCesar[i] = base + (currentChar - base - numCesar + 26) % 26;
         }
     }
+}
+
+void RespaldoDatos::cifrarArchivoABaseTxt(const std::string& archivoBin, int numCesar) {
+    std::ifstream in(archivoBin, std::ios::binary);
+    if (!in) return;
+    std::string contenido((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.close();
+
+    // Cifrar el contenido
+    CifradoCesar(contenido, numCesar);
+
+    // Guardar como .txt
+    std::string archivoTxt = archivoBin.substr(0, archivoBin.find_last_of('.')) + "_cifrado.txt";
+    std::ofstream out(archivoTxt, std::ios::out | std::ios::trunc);
+    out << contenido;
+    out.close();
+}
+void RespaldoDatos::decifrarTxtABinario(const std::string& archivoTxt, int numCesar) {
+    std::ifstream in(archivoTxt, std::ios::in);
+    if (!in) return;
+    std::string contenido((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.close();
+
+    // Decifrar el contenido
+    DecifradoCesar(contenido, numCesar);
+
+    // Guardar como .bin
+    std::string archivoBin = archivoTxt.substr(0, archivoTxt.find("_cifrado.txt")) + "_decifrado.bin";
+    std::ofstream out(archivoBin, std::ios::binary | std::ios::trunc);
+    out.write(contenido.c_str(), contenido.size());
+    out.close();
 }

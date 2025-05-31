@@ -3,6 +3,7 @@
 #include "Corriente.h"
 #include <stdexcept>
 #include <functional>
+#include <algorithm>
 
 Cliente::Cliente() {
     cuentas = new ListaDoble<Cuenta*>();
@@ -107,11 +108,23 @@ void Cliente::agregar_cuenta(Cuenta* cuenta) {
     }
 }
 
-Cuenta* Cliente::buscar_cuenta(std::string id_cuenta) {
+Cuenta* Cliente::buscar_cuenta(const std::string id_cuenta) {
     try {
         Cuenta* resultado = nullptr;
+        std::string id_buscado = id_cuenta;
+        // Elimina espacios y convierte a mayúsculas
+        id_buscado.erase(0, id_buscado.find_first_not_of(" \t\n\r\f\v"));
+        id_buscado.erase(id_buscado.find_last_not_of(" \t\n\r\f\v") + 1);
+        std::transform(id_buscado.begin(), id_buscado.end(), id_buscado.begin(), ::toupper);
+
         cuentas->filtrar(
-            [&](Cuenta* c) { return c->get_id_cuenta() == id_cuenta; },
+            [&](Cuenta* c) {
+                std::string id_actual = c->get_id_cuenta();
+                id_actual.erase(0, id_actual.find_first_not_of(" \t\n\r\f\v"));
+                id_actual.erase(id_actual.find_last_not_of(" \t\n\r\f\v") + 1);
+                std::transform(id_actual.begin(), id_actual.end(), id_actual.begin(), ::toupper);
+                return id_actual == id_buscado;
+            },
             [&](Cuenta* c) { resultado = c; }
         );
         if (!resultado) throw std::runtime_error("Cuenta no encontrada");

@@ -7,10 +7,18 @@
 #include <stdexcept>
 #include <random>
 #include <algorithm>
+#include <fstream>
 #include <iostream>
 
 using namespace std;
-
+void salir_con_esc() {
+    printf("Presione ESC para salir del programa...\n");
+    int tecla;
+    do {
+        tecla = getch();
+    } while (tecla != 27); // 27 es el código ASCII de ESC
+    return; // Termina el programa
+}
 void pausar_consola()
 {
     cout << "Presione Enter para continuar...";
@@ -32,6 +40,73 @@ void mover_cursor(int x, int y)
     HANDLE manejo_consola = GetStdHandle(STD_OUTPUT_HANDLE);
     COORD pos = {static_cast<SHORT>(x), static_cast<SHORT>(y)};
     SetConsoleCursorPosition(manejo_consola, pos);
+}
+
+int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fila_inicio) {
+    system("chcp 65001 > nul"); // Configura la consola para UTF-8
+    int opcionSeleccionada = 1; // Inicializada a 1 (primera opción)
+    int tecla;
+
+    // Dibujar el título, alineado a la izquierda, en la fila especificada
+    mover_cursor(1, fila_inicio);
+    cout << titulo;
+
+    // Dibujar las opciones iniciales, empezando justo debajo del título
+    for (int e = 0; e < n; e++) {
+        mover_cursor(10, fila_inicio + 2 + e); // +2 para dejar un espacio entre título y opciones
+        if (e + 1 == opcionSeleccionada) {
+            cout << " ➤ " << e + 1 << " " << opciones[e];
+        } else {
+            cout << "    " << e + 1 << " " << opciones[e];
+        }
+    }
+
+    do {
+        tecla = getch();
+        switch (tecla) {
+            case TECLA_ARRIBA:
+                // Actualizar la opción seleccionada
+                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
+
+                opcionSeleccionada--;
+                if (opcionSeleccionada < 1) opcionSeleccionada = n;
+
+                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                cout << " ➤ " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
+                break;
+
+            case TECLA_ABAJO:
+                // Actualizar la opción seleccionada
+                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
+
+                opcionSeleccionada++;
+                if (opcionSeleccionada > n) opcionSeleccionada = 1;
+
+                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                cout << " ➤ " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
+                break;
+        }
+    } while (tecla != ENTER);
+
+    return opcionSeleccionada;
+}
+
+bool seleccionar_Si_No(int fila_inicio) {
+    const char *titulo = "------------------------------------------";
+    const char *opciones[] = {
+        "SÍ",
+        "NO"
+    };
+    int n = 2;
+    int opcion = seleccionar_opcion(titulo, opciones, n, fila_inicio);
+    
+    if (opcion == 1) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 int desplegar_menu(const char** opciones, int nopciones)
@@ -112,13 +187,124 @@ bool validar_credenciales_administrador(const string& usuario, const string& con
     return usuario == USUARIO_ADMIN && contrasenia == CONTRASENIA_ADMIN;
 }
 
+void recuperar_backup_por_fecha(Banco& banco)
+{
+    int horas = 0, minutos = 0, segundos = 0;
+    string fecha_hora;
+    system("cls");
+    visibilidad_cursor(true);
+    try
+    {
+        Fecha fecha;
+        // Validar fecha
+        do {
+            limpiar_linea("!!!Ingrese la fecha del backup (DD/MM/YYYY): ");
+            fecha = validarFecha("");
+        } while (fecha.empty());
+        std::cout << std::endl;
+
+        // Validar hora
+        do {
+            limpiar_linea("!!!Ingrese la hora del backup (HH:MM:SS): ");
+            fecha_hora = validarHora("");
+            horas = stoi(fecha_hora.substr(0, 2));
+            minutos = stoi(fecha_hora.substr(2, 2));
+            segundos = stoi(fecha_hora.substr(4, 2));
+        } while (!validar_hora_minuto_segundo(horas, minutos, segundos));
+        cout << endl;
+
+        // Formato de nombre: backup_YYYYMMDD_HHMMSS.bin
+        char buffer[100];
+        // Usar guiones en lugar de espacios para compatibilidad
+        snprintf(buffer, sizeof(buffer), "backup_clientes_%04d-%02d-%02d_%02d-%02d-%02d.bin",
+                fecha.get_anuario(), fecha.get_mes(), fecha.get_dia(),
+                horas, minutos, segundos);
+        std::string nombre_archivo = buffer;
+
+        // Validar si el archivo existe
+        std::ifstream test_file(nombre_archivo, std::ios::binary);
+        if (!test_file.good()) {
+            std::cout << "\n=== ERROR: El backup no existe para esa fecha y hora ===" << std::endl;
+            pausar_consola();
+            return;
+        }
+        test_file.close();
+
+        std::cout << "\nIntentando recuperar backup: " << nombre_archivo << std::endl;
+
+        // Cargar nuevos clientes desde el respaldo
+        ListaDoble<Cliente*>* nuevos_clientes = RespaldoDatos::restaurarClientesBinario(nombre_archivo);
+        
+        if (!nuevos_clientes || nuevos_clientes->esta_vacia()) {
+            std::cout << "\n=== ERROR: No se pudieron cargar datos del backup ===" << std::endl;
+            pausar_consola();
+            return;
+        }
+
+        // Actualizar el banco con los nuevos clientes
+        banco.guardar_datos_binario("datos.bin"); // Guardar estado actual
+
+        std::cout << "\n=== BACKUP RECUPERADO EXITOSAMENTE ===" << std::endl;
+        std::cout << "Datos cargados desde: " << nombre_archivo << std::endl;
+        
+        std::cout << "\nRegresando al menú principal...\n";
+        pausar_consola();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Error al recuperar backup: " << e.what() << std::endl;
+        std::cout << "\n=== ERROR AL RECUPERAR BACKUP ===" << std::endl;
+        std::cout << "Error: " << e.what() << std::endl;
+        std::cout << "\nRegresando al menú principal...\n";
+        pausar_consola();
+    }
+}
+
+void cargar_base_datos(Banco& banco) {
+    system("cls");
+    auto* clientes = banco.getClientes();
+    if (!clientes || clientes->esta_vacia()) {
+        cout << "No hay clientes registrados en la base de datos.\n";
+        pausar_consola();
+        return;
+    }
+
+    int contador = 0;
+    cout << "=== LISTADO DE CLIENTES Y SUS CUENTAS ===\n\n";
+    clientes->recorrer([&](Cliente* cliente) {
+        contador++;
+        cout << "Cliente #" << contador << endl;
+        cout << "DNI: " << cliente->get_dni() << endl;
+        cout << "Nombre: " << cliente->get_nombres() << " " << cliente->get_apellidos() << endl;
+        cout << "Dirección: " << cliente->get_direccion() << endl;
+        cout << "Teléfono: " << cliente->get_telefono() << endl;
+        cout << "Email: " << cliente->get_email() << endl;
+        cout << "Fecha de nacimiento: " << cliente->get_fecha_nacimiento().to_string() << endl;
+
+        auto* cuentas = cliente->get_cuentas();
+        if (cuentas && !cuentas->esta_vacia()) {
+            cuentas->recorrer([&](Cuenta* cuenta) {
+                cout << "  - Cuenta " << cuenta->get_tipo() << " | ID: " << cuenta->get_id_cuenta()
+                     << " | Saldo: $" << cuenta->get_saldo() << endl;
+            });
+        } else {
+            cout << "  (Sin cuentas asociadas)\n";
+        }
+        cout << "----------------------------------------\n";
+    });
+    cout << "\nTotal de clientes: " << contador << endl;
+    pausar_consola();
+}
+
 void menu_administrador(Banco& banco)
 {
     system("chcp 65001 > nul");
-    const int NUM_OPCIONES = 3;
+    const int NUM_OPCIONES = 5;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
+        "Base de datos",
+        "Recuperar backup por fecha y hora",
         "Salir"
     };
 
@@ -143,9 +329,6 @@ void menu_administrador(Banco& banco)
             throw std::runtime_error("Usuario o contraseña incorrectos");
         }
 
-        // Cargar datos al inicio del menú administrador
-        banco.cargar_datos_binario("datos.bin");
-
         int opcion;
         do
         {
@@ -160,6 +343,12 @@ void menu_administrador(Banco& banco)
                     consultar_cuentas(banco);
                     break;
                 case 3:
+                    cargar_base_datos(banco);
+                    break;
+                case 4:
+                    recuperar_backup_por_fecha(banco);
+                    break;
+                case 5:
                     return;
             }
         } while (opcion != NUM_OPCIONES);
@@ -189,8 +378,6 @@ void menu_cliente(Banco& banco)
     std::string dni, contrasenia;
     try
     {
-        // Cargar datos antes de validar
-        banco.cargar_datos_binario("datos.bin");
 
         // Validación de DNI
         do{
@@ -316,176 +503,242 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta)
     double saldo_inicial = 0;
     visibilidad_cursor(true);
     system("cls");
-    
     try
     {
-        // Cargar datos existentes desde datos.bin
-        banco.cargar_datos_binario("datos.bin");
-
         // Validación de DNI
-       do {
-            limpiar_linea("!!!Ingrese el DNI del cliente: ");
+        int fila_actual = 2; // Comenzamos en la fila 2
+        do {
+            mover_cursor(1, fila_actual);
+            limpiar_linea("➤ Ingrese el DNI del cliente: ");
             dni = ingresar_dni("");
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
-        
-        // Validación de nombre
-        do {
-            limpiar_linea("!!!Ingrese el nombre del cliente: ");
-            nombre = ingresar_alfabetico("");
-        } while (nombre.empty() || nombre.length() < 3);
-        cout << endl;
-        
-        // Validación de apellido
-        do {
-            limpiar_linea("!!!Ingrese el apellido del cliente: ");
-            apellido = ingresar_alfabetico("");
-        } while (apellido.empty() || apellido.length() < 3);
-        cout << endl;
-        
-        // Validación de dirección
-        do {
-            limpiar_linea("!!!Ingrese la dirección del cliente: ");
-            direccion = ingresar_direccion("");
-        } while (direccion.empty() || direccion.length() < 5);
-        cout << endl;
-        // Validación de teléfono
-        do {
-            limpiar_linea("!!!Ingrese el teléfono del cliente: ");
-            telefono = ingresar_dni("");
-        } while (!validar_telefono(telefono));
-        cout << endl;
-        
-        // Validación de email
-        do {
-            limpiar_linea("!!!Ingrese el email del cliente: ");
-            email = ingresar_email("");
-        } while (!validar_email(email));
-        cout << endl;
-        
-        // Validación de fecha de nacimiento
-        do {
-            limpiar_linea("!!!Ingrese la fecha de nacimiento (DD/MM/YYYY): ");
-            fecha_nacimiento = validarFecha("");
-        } while (fecha_nacimiento.empty());
-        cout << endl;
+        fila_actual += 2; // Avanzamos dos filas (una para entrada, otra para espacio)
 
-        // Validación de contraseña
-        do {
-            limpiar_linea("!!!Ingrese la contraseña (mínimo 20 caracteres, al menos una mayúscula, minúscula, dígito y carácter especial): ");
-            contrasenia = ingresar_contrasenia("");
-        } while (!validar_contrasenia(contrasenia));
-        cout << endl;
+        // Verificar si el cliente ya existe
+        Cliente* cliente_existe = banco.buscar_cliente(dni);
+        bool ya_tiene = false;
+        if (cliente_existe) {
+            cliente_existe->get_cuentas()->recorrer([&](Cuenta* cuenta) {
+                if ((tipo_cuenta == 1 && cuenta->get_tipo() == "Ahorros") ||
+                    (tipo_cuenta == 2 && cuenta->get_tipo() == "Corriente")) {
+                    ya_tiene = true;
+                }
+            });
+            if (ya_tiene) {
+                throw std::runtime_error("El cliente con DNI " + dni + " ya tiene una cuenta de este tipo.");
+            }
+        }
 
+        // Si el cliente ya existe, usa sus datos
+        if (cliente_existe) {
+            nombre = cliente_existe->get_nombres();
+            apellido = cliente_existe->get_apellidos();
+            direccion = cliente_existe->get_direccion();
+            telefono = cliente_existe->get_telefono();
+            email = cliente_existe->get_email();
+            fecha_nacimiento = cliente_existe->get_fecha_nacimiento();
+            contrasenia = cliente_existe->get_contrasenia();
+        } else {
+            // Pedir datos solo si es un cliente nuevo
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el nombre del cliente: ");
+                nombre = ingresar_alfabetico("");
+            } while (nombre.empty() || nombre.length() < 3);
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el apellido del cliente: ");
+                apellido = ingresar_alfabetico("");
+            } while (apellido.empty() || apellido.length() < 3);
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese la dirección del cliente: ");
+                direccion = ingresar_direccion("");
+            } while (direccion.empty() || direccion.length() < 5);
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el teléfono del cliente: ");
+                telefono = ingresar_dni("");
+            } while (!validar_telefono(telefono) || telefono_existe(banco, telefono));
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el email del cliente: ");
+                email = ingresar_email("");
+            } while (!validar_email(email) || email_existe(banco, email));
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese la fecha de nacimiento (DD/MM/YYYY): ");
+                fecha_nacimiento = validarFecha("");
+            } while (fecha_nacimiento.empty());
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese la contraseña (mínimo 20 caracteres, al menos una mayúscula, minúscula, dígito y carácter especial): ");
+                contrasenia = ingresar_contrasenia("");
+            } while (!validar_contrasenia(contrasenia));
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ ¿Desea depositar un monto inicial? (S/N): ");
+                depositar_inicial = ingresar_alfabetico("");
+                transform(depositar_inicial.begin(), depositar_inicial.end(), depositar_inicial.begin(), ::toupper);
+            } while (depositar_inicial != "S" && depositar_inicial != "N");
+            cout << endl;
+            fila_actual += 2;
+
+            // Preguntar si desea depositar un monto inicial
+            if (depositar_inicial == "S") {
+                do {
+                    mover_cursor(1, fila_actual);
+                    limpiar_linea("➤ Ingrese el saldo inicial: ");
+                    saldo_inicial1 = ingresar_decimales("");
+                } while (!validar_monto(saldo_inicial1));
+                saldo_inicial = stod(saldo_inicial1);
+                cout << endl;
+                fila_actual += 2;
+            }
+        }
+
+        // Mostrar mensaje de confirmación
+        mover_cursor(1, fila_actual);
+        cout << "¿Está seguro que desea crear la cuenta con estos datos?" << endl;
+        fila_actual += 1; // Avanzar una fila para el título del menú
+
+        // Llamar a seleccionar_Si_No con la fila actual
+        bool resultado = seleccionar_Si_No(fila_actual);
+        if (!resultado) {
+            mover_cursor(1, fila_actual + 4); // Posicionar debajo del menú
+            cout << "Operación cancelada. No se creó la cuenta." << endl;
+            mover_cursor(1, fila_actual + 5);
+            cout << "Presione Enter para regresar al menú principal...";
+            cin.get();
+            return;
+        }
 
         // Generar ID de cuenta
         std::string id_cuenta_base = "";
         id_cuenta_base += toupper(nombre[0]);
         id_cuenta_base += toupper(apellido[0]);
         id_cuenta_base += (tipo_cuenta == 1) ? "A" : "C";
-
-        // Tomar los últimos 6 dígitos del DNI y convertirlos a mayúsculas (por si acaso)
         std::string ultimos_dni = dni.substr(dni.length() - 6, 6);
         std::transform(ultimos_dni.begin(), ultimos_dni.end(), ultimos_dni.begin(), ::toupper);
         id_cuenta_base += ultimos_dni;
-
-        // Agregar 3 caracteres aleatorios para hacerlo indetectable
         id_cuenta_base += generar_cadena_aleatoria(3);
-
         std::string id_cuenta = id_cuenta_base;
-
-        // Verificar si el ID de cuenta ya existe
-        int suffix = 1;
-        bool id_exists = false;
-        do
-        {
-            id_exists = false;
-            Cliente* cliente_temp = banco.buscar_cliente(dni);
-            if (cliente_temp)
-            {
-                Cuenta* cuenta_existente = cliente_temp->buscar_cuenta(id_cuenta);
-                if (cuenta_existente)
-                {
-                    id_exists = true;
-                    id_cuenta = id_cuenta_base + std::to_string(suffix++);
-                }
-            }
-        } while (id_exists);
-
-        // Preguntar si desea depositar un monto inicial
-        do {
-            limpiar_linea("!!!¿Desea depositar un monto inicial? (S/N): ");
-            depositar_inicial = ingresar_alfabetico("");
-            transform(depositar_inicial.begin(), depositar_inicial.end(), depositar_inicial.begin(), ::toupper);
-        } while (depositar_inicial != "S" && depositar_inicial != "N");
-        cout << endl;
-
-        if (depositar_inicial == "S") {
-            do {
-                limpiar_linea("!!!Ingrese el saldo inicial: ");
-                saldo_inicial1 = ingresar_decimales("");
-            } while (!validar_monto(saldo_inicial1));
-            saldo_inicial = stod(saldo_inicial1);
-        }
-        cout << endl;
 
         // Crear la cuenta según el tipo
         Fecha fecha_apertura;
         Cuenta* cuenta = nullptr;
-        
-        if (tipo_cuenta == 1)
-        {
+
+        if (tipo_cuenta == 1) {
+            mover_cursor(1, fila_actual + 4);
             cout << "La tasa de interés para la cuenta de ahorros es 5%" << endl;
             double tasa_interes = 5.0;
             cuenta = new Ahorro(id_cuenta, saldo_inicial, fecha_apertura, tasa_interes);
-        }
-        else if (tipo_cuenta == 2)
-        {
+            fila_actual += 5;
+        } else if (tipo_cuenta == 2) {
             int limite_retiro_diario;
-             do {
+            do {
+                mover_cursor(1, fila_actual + 4);
                 limpiar_linea("!!!Ingrese el límite de retiro diario: ");
                 limite_retiro_diario = ingresar_enteros("");
             } while (limite_retiro_diario <= 0);
             cout << endl;
             cuenta = new Corriente(id_cuenta, saldo_inicial, fecha_apertura, limite_retiro_diario);
+            fila_actual += 5;
         }
-        
-        if (!cuenta)
-        {
+
+        if (!cuenta) {
             throw std::runtime_error("Error al crear la cuenta");
         }
 
-        Cliente* cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
-        Cliente* cliente_existente = banco.buscar_cliente(dni);
-        
-        if (cliente_existente)
-        {
-            cliente_existente->agregar_cuenta(cuenta);
-            delete cliente;
-        }
-        else
-        {
+        if (cliente_existe) {
+            cliente_existe->agregar_cuenta(cuenta);
+            banco.guardar_datos_binario("datos.bin");
+            mover_cursor(1, fila_actual);
+            cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
+            mover_cursor(1, fila_actual + 1);
+            cout << "ID de cuenta: " << id_cuenta << endl;
+            mover_cursor(1, fila_actual + 2);
+            cout << "Tipo de cuenta: " << (tipo_cuenta == 1 ? "Ahorros" : "Corriente") << endl;
+            mover_cursor(1, fila_actual + 3);
+            cout << "Saldo inicial: $" << saldo_inicial << endl;
+            mover_cursor(1, fila_actual + 4);
+            cout << "=== DATOS CARGADOS EXITOSAMENTE ===" << endl;
+            mover_cursor(1, fila_actual + 5);
+            cout << "  DNI: " << cliente_existe->get_dni() << endl;
+            mover_cursor(1, fila_actual + 6);
+            cout << "  Nombre: " << cliente_existe->get_nombres() << endl;
+            mover_cursor(1, fila_actual + 7);
+            cout << "  Apellido: " << cliente_existe->get_apellidos() << endl;
+            mover_cursor(1, fila_actual + 8);
+            cout << "  Dirección: " << cliente_existe->get_direccion() << endl;
+            mover_cursor(1, fila_actual + 9);
+            cout << "  Teléfono: " << cliente_existe->get_telefono() << endl;
+            mover_cursor(1, fila_actual + 10);
+            cout << "  Email: " << cliente_existe->get_email() << endl;
+            mover_cursor(1, fila_actual + 11);
+            cout << "  Fecha de nacimiento: " << cliente_existe->get_fecha_nacimiento().to_string() << endl;
+            mover_cursor(1, fila_actual + 12);
+            cout << "Datos guardados en datos.bin" << endl;
+            mover_cursor(1, fila_actual + 13);
+            cout << "Presione Enter para regresar al menú principal...";
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cin.get();
+            return;
+        } else {
+            Cliente* cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
             cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
+            banco.guardar_datos_binario("datos.bin");
+            mover_cursor(1, fila_actual);
+            cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
+            mover_cursor(1, fila_actual + 1);
+            cout << "ID de cuenta: " << id_cuenta << endl;
+            mover_cursor(1, fila_actual + 2);
+            cout << "La contrasenia: " << contrasenia << endl;
+            mover_cursor(1, fila_actual + 3);
+            cout << "Tipo de cuenta: " << (tipo_cuenta == 1 ? "Ahorros" : "Corriente") << endl;
+            mover_cursor(1, fila_actual + 4);
+            cout << "Saldo inicial: $" << saldo_inicial << endl;
+            mover_cursor(1, fila_actual + 5);
+            cout << "Datos guardados en datos.bin" << endl;
+            mover_cursor(1, fila_actual + 6);
+            cout << "Presione Enter para regresar al menú principal...";
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cin.get();
+            return;
         }
-
-        // Guardar datos automáticamente en datos.bin
-        banco.guardar_datos_binario("datos.bin");
-
-        cout << "\n=== CUENTA CREADA EXITOSAMENTE ===" << endl;
-        cout << "ID de cuenta: " << id_cuenta << endl;
-        cout << "Tipo de cuenta: " << (tipo_cuenta == 1 ? "Ahorros" : "Corriente") << endl;
-        cout << "Saldo inicial: $" << saldo_inicial << endl;
-        cout << "Datos guardados en datos.bin" << endl;
-        cout << "\nPresione Enter para regresar al menú principal...";
-        cin.ignore(numeric_limits<streamsize>::max(), '\n');
-        cin.get();
     }
     catch (const std::exception& e)
     {
-        cout << "\n=== ERROR AL CREAR CUENTA ===" << endl;
+        int fila_actual = 3;
+        mover_cursor(1, fila_actual);
+        cout << "=== ERROR AL CREAR CUENTA ===" << endl;
+        mover_cursor(1, fila_actual + 1);
         cout << "Error: " << e.what() << endl;
-        cout << "\nPresione Enter para regresar al menú principal...";
+        mover_cursor(1, fila_actual + 2);
+        cout << "Presione Enter para regresar al menú principal...";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
     }
@@ -499,21 +752,21 @@ void realizar_deposito(Banco& banco, const std::string& dni)
     visibilidad_cursor(true);
     try
     {
-        // Cargar datos existentes desde datos.bin
-        banco.cargar_datos_binario("datos.bin");
 
         // Obtener cliente autenticado
         Cliente* cliente = banco.buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente no encontrado");
 
         // Validación de ID de cuenta
-        do{
+        do {
             limpiar_linea("!!!Ingrese el ID de la cuenta: ");
             id_cuenta = ingresar_id("");
-            cout << id_cuenta ;
+            if (!validar_id_cuenta(cliente, id_cuenta)) {
+                cout << "Error: Cuenta no encontrada. Intente nuevamente." << endl;
+            }
         } while (!validar_id_cuenta(cliente, id_cuenta));
         cout << endl;
-        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
+Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         
         // Validación de monto
         do
@@ -527,7 +780,7 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         Fecha fecha;
         cuenta->depositar(monto, fecha);
         banco.guardar_datos_binario("datos.bin");
-        RespaldoDatos::respaldoClientes("respaldo_clientes.json", *banco.getClientes());
+        RespaldoDatos::respaldoClientesBinario("respaldo_clientes.bin", *banco.getClientes());
 
         std::cout << "\n=== DEPÓSITO REALIZADO EXITOSAMENTE ===" << endl;
         std::cout << "Monto depositado: $" << monto << endl;
@@ -554,20 +807,21 @@ void realizar_retiro(Banco& banco, const std::string& dni)
     double monto = 0;
     try
     {
-        // Cargar datos existentes desde datos.bin
-        banco.cargar_datos_binario("datos.bin");
         
         // Obtener cliente autenticado
         Cliente* cliente = banco.buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente no encontrado");
         
         // Validación de ID de cuenta
-        do{
+        do {
             limpiar_linea("!!!Ingrese el ID de la cuenta: ");
             id_cuenta = ingresar_id("");
+            if (!validar_id_cuenta(cliente, id_cuenta)) {
+                cout << "Error: Cuenta no encontrada. Intente nuevamente." << endl;
+            }
         } while (!validar_id_cuenta(cliente, id_cuenta));
         cout << endl;
-        Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
+Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
         
         // Validación de monto
         do
@@ -629,7 +883,7 @@ void consultar_movimientos(Banco& banco)
         // Validación de fecha de inicio
         do
         {
-            limpiar_linea("!!!Ingrese la fecha de inicio (YYYY-MM-DD): ");
+            limpiar_linea("!!!Ingrese la fecha de inicio (DD/MM/YYYY): ");
             fecha_inicio = validarFecha("");
         } while (fecha_inicio.empty());
         cout << endl;
@@ -637,7 +891,7 @@ void consultar_movimientos(Banco& banco)
         // Validación de fecha de fin
         do
         {
-            limpiar_linea("!!!Ingrese la fecha de fin (YYYY-MM-DD): ");
+            limpiar_linea("!!!Ingrese la fecha de fin (DD/MM/YYYY): ");
             fecha_fin = validarFecha("");
         } while (fecha_fin.empty() || fecha_inicio > fecha_fin);
         cout << endl;

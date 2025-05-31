@@ -3,6 +3,7 @@
 #include <iostream>
 #include "Cliente.h"
 #include "Fecha.h"
+#include "Banco.h"
 #include <string>
 using namespace std;
 void limpiar_linea(const string& mensaje);
@@ -17,6 +18,7 @@ string ingresar_contrasenia(const std::string& mensaje);
 string ingresar_decimales(const string& mensaje);
 string ingresar_id(const string& mensaje);
 string generar_cadena_aleatoria(int n);
+string validarHora(const std::string& mensaje);
 string ingresar_contrasenia_administrador(const string& mensaje);
 int ingresar_enteros(const string& mensaje);
 bool validarCedulaEcuatoriana(const std::string& cedula);
@@ -26,5 +28,8 @@ bool validar_email(const string& email);
 bool validar_contrasenia(const std::string& contrasenia);
 bool validar_monto(const string& montoStr);
 bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta);
-
+bool encontrar_cliente(Cliente* cliente);
+bool telefono_existe(Banco& banco, const std::string& telefono);
+bool email_existe(Banco& banco, const std::string& email);
+bool validar_hora_minuto_segundo(int hora, int minuto, int segundo);
 #endif

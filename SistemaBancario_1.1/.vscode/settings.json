@@ -55,7 +55,8 @@
     "sstream": "cpp",
     "cstring": "cpp",
     "codecvt": "cpp",
-    "ratio": "cpp"
+    "ratio": "cpp",
+    "ranges": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled",
   "C_Cpp_Runner.cCompilerPath": "gcc",

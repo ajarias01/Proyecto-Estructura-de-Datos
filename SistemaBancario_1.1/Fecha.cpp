@@ -16,6 +16,9 @@ Fecha::Fecha() {
     minutos = tm_actual.tm_min;
     segundos = tm_actual.tm_sec;
 }
+Fecha::Fecha(const Fecha& otro)
+    : dia(otro.dia), mes(otro.mes), anuario(otro.anuario),
+      hora(otro.hora), minutos(otro.minutos), segundos(otro.segundos) {}
 bool Fecha::es_fecha_valida(int anio, int mes, int dia) {
     if (anio < 1900 || anio > 2100) return false;
     if (mes < 1 || mes > 12) return false;
@@ -28,6 +31,11 @@ bool Fecha::es_fecha_valida(int anio, int mes, int dia) {
     if (dia < 1 || dia > dias_en_mes[mes - 1]) return false;
 
     return true;
+}
+void Fecha::set_hora_completa(int _hora, int _minutos, int _segundos) {
+    hora = _hora;
+    minutos = _minutos;
+    segundos = _segundos;
 }
 
 bool Fecha::validar() const{

@@ -68,11 +68,29 @@ double Cuenta::consultar_saldo() {
 void Cuenta::consultar_movimientos_rango(Fecha inicio, Fecha fin) {
     try {
         if (inicio > fin) throw std::invalid_argument("Rango de fechas inválido");
-        std::cout << "Movimientos de la cuenta " << id_cuenta << " entre " << inicio.to_string() << " y " << fin.to_string() << ":\n";
+        std::cout << "Movimientos de la cuenta " << id_cuenta << " entre " 
+                  << inicio.to_string() << " y " << fin.to_string() << ":\n";
+
+        // BLOQUE DE DEPURACIÓN: imprime todos los movimientos registrados
+        std::cout << "DEBUG: Todos los movimientos registrados:\n";
+        movimientos->recorrer([&](Movimiento m) {
+            std::cout << "  - " << m.to_string() << " | Fecha: " << m.get_fecha().to_string() << std::endl;
+        });
+
+        bool hay_movimientos = false;
         movimientos->filtrar(
-            [&inicio, &fin](Movimiento m) { return m.get_fecha() >= inicio && m.get_fecha() <= fin; },
-            [](Movimiento m) { std::cout << m.to_string() << std::endl; }
+            [&inicio, &fin](Movimiento m) {
+                return !m.get_tipo().empty()
+                    && m.get_fecha() >= inicio && m.get_fecha() <= fin;
+            },
+            [&](Movimiento m) {
+                std::cout << "  - " << m.to_string() << std::endl;
+                hay_movimientos = true;
+            }
         );
+        if (!hay_movimientos) {
+            std::cout << "  No hay movimientos en este rango de fechas." << std::endl;
+        }
     } catch (const std::exception& e) {
         std::cerr << "Error en consultar_movimientos_rango: " << e.what() << std::endl;
     }

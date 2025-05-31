@@ -155,23 +155,40 @@ string ingresar_email(const std::string& mensaje) {
     char c;
     string palabra;
     cout << mensaje;
+    int arroba_count = 0;
+    int punto_count = 0;
+    bool arroba_encontrado = false;
     while (true) {
-         c = getch();
-        // Permitir letras, números, @, ., -, _, +
-        if ((isalnum(c) || c == '@' || c == '.' || c == '-' || c == '_' || c == '+') && palabra.length() < 100) {
+        c = getch();
+        if (isalnum(c) || c == '-' || c == '_' || c == '+') {
             palabra += c;
             cout << c;
-        } else if (c == 13 && palabra.length() >= 6 && validar_email(palabra)) { // Enter, mínimo 6 caracteres y email válido
-            // Normalizar a minúsculas
+        } else if (c == '@' && arroba_count == 0) {
+            palabra += c;
+            cout << c;
+            arroba_count++;
+            arroba_encontrado = true;
+        } else if (c == '.' && arroba_encontrado && punto_count == 0) {
+            palabra += c;
+            cout << c;
+            punto_count++;
+        } else if (c == 13 && palabra.length() >= 6 && validar_email(palabra)) { // Enter
             transform(palabra.begin(), palabra.end(), palabra.begin(), ::tolower);
             return palabra;
         } else if (c == 8 && !palabra.empty()) { // Backspace
+            if (palabra.back() == '@') {
+                arroba_count--;
+                arroba_encontrado = false;
+            }
+            if (palabra.back() == '.') {
+                punto_count--;
+            }
             palabra.pop_back();
             cout << "\b \b";
         } else if (c == 13) { // Enter con entrada corta
             palabra.clear();
             return palabra;
-        } 
+        }
     }
 }
 string generar_cadena_aleatoria(int n) {
@@ -205,14 +222,20 @@ string ingresar_decimales(const string& mensaje) {
     char c;
     string palabra;
     cout << mensaje;
+    bool punto_usado = false;
     while (true) {
         c = getch();
-        if ((c>='0'&& c<='9') || c == '.') {
+        if ((c >= '0' && c <= '9')) {
             palabra += c;
             printf("%c", c);
+        } else if (c == '.' && !punto_usado) {
+            palabra += c;
+            printf("%c", c);
+            punto_usado = true;
         } else if (c == 13) {
             return palabra;
         } else if (c == 8 && !palabra.empty()) { // Backspace
+            if (palabra.back() == '.') punto_usado = false;
             palabra.pop_back();
             printf("\b \b");
         }
@@ -224,15 +247,15 @@ string ingresar_id(const string& mensaje) {
     cout << mensaje;
     while (true) {
         c = getch();
-        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') && palabra.length() < 12) {  
+        if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) && palabra.length() < 20) {  
             palabra += c;
-            cout << c; // Mostrar asterisco
+            cout << (char)toupper(c);
         } else if (c == 13 && !palabra.empty()) { 
-            string resultado = palabra;
-            for (char& ch : resultado) {
-                ch = toupper(ch);
-            }
-            return resultado;
+            // Elimina espacios al inicio y final y convierte a mayúsculas
+            palabra.erase(0, palabra.find_first_not_of(" \t\n\r\f\v"));
+            palabra.erase(palabra.find_last_not_of(" \t\n\r\f\v") + 1);
+            for (char& ch : palabra) ch = toupper(ch);
+            return palabra;
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             printf("\b \b");
@@ -466,6 +489,70 @@ bool validar_monto(const string& montoStr) {
 bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta) {
     if (id_cuenta.empty() || cliente == nullptr) return false;
 
-    Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
-    return cuenta != nullptr;
+    // Normaliza el id_cuenta ingresado
+    string id_buscado = id_cuenta;
+    id_buscado.erase(0, id_buscado.find_first_not_of(" \t\n\r\f\v"));
+    id_buscado.erase(id_buscado.find_last_not_of(" \t\n\r\f\v") + 1);
+    for (char& ch : id_buscado) ch = toupper(ch);
+
+    Cuenta* resultado = nullptr;
+    cliente->get_cuentas()->recorrer([&](Cuenta* cuenta) {
+        string id_actual = cuenta->get_id_cuenta();
+        id_actual.erase(0, id_actual.find_first_not_of(" \t\n\r\f\v"));
+        id_actual.erase(id_actual.find_last_not_of(" \t\n\r\f\v") + 1);
+        for (char& ch : id_actual) ch = toupper(ch);
+        if (id_actual == id_buscado) {
+            resultado = cuenta;
+        }
+    });
+    return resultado != nullptr;
 }
+string validarHora(const string& mensaje) {
+    char buffer[7] = {0};
+    char* palabra = buffer;
+    char c;
+    int index = 0;
+    cout << mensaje;
+    while (true) {
+        c = getch();
+        if ((c >= '0' && c <= '9') && index < 6) {
+            *(palabra + index) = c;
+            printf("%c", c);
+            index++;
+            if (index %2==0&& index < 6) {
+                cout << ":";
+            }
+        } else if (c == 13) { // Enter
+            return palabra;
+        } else if (c == 8 && index > 0) { // BACKSPACE
+            *(palabra + index) = '\0';
+            printf("\b \b");
+            if (index %2==0 && index < 6) {
+                printf("\b \b");
+            }
+            index--;
+        }
+    }
+}
+bool telefono_existe(Banco& banco, const std::string& telefono) {
+    auto* clientes = banco.getClientes();
+    bool existe = false;
+    clientes->recorrer([&](Cliente* c) {
+        if (c->get_telefono() == telefono) existe = true;
+    });
+    return existe;
+}
+bool email_existe(Banco& banco, const std::string& email) {
+    auto* clientes = banco.getClientes();
+    bool existe = false;
+    clientes->recorrer([&](Cliente* c) {
+        if (c->get_email() == email) existe = true;
+    });
+    return existe;
+}
+bool validar_hora_minuto_segundo(int hora, int minuto, int segundo) {
+    return (hora >= 0 && hora <= 23) &&
+           (minuto >= 0 && minuto <= 59) &&
+           (segundo >= 0 && segundo <= 59);
+}
+

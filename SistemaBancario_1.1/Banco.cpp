@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <functional>
 #include <stdio.h>
+#include <conio.h>
 #include <fstream>
 #include <algorithm>
 
@@ -102,13 +103,13 @@ void Banco::consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin
         if (inicio > fin) throw std::invalid_argument("Rango de fechas inválido");
         Cliente* cliente = buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente con DNI " + dni + " no encontrado");
-        std::cout << "Movimientos para DNI=" << dni << " entre " << inicio.to_string() << " y " << fin.to_string() << ":\n";
+        std::cout << "\nMovimientos para el cliente: " << cliente->get_nombres() << " " << cliente->get_apellidos()
+                  << " (DNI: " << dni << ") entre " << inicio.to_string() << " y " << fin.to_string() << ":\n";
         cliente->get_cuentas()->recorrer([&](Cuenta* cuenta) {
             cuenta->consultar_movimientos_rango(inicio, fin);
         });
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar movimientos: " << e.what() << std::endl;
-        throw;
     }
 }
 
@@ -127,6 +128,15 @@ void Banco::guardar_datos_binario(std::string archivo) {
         std::cerr << "Error al guardar datos: " << e.what() << std::endl;
     }
 }
+void Banco::guardar_datos_binario_sin_backup(std::string archivo) {
+    FILE* file = fopen(archivo.c_str(), "wb");
+    if (!file) throw std::runtime_error("No se pudo abrir/crear el archivo para escritura");
+    int num_clientes = 0;
+    clientes->recorrer([&](Cliente* c) { num_clientes++; });
+    fwrite(&num_clientes, sizeof(int), 1, file);
+    clientes->recorrer([&](Cliente* c) { c->guardar_binario(file); });
+    fclose(file);
+}
 void Banco::cargar_datos_binario(std::string archivo) {
     try {
         if (datos_cargados) return;
@@ -135,7 +145,7 @@ void Banco::cargar_datos_binario(std::string archivo) {
         if (!check_file.good()) {
             std::string backupFile = RespaldoDatos::obtenerUltimoRespaldo();
             if (!backupFile.empty()) {
-                ListaDoble<Cliente*>* clientesRestaurados = RespaldoDatos::restaurarClientes(backupFile);
+                ListaDoble<Cliente*>* clientesRestaurados = RespaldoDatos::restaurarClientesBinario(backupFile);
                 
                 if (clientes) {
                     clientes->recorrer([](Cliente* c) { delete c; });
@@ -143,15 +153,16 @@ void Banco::cargar_datos_binario(std::string archivo) {
                 }
                 clientes = clientesRestaurados;
                 
-                guardar_datos_binario(archivo);
+                guardar_datos_binario_sin_backup(archivo);
                 datos_cargados = true;
                 std::cout << "Datos restaurados desde el respaldo: " << backupFile << std::endl;
+                getch();
                 return;
             } else {
                 std::ofstream create_file(archivo, std::ios::binary);
                 if (!create_file.good()) throw std::runtime_error("No se pudo crear el archivo");
                 create_file.close();
-                std::cout << "Archivo " << archivo << " creado. No hay respaldos JSON disponibles.\n";
+                std::cout << "Archivo " << archivo << " creado. No hay respaldos BIN disponibles.\n";
                 datos_cargados = true;
                 return;
             }
@@ -188,6 +199,67 @@ void Banco::cargar_datos_binario(std::string archivo) {
         std::cout << "Datos cargados exitosamente desde " << archivo << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error al cargar datos: " << e.what() << std::endl;
+        throw;
+    }
+}
+
+void Banco::cargar_datos_recuperados_binario(std::string archivo) {
+    // NO uses la bandera datos_cargados aquí
+    try {
+        FILE* file = fopen(archivo.c_str(), "rb");
+        if (!file) throw std::runtime_error("No se pudo abrir el archivo para lectura");
+
+        int num_clientes;
+        if (fread(&num_clientes, sizeof(int), 1, file) != 1) {
+            fclose(file);
+            throw std::runtime_error("Error al leer el número de clientes");
+        }
+
+        if (clientes) {
+            clientes->recorrer([](Cliente* c) { delete c; });
+            delete clientes;
+        }
+
+        clientes = new ListaDoble<Cliente*>();
+        for (int i = 0; i < num_clientes; i++) {
+            Cliente* cliente = new Cliente();
+            try {
+                cliente->cargar_binario(file);
+                clientes->insertar_cola(cliente);
+            } catch (...) {
+                delete cliente;
+                fclose(file);
+                throw std::runtime_error("Error al cargar cliente desde el archivo");
+            }
+        }
+        fclose(file);
+        std::cout << "Datos cargados exitosamente desde " << archivo << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error al cargar datos: " << e.what() << std::endl;
+        throw;
+    }
+}
+void Banco::restaurar_desde_respaldo(const std::string& nombreArchivo) {
+    try {
+        std::cout << "Abriendo backup: " << nombreArchivo << std::endl;
+        RespaldoDatos respaldo;
+        ListaDoble<Cliente*>* nuevos_clientes = respaldo.restaurarClientesBinario(nombreArchivo);
+        std::cout << "Backup abierto, reemplazando clientes..." << std::endl;
+        if (clientes) {
+            std::cout << "Eliminando clientes actuales..." << std::endl;
+            clientes->recorrer([](Cliente* c) { 
+                std::cout << "Eliminando cliente..." << std::endl;
+                delete c; 
+            });
+            delete clientes;
+        }
+        if (!nuevos_clientes) {
+            std::cout << "La lista de nuevos clientes es nula." << std::endl;
+        }
+        clientes = nuevos_clientes;
+        std::cout << "Clientes reemplazados correctamente." << std::endl;
+    } catch (const std::exception& e) {
+        std::cerr << "Error en restaurar_desde_respaldo: " << e.what() << std::endl;
         throw;
     }
 }
