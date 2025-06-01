@@ -292,16 +292,25 @@ void cargar_base_datos(Banco& banco) {
     cout << "\nTotal de clientes: " << contador << endl;
     pausar_consola();
 }
+void descifrar_archivos_txt(Banco& banco) {
+    system("cls");
+    std::cout << "\n=== DESCIFRAR ARCHIVOS .TXT CIFRADOS ===" << std::endl;
+    std::cout << "========================================" << std::endl;
+    
+    RespaldoDatos respaldo;
+    respaldo.seleccionarYDescifrarTxt();
+}
 
 void menu_administrador(Banco& banco)
 {
     system("chcp 65001 > nul");
-    const int NUM_OPCIONES = 5;
+    const int NUM_OPCIONES = 6;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
         "Base de datos",
         "Recuperar backup por fecha y hora",
+        "Descifrar archivos .txt cifrados",
         "Salir"
     };
 
@@ -348,6 +357,9 @@ void menu_administrador(Banco& banco)
                     recuperar_backup_por_fecha(banco);
                     break;
                 case 5:
+                    descifrar_archivos_txt(banco);
+                    break;
+                case 6:
                     return;
             }
         } while (opcion != NUM_OPCIONES);

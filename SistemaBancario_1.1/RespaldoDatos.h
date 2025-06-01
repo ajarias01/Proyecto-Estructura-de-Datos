@@ -16,9 +16,14 @@ public:
     static ListaDoble<Cliente*>* restaurarClientesDesdeTxt(const std::string& archivoTxt, int numCesar);
     static void cifrarArchivoABaseTxt(const std::string& archivoBin, int numCesar);
     static void decifrarTxtABinario(const std::string& archivoTxt, int numCesar) ;
-    private:
+    static std::string obtenerUltimoTxtCifrado();
+    static void listarArchivosTxtCifrados();
+    static void seleccionarYDescifrarTxt();
+    static void descifrarTxtSolamente(const std::string& archivoTxt, int numCesar);
+private:
     static void CifradoCesar(std::string& cifradoCesar, int numCesar);
     static void DecifradoCesar(std::string& decifradoCesar, int numCesar);
+    
 };
 
 #endif
