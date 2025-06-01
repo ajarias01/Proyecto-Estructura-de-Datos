@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <functional>
 #include <algorithm>
+#include <conio.h>
 
 Cliente::Cliente() {
     cuentas = new ListaDoble<Cuenta*>();
@@ -75,7 +76,6 @@ Cliente& Cliente::operator=(const Cliente& otro) {
 
 Cliente::~Cliente() {
     if (cuentas) {
-        cuentas->recorrer([](Cuenta* c) { delete c; });
         delete cuentas;
     }
 }
@@ -169,14 +169,20 @@ void Cliente::guardar_binario(FILE* archivo) {
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(contrasenia.c_str(), sizeof(char), len + 1, archivo);
         fwrite(&fecha_nacimiento, sizeof(Fecha), 1, archivo);
+        // Guardar número de cuentas como int
         int num_cuentas = 0;
-        cuentas->recorrer([&](Cuenta*) { num_cuentas++; });
+        cuentas->recorrer([&](Cuenta* c) { num_cuentas++; });
         fwrite(&num_cuentas, sizeof(int), 1, archivo);
-        cuentas->recorrer([&](Cuenta* c) { c->guardar_binario(archivo); });
+        cuentas->recorrer([&](Cuenta* c) {
+            char tipo = dynamic_cast<Ahorro*>(c) ? 'A' : 'C';
+            fwrite(&tipo, sizeof(char), 1, archivo);
+            c->guardar_binario(archivo);
+        });
     } catch (const std::exception& e) {
         std::cerr << "Error en guardar_binario: " << e.what() << std::endl;
     }
 }
+
 
 void Cliente::cargar_binario(FILE* archivo) {
     try {
@@ -257,25 +263,16 @@ void Cliente::cargar_binario(FILE* archivo) {
         // Leer fecha de nacimiento
         if (fread(&fecha_nacimiento, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer fecha de nacimiento");
 
-        // Leer número de cuentas
+        // Leer número de cuentas como int
         int num_cuentas;
-        if (fread(&num_cuentas, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer número de cuentas");
-        if (cuentas) {
-            cuentas->recorrer([](Cuenta* c) { delete c; });
-            delete cuentas;
-        }
-        cuentas = new ListaDoble<Cuenta*>();
+        fread(&num_cuentas, sizeof(int), 1, archivo);
         for (int i = 0; i < num_cuentas; i++) {
             char tipo;
-            if (fread(&tipo, sizeof(char), 1, archivo) != 1) throw std::runtime_error("Error al leer tipo de cuenta");
-            Cuenta* cuenta;
-            if (tipo == 'A') {
-                cuenta = new Ahorro();
-            } else if (tipo == 'C') {
-                cuenta = new Corriente();
-            } else {
-                throw std::runtime_error("Tipo de cuenta desconocido");
-            }
+            fread(&tipo, sizeof(char), 1, archivo);
+            Cuenta* cuenta = nullptr;
+            if (tipo == 'A') cuenta = new Ahorro();
+            else if (tipo == 'C') cuenta = new Corriente();
+            else throw std::runtime_error("Tipo de cuenta desconocido");
             cuenta->cargar_binario(archivo);
             cuentas->insertar_cola(cuenta);
         }

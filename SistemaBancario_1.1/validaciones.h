@@ -28,7 +28,6 @@ bool validar_email(const string& email);
 bool validar_contrasenia(const std::string& contrasenia);
 bool validar_monto(const string& montoStr);
 bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta);
-bool encontrar_cliente(Cliente* cliente);
 bool telefono_existe(Banco& banco, const std::string& telefono);
 bool email_existe(Banco& banco, const std::string& email);
 bool validar_hora_minuto_segundo(int hora, int minuto, int segundo);

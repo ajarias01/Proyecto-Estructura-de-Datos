@@ -36,8 +36,7 @@ std::string Ahorro::to_string() {
 void Ahorro::guardar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
-        char tipo = 'A';
-        fwrite(&tipo, sizeof(char), 1, archivo);
+        // NO guardar el tipo aquí
         size_t len = id_cuenta.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(id_cuenta.c_str(), sizeof(char), len + 1, archivo);
@@ -52,6 +51,7 @@ void Ahorro::guardar_binario(FILE* archivo) {
         std::cerr << "Error en guardar_binario: " << e.what() << std::endl;
     }
 }
+
 
 void Ahorro::cargar_binario(FILE* archivo) {
     try {
@@ -71,7 +71,6 @@ void Ahorro::cargar_binario(FILE* archivo) {
         int num_movimientos;
         if (fread(&num_movimientos, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer número de movimientos");
         if (movimientos) {
-            movimientos->recorrer([](Movimiento) {});
             delete movimientos;
         }
         movimientos = new ListaDoble<Movimiento>();

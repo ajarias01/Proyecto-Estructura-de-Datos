@@ -206,6 +206,7 @@ std::string RespaldoDatos::obtenerUltimoRespaldo() {
     }
     return "";
 }
+
 // Las funciones de cifrado y decifrado pueden quedarse igual:
 void RespaldoDatos::CifradoCesar(std::string& cifradoCesar, int numCesar) {
     for (int i = 0; i < cifradoCesar.length(); i++) {

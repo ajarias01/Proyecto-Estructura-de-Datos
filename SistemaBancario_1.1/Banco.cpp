@@ -1,5 +1,6 @@
 #include "Banco.h"
 #include "RespaldoDatos.h"
+#include "Menus.h"
 #include <stdexcept>
 #include <functional>
 #include <stdio.h>
@@ -26,6 +27,18 @@ void Banco::agregar_cliente(Cliente* cliente) {
     }
 }
 
+void Banco::setClientes(ListaDoble<Cliente*>* nuevos_clientes) {
+    clientes = nuevos_clientes;
+}
+
+void Banco::limpiar_clientes() {
+    if (clientes) {
+        clientes->recorrer([](Cliente* c) { delete c; });
+        delete clientes;
+        clientes = new ListaDoble<Cliente*>(); // Crear nueva lista vacía
+    }
+}
+
 Cliente* Banco::buscar_cliente(std::string dni) {
     try {
         Cliente* resultado = nullptr;
@@ -40,7 +53,7 @@ Cliente* Banco::buscar_cliente(std::string dni) {
     }
 }
 
-void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido) {
+void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido,int fila_actual) {
     try {
         // Verificar que al menos un criterio de búsqueda esté presente
         if (dni.empty() && nombre.empty() && apellido.empty()) {
@@ -70,29 +83,42 @@ void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::
                 return dni_match || nombre_match || apellido_match;
             },
             [&](Cliente* c) {
-                encontrado = true;
-                std::cout << "\n=== DATOS DEL CLIENTE ===" << std::endl;
-                std::cout << "DNI: " << c->get_dni() << std::endl;
-                std::cout << "Nombre: " << c->get_nombres() << std::endl;
-                std::cout << "Apellido: " << c->get_apellidos() << std::endl;
-                std::cout << "Dirección: " << c->get_direccion() << std::endl;
-                std::cout << "Teléfono: " << c->get_telefono() << std::endl;
-                std::cout << "Email: " << c->get_email() << std::endl;
-                std::cout << "Fecha de Nacimiento: " << c->get_fecha_nacimiento().to_string() << std::endl;
-                std::cout << "\nCuentas asociadas:" << std::endl;
-                c->get_cuentas()->recorrer([](Cuenta* cuenta) {
-                    std::cout << cuenta->to_string() << std::endl;
-                });
-            }
+            encontrado = true;
+            mover_cursor(1, fila_actual++);
+            std::cout << "=== DATOS DEL CLIENTE ===" << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "DNI: " << c->get_dni() << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "Nombre: " << c->get_nombres() << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "Apellido: " << c->get_apellidos() << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "Dirección: " << c->get_direccion() << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "Teléfono: " << c->get_telefono() << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "Email: " << c->get_email() << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "Fecha de Nacimiento: " << c->get_fecha_nacimiento().to_string() << std::endl;
+            mover_cursor(1, fila_actual++);
+            std::cout << "Cuentas asociadas:" << std::endl;
+            c->get_cuentas()->recorrer([&](Cuenta* cuenta) {
+                mover_cursor(3, fila_actual++);
+                std::cout << cuenta->to_string() << std::endl;
+            });
+        }
         );
-        if (!encontrado) {
-            std::cout << "\n=== NO SE ENCONTRARON CLIENTES ===" << std::endl;
+       if (!encontrado) {
+            mover_cursor(1, fila_actual++);
+            std::cout << "=== NO SE ENCONTRARON CLIENTES ===" << std::endl;
+            mover_cursor(1, fila_actual++);
             std::cout << "No se encontraron clientes con DNI=" << dni;
             if (!nombre.empty()) std::cout << ", Nombre=" << nombre;
             if (!apellido.empty()) std::cout << ", Apellido=" << apellido;
             std::cout << std::endl;
         }
     } catch (const std::exception& e) {
+        mover_cursor(1, fila_actual++);
         std::cerr << "Error al consultar cuentas: " << e.what() << std::endl;
     }
 }
@@ -123,7 +149,6 @@ void Banco::guardar_datos_binario(std::string archivo) {
         clientes->recorrer([&](Cliente* c) { c->guardar_binario(file); });
         RespaldoDatos::guardarRespaldoClientesConFecha(*clientes);
         fclose(file);
-        std::cout << "Datos guardados exitosamente en " << archivo << std::endl;
     } catch (const std::exception& e) {
         std::cerr << "Error al guardar datos: " << e.what() << std::endl;
     }

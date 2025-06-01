@@ -41,7 +41,9 @@ void Movimiento::guardar_binario(FILE* archivo) {
         return;
     }
     try {
-        fwrite(tipo.c_str(), sizeof(char), tipo.length() + 1, archivo);
+        size_t len = tipo.length();
+        fwrite(&len, sizeof(size_t), 1, archivo);
+        fwrite(tipo.c_str(), sizeof(char), len + 1, archivo);
         fwrite(&monto, sizeof(double), 1, archivo);
         fwrite(&fecha, sizeof(Fecha), 1, archivo);
         fwrite(&saldo_post_movimiento, sizeof(double), 1, archivo);
@@ -56,13 +58,17 @@ void Movimiento::cargar_binario(FILE* archivo) {
         return;
     }
     try {
-        char buffer[50] = {0};
-        size_t bytes_leidos = fread(buffer, sizeof(char), 50, archivo);
-        if (bytes_leidos == 0) {
-            throw std::runtime_error("Error al leer el tipo de movimiento");
+        size_t len;
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de tipo");
+        if (len > 100) throw std::runtime_error("Longitud de tipo de movimiento inválida");
+        char* buffer = new char[len + 1];
+        if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
+            delete[] buffer;
+            throw std::runtime_error("Error al leer tipo de movimiento");
         }
         tipo = std::string(buffer);
-        
+        delete[] buffer;
+
         if (fread(&monto, sizeof(double), 1, archivo) != 1) {
             throw std::runtime_error("Error al leer el monto");
         }
@@ -76,7 +82,6 @@ void Movimiento::cargar_binario(FILE* archivo) {
         std::cerr << "Error al cargar movimiento desde archivo binario: " << e.what() << std::endl;
     }
 }
-
 std::ostream& operator<<(std::ostream& os, const Movimiento& mov) {
     os << mov.to_string();
     return os;

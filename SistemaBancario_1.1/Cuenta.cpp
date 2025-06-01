@@ -50,7 +50,7 @@ bool Cuenta::retirar(double monto, Fecha fecha) {
     try {
         if (monto <= 0) throw std::invalid_argument("Monto de retiro debe ser mayor a 0");
         if (saldo < monto) throw std::invalid_argument("Saldo insuficiente");
-        if (!fecha.es_dia_habil()) throw std::invalid_argument("Retiro no permitido en día no hábil");
+        //if (!fecha.es_dia_habil()) throw std::invalid_argument("Retiro no permitido en día no hábil");
         saldo -= monto;
         Movimiento movimiento("Retiro", monto, fecha, saldo);
         movimientos->insertar_cola(movimiento);

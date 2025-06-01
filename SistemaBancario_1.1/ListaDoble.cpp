@@ -30,7 +30,9 @@ ListaDoble<T>::~ListaDoble() {
             siguiente = actual->get_siguiente();
             // Solo elimina si T es un puntero
             if constexpr (std::is_pointer_v<T>) {
-                delete actual->get_valor();
+                if (actual->get_valor() != nullptr) {
+                    delete actual->get_valor();
+                }
             }
             delete actual;
             actual = siguiente;

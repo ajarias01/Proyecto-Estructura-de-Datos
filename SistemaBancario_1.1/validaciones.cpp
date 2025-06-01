@@ -1,12 +1,13 @@
 #include "Validaciones.h"
 #include "Fecha.h"
+#include "Banco.h"
 #include <iostream>
 #include <limits>
 #include <cctype>
 #include <random>
 #include <conio.h>
 #include <algorithm>
-
+#include <fstream>
 using namespace std;
 void limpiar_linea(const string& mensaje) {
     cout << "\r\033[K" << mensaje;
@@ -25,6 +26,8 @@ string ingresar_alfabetico(const string& mensaje) {
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             printf("\b \b");
+        } else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -42,6 +45,8 @@ string ingresar_dni(const string& mensaje) {
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             printf("\b \b");
+        } else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -106,6 +111,8 @@ string ingresar_direccion(const string& mensaje) {
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             cout << "\b \b";
+        } else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -188,6 +195,8 @@ string ingresar_email(const std::string& mensaje) {
         } else if (c == 13) { // Enter con entrada corta
             palabra.clear();
             return palabra;
+        }else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -238,6 +247,8 @@ string ingresar_decimales(const string& mensaje) {
             if (palabra.back() == '.') punto_usado = false;
             palabra.pop_back();
             printf("\b \b");
+        }else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -259,6 +270,8 @@ string ingresar_id(const string& mensaje) {
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             printf("\b \b");
+        }else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -267,33 +280,27 @@ bool validarCedulaEcuatoriana(const string& cedula) {
     if (cedula.length() != 10) {
         return false;
     }
-    
     // Verificar que todos los caracteres sean dígitos
     for (char c : cedula) {
         if (!std::isdigit(c)) {
             return false;
         }
     }
-    
     // Verificar código de provincia (los dos primeros dígitos)
     int provincia = std::stoi(cedula.substr(0, 2));
     if (provincia < 1 || provincia > 24) {
         return false;
     }
-    
     // Verificar tercer dígito (0-5 para personas naturales, 6-9 para empresas)
     int tercerDigito = cedula[2] - '0';
     if (tercerDigito > 9) {
         return false;
     }
-    
     // Algoritmo de validación del dígito verificador
     int suma = 0;
-    
     // Para los 9 primeros dígitos
     for (int i = 0; i < 9; i++) {
         int digito = cedula[i] - '0';
-        
         // Para posiciones impares (0, 2, 4, 6, 8)
         if (i % 2 == 0) {
             digito *= 2;
@@ -301,7 +308,6 @@ bool validarCedulaEcuatoriana(const string& cedula) {
                 digito -= 9;
             }
         }
-        
         suma += digito;
     }
     
@@ -341,6 +347,8 @@ string ingresar_contrasenia(const string& mensaje) {
         } else if (c == 8 && !palabra.empty()) { // Backspace
             palabra.pop_back();
             printf("\b \b");
+        }else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -368,6 +376,8 @@ string ingresar_contrasenia_administrador(const string& mensaje) {
                 printf("\b \b"); // Borrar guion si era uno
             }
             index--;
+        }else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -531,6 +541,8 @@ string validarHora(const string& mensaje) {
                 printf("\b \b");
             }
             index--;
+        }else if (c == 27) { // ESC
+            return "__ESC__"; // Valor especial para ESC
         }
     }
 }
@@ -555,4 +567,5 @@ bool validar_hora_minuto_segundo(int hora, int minuto, int segundo) {
            (minuto >= 0 && minuto <= 59) &&
            (segundo >= 0 && segundo <= 59);
 }
+
 
