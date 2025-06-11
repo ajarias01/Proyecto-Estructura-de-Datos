@@ -20,10 +20,10 @@ Movimiento::Movimiento(std::string _tipo, double _monto, Fecha _fecha, double _s
     }
 }
 
-std::string Movimiento::get_tipo() { return tipo; }
-double Movimiento::get_monto() { return monto; }
-Fecha Movimiento::get_fecha() { return fecha; }
-double Movimiento::get_saldo_post_movimiento() { return saldo_post_movimiento; }
+std::string Movimiento::get_tipo() const { return tipo; }
+double Movimiento::get_monto() const { return monto; }
+Fecha Movimiento::get_fecha() const { return fecha; }
+double Movimiento::get_saldo_post_movimiento() const{ return saldo_post_movimiento; }
 
 void Movimiento::set_tipo(std::string _tipo) { tipo = _tipo; }
 void Movimiento::set_monto(double _monto) { monto = _monto; }

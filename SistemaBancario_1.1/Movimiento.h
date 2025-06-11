@@ -9,10 +9,10 @@ public:
     Movimiento();
     Movimiento(std::string tipo, double monto, Fecha fecha, double saldo_post);
     Movimiento(const Movimiento& otro);
-    std::string get_tipo();
-    double get_monto();
-    Fecha get_fecha();
-    double get_saldo_post_movimiento();
+    std::string get_tipo() const;
+    double get_monto()const;
+    Fecha get_fecha() const;
+    double get_saldo_post_movimiento() const;
     void set_tipo(std::string);
     void set_monto(double);
     void set_fecha(Fecha);
