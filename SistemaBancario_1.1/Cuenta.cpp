@@ -1,6 +1,11 @@
 #include "Cuenta.h"
+#include "Sorting.h"
 #include <stdexcept>
 #include <functional>
+#include <vector>
+#include <algorithm>
+#include <iostream>
+#include <stdexcept>
 
 Cuenta::Cuenta() {
     id_cuenta = "";
@@ -64,33 +69,47 @@ bool Cuenta::retirar(double monto, Fecha fecha) {
 double Cuenta::consultar_saldo() {
     return saldo;
 }
-
 void Cuenta::consultar_movimientos_rango(Fecha inicio, Fecha fin) {
     try {
         if (inicio > fin) throw std::invalid_argument("Rango de fechas inválido");
-        std::cout << "Movimientos de la cuenta " << id_cuenta << " entre " 
-                  << inicio.to_string() << " y " << fin.to_string() << ":\n";
+        std::cout << "  ==============================================\n";
+        std::cout << "     MOVIMIENTOS DE LA CUENTA " << id_cuenta << "\n";
+        std::cout << "     Desde: " << inicio.to_string() << "  Hasta: " << fin.to_string() << "\n";
+        std::cout << "  ==============================================\n";
 
-        // BLOQUE DE DEPURACIÓN: imprime todos los movimientos registrados
-        std::cout << "DEBUG: Todos los movimientos registrados:\n";
+        std::vector<Movimiento> movs;
         movimientos->recorrer([&](Movimiento m) {
-            std::cout << "  - " << m.to_string() << " | Fecha: " << m.get_fecha().to_string() << std::endl;
+            movs.push_back(m);
         });
 
-        bool hay_movimientos = false;
-        movimientos->filtrar(
-            [&inicio, &fin](Movimiento m) {
-                return !m.get_tipo().empty()
-                    && m.get_fecha() >= inicio && m.get_fecha() <= fin;
-            },
-            [&](Movimiento m) {
-                std::cout << "  - " << m.to_string() << std::endl;
-                hay_movimientos = true;
-            }
-        );
-        if (!hay_movimientos) {
-            std::cout << "  No hay movimientos en este rango de fechas." << std::endl;
+        if (movs.empty()) {
+            std::cout << "  No hay movimientos registrados.\n";
+            return;
         }
+
+        radixSortMovements(movs);
+
+        int keyInicio = dateKey(inicio);
+        int keyFin = dateKey(fin);
+
+        int startIdx = lowerBound(movs, keyInicio);
+        int endIdx = upperBound(movs, keyFin) - 1;
+
+        if (startIdx > endIdx || startIdx >= (int)movs.size()) {
+            std::cout << "  No hay movimientos en este rango de fechas.\n";
+            return;
+        }
+
+        std::cout << "  Movimientos encontrados:\n";
+        for (int i = startIdx; i <= endIdx; ++i) {
+            const Movimiento& m = movs[i];
+            std::cout << "    • Tipo: " << m.get_tipo()
+                      << " | Monto: " << m.get_monto()
+                      << " | Fecha: " << m.get_fecha().to_string()
+                      << " | Saldo posterior: " << m.get_saldo_post_movimiento()
+                      << std::endl;
+        }
+        std::cout << "  ==============================================\n";
     } catch (const std::exception& e) {
         std::cerr << "Error en consultar_movimientos_rango: " << e.what() << std::endl;
     }

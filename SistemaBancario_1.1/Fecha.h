@@ -13,12 +13,12 @@ public:
     Fecha(int _anuario, int _mes, int _dia);
     Fecha(int _anuario, int _mes, int _dia, int _hora, int _minutos, int _segundos);
     static bool es_fecha_valida(int anio, int mes, int dia);
-    int get_anuario();
+    int get_anuario() const;
     void set_anuario(int);
     int dias_en_mes(int anio, int mes);
-    int get_mes();
+    int get_mes() const;
     void set_mes(int);
-    int get_dia();
+    int get_dia() const;
     void set_dia(int);
     int get_hora();
     void set_hora(int);

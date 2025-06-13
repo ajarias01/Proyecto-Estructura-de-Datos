@@ -341,15 +341,14 @@ void cargar_base_datos(Banco& banco) {
 
     // --- BÚSQUEDA BINARIA ---
     string respuesta,valor_buscar;
-    cout<<endl;
-    do {
-        limpiar_linea("➤ ¿Desea buscar un cliente por el campo seleccionado? (S/N): ");
-        respuesta = ingresar_alfabetico("");
-        if (respuesta == "__ESC__") return;
-        transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper); // <-- aquí el cambio
-    } while (respuesta != "S" && respuesta != "N");
-    cout<<endl;
-    if (respuesta == "S" || respuesta == "s") {
+        do {
+            limpiar_linea("➤ ¿Desea depositar un monto inicial? (S/N): ");
+            respuesta = ingresar_alfabetico("");
+            if (respuesta == "__ESC__") return;
+            transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
+        } while (respuesta != "S" && respuesta != "N");
+            cout << endl;
+        if (respuesta == "S" || respuesta == "s") {
         do {
             limpiar_linea("➤ Ingrese el valor a buscar: ");
             if (campo == 1 || campo == 4) { // DNI o Teléfono
@@ -361,7 +360,7 @@ void cargar_base_datos(Banco& banco) {
             }
             if (valor_buscar == "__ESC__") return;
         } while (!validar_valor_busqueda(campo, valor_buscar));
-
+        
         int pos = -1;
         // Búsqueda binaria según el campo
         if (campo == 1 || campo == 4) { // numérico
@@ -414,6 +413,7 @@ void cargar_base_datos(Banco& banco) {
             std::cout << "\nNo se encontró ningún cliente con ese valor.\n";
         }
     }
+
     pausar_consola();
 }
 

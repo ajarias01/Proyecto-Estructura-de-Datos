@@ -60,9 +60,9 @@ Fecha::Fecha(int _anuario, int _mes, int _dia, int _hora, int _minutos, int _seg
     segundos = _segundos;
 }
 
-int Fecha::get_anuario() { return anuario; }
+int Fecha::get_anuario() const { return anuario; }
 void Fecha::set_anuario(int nuevo_anuario) { anuario = nuevo_anuario; }
-int Fecha::get_mes() { return mes; }
+int Fecha::get_mes() const { return mes; }
 
 void Fecha::set_mes(int nuevo_mes) {
     if (nuevo_mes < 1 || nuevo_mes > 12) {
@@ -87,7 +87,7 @@ void Fecha::set_dia(int nuevo_dia) {
     }
 }
 
-int Fecha::get_dia() { return dia; }
+int Fecha::get_dia() const { return dia; }
 
 int Fecha::dias_en_mes(int anio, int mes) {
     int dias[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};

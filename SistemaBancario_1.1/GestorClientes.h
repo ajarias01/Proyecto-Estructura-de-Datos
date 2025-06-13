@@ -14,6 +14,9 @@ public:
     int getMaxCampoNumerico(const ListaDoble<Cliente*>& clientes, int n, std::function<int(Cliente*)> getter);
     void countSortCampoNumerico(ListaDoble<Cliente*>& clientes, int n, int exp, std::function<int(Cliente*)> getter);
     void radixSortCampoNumerico(ListaDoble<Cliente*>& clientes, int n, std::function<int(Cliente*)> getter);
+    int busquedaBinariaNumerica(ListaDoble<Cliente*>& lista, int n, int valor, std::function<int(Cliente*)> getter, bool ascendente = true);
+    int busquedaBinariaString(ListaDoble<Cliente*>& lista, int n, const std::string& valor, std::function<std::string(Cliente*)> getter, bool ascendente = true);
+
 };
 
 #endif
