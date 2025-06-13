@@ -4,6 +4,13 @@
 #include "Cliente.h"
 #include "Fecha.h"
 #include "Banco.h"
+#include <iostream>
+#include <limits>
+#include <cctype>
+#include <random>
+#include <conio.h>
+#include <algorithm>
+#include <fstream>
 #include <string>
 using namespace std;
 void limpiar_linea(const string& mensaje);
@@ -31,4 +38,5 @@ bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta);
 bool telefono_existe(Banco& banco, const std::string& telefono);
 bool email_existe(Banco& banco, const std::string& email);
 bool validar_hora_minuto_segundo(int hora, int minuto, int segundo);
+bool validar_valor_busqueda(int campo, const std::string& valor);
 #endif

@@ -3,12 +3,6 @@
 #include "Corriente.h"
 #include "ListaDoble.h"
 #include "Menus.h"
-#include <fstream>
-#include <iomanip>
-#include <ctime>
-#include <filesystem>
-#include <algorithm>
-#include <vector>
 namespace fs = std::filesystem;
 using namespace std;
 
@@ -80,6 +74,7 @@ void RespaldoDatos::respaldoClientesBinario(const std::string& nombreArchivo, co
 
     archivo.close();
 }
+
 ListaDoble<Cliente*>* RespaldoDatos::restaurarClientesBinario(const std::string& nombreArchivo) {
     ListaDoble<Cliente*>* clientes = new ListaDoble<Cliente*>();
     ifstream archivo(nombreArchivo, ios::binary);
@@ -163,25 +158,22 @@ void RespaldoDatos::guardarRespaldoClientesConFecha(const ListaDoble<Cliente*>& 
     auto tm = *std::localtime(&t);
     std::ostringstream oss;
     oss << std::put_time(&tm, "%Y%m%d_%H%M%S");
-    std::string nombreArchivo = "backup_clientes_" + oss.str() + ".bak";
+    std::string nombreArchivo = "backup_clientes_" + oss.str() + ".bin";
     
     // Llamar al método de respaldo binario
     respaldoClientesBinario(nombreArchivo, clientes);
-    int numCesar = 3; // Puedes cambiar el número de desplazamiento
-    cifrarArchivoABaseTxt(nombreArchivo, numCesar);
+    //int numCesar = 3; // Puedes cambiar el número de desplazamiento
+    //cifrarArchivoABaseTxt(nombreArchivo, numCesar);
 }
+
 ListaDoble<Cliente*>* RespaldoDatos::restaurarClientesDesdeTxt(const std::string& archivoTxt, int numCesar) {
-    // Decifrar el .txt cifrado y crear un .bin temporal
-    decifrarTxtABinario(archivoTxt, numCesar);
-
-    // El nombre del binario decifrado
-    std::string archivoBin = archivoTxt.substr(0, archivoTxt.find("_cifrado.txt")) + "_decifrado.txt";
-
-    // Restaurar normalmente desde el binario decifrado
+    // Decifrar el .txt cifrado y obtener el nombre del archivo descifrado
+    std::string archivoBin = decifrarTxtABinario(archivoTxt, numCesar);
+    // Restaurar normalmente desde el binario descifrado
     return restaurarClientesBinario(archivoBin);
 }
 
-std::string RespaldoDatos::obtenerUltimoRespaldo() {
+string RespaldoDatos::obtenerUltimoRespaldo() {
     std::vector<std::pair<std::string, std::time_t>> backups;
 
     for (const auto& entry : fs::directory_iterator(".")) {
@@ -210,54 +202,72 @@ std::string RespaldoDatos::obtenerUltimoRespaldo() {
 
 void RespaldoDatos::CifradoCesar(std::string& cifradoCesar, int numCesar) {
     for (int i = 0; i < cifradoCesar.length(); i++) {
-        char currentChar = cifradoCesar[i];
-        if (isalpha(currentChar)) {
-            char base = islower(currentChar) ? 'a' : 'A';
-            cifradoCesar[i] = base + (currentChar - base + numCesar) % 26;
+        char c = cifradoCesar[i];
+        if (c >= 'a' && c <= 'f') {
+            cifradoCesar[i] = 'a' + (c - 'a' + numCesar) % 6;
+        } else if (c >= '0' && c <= '9') {
+            cifradoCesar[i] = '0' + (c - '0' + numCesar) % 10;
         }
     }
 }
 
 void RespaldoDatos::DecifradoCesar(std::string& decifradoCesar, int numCesar) {
     for (int i = 0; i < decifradoCesar.length(); i++) {
-        char currentChar = decifradoCesar[i];
-        if (isalpha(currentChar)) {
-            char base = islower(currentChar) ? 'a' : 'A';
-            decifradoCesar[i] = base + (currentChar - base - numCesar + 26) % 26;
+        char c = decifradoCesar[i];
+        if (c >= 'a' && c <= 'f') {
+            decifradoCesar[i] = 'a' + (c - 'a' - numCesar + 6) % 6;
+        } else if (c >= '0' && c <= '9') {
+            decifradoCesar[i] = '0' + (c - '0' - numCesar + 10) % 10;
         }
     }
 }
-
 
 void RespaldoDatos::cifrarArchivoABaseTxt(const std::string& archivoBin, int numCesar) {
     std::ifstream in(archivoBin, std::ios::binary);
     if (!in) return;
 
     // Leer los datos binarios y convertirlos a una representación textual (hexadecimal)
-    std::stringstream ss;
+    std::ostringstream oss;
     char c;
     while (in.get(c)) {
-        // Convertir cada byte a su representación hexadecimal
-        ss << std::hex << std::setw(2) << std::setfill('0') << (int)(unsigned char)c;
+        oss << std::hex << std::setw(2) << std::setfill('0') << (static_cast<unsigned int>(static_cast<unsigned char>(c)));
     }
-    std::string contenido = ss.str();
+    std::string contenido = oss.str();
     in.close();
 
     // Aplicar cifrado César con desplazamiento fijo de 3
-    CifradoCesar(contenido, 3);
+    CifradoCesar(contenido, numCesar);
 
-    std::string archivoTxt = archivoBin.substr(0, archivoBin.find_last_of('.')) + "_cifrado.txt";
+    // Extraer la marca de tiempo correctamente
+    size_t pos1 = archivoBin.find("backup_clientes_");
+    size_t pos2 = archivoBin.find(".bin");
+    std::string timestamp;
+    if (pos1 != std::string::npos && pos2 != std::string::npos) {
+        timestamp = archivoBin.substr(16, pos2 - 16); // 16 es la posición después de "backup_clientes_"
+    } else {
+        timestamp = "error_timestamp";
+    }
+
+    // Construir el nombre del archivo cifrado
+    std::string archivoTxt = "cifrado_" + timestamp + ".txt";
+
+    // Escribir el contenido cifrado en el archivo como texto plano hexadecimal con saltos de línea
     std::ofstream out(archivoTxt, std::ios::out | std::ios::trunc);
     if (out) {
-        out << contenido;
+        const size_t ancho = 64; // 64 caracteres por línea (32 bytes)
+        for (size_t i = 0; i < contenido.length(); i += ancho) {
+            out << contenido.substr(i, ancho) << '\n';
+        }
         out.close();
     }
 }
 
-void RespaldoDatos::decifrarTxtABinario(const std::string& archivoTxt, int numCesar) {
+string RespaldoDatos::decifrarTxtABinario(const std::string& archivoTxt, int numCesar) {
     std::ifstream in(archivoTxt, std::ios::in);
-    if (!in) return;
-
+    if (!in) {
+        throw std::runtime_error("No se pudo abrir el archivo: " + archivoTxt);
+    }
+    
     // Leer el contenido cifrado
     std::string contenido;
     char c;
@@ -270,7 +280,8 @@ void RespaldoDatos::decifrarTxtABinario(const std::string& archivoTxt, int numCe
     DecifradoCesar(contenido, 3);
 
     // Convertir la representación hexadecimal de vuelta a binario
-    std::string archivoDescifrado = archivoTxt.substr(0, archivoTxt.find("_cifrado.txt")) + "_decifrado.txt";
+    std::string timestamp = archivoTxt.substr(16, 15); // Extraer YYYYMMDD_HHMMSS
+    std::string archivoDescifrado = "decifrado_" + timestamp + ".bin"; // Nuevo nombre
     std::ofstream out(archivoDescifrado, std::ios::binary | std::ios::trunc);
     if (out) {
         for (size_t i = 0; i < contenido.length(); i += 2) {
@@ -283,6 +294,7 @@ void RespaldoDatos::decifrarTxtABinario(const std::string& archivoTxt, int numCe
         }
         out.close();
     }
+    return archivoDescifrado; // Retornar el nombre para uso en otras funciones
 }
 
 string RespaldoDatos::obtenerUltimoTxtCifrado() {
@@ -319,8 +331,8 @@ void RespaldoDatos::listarArchivosTxtCifrados() {
 
     for (const auto& entry : fs::directory_iterator(".")) {
         std::string nombre = entry.path().filename().string();
-        if (nombre.find("backup_clientes_") == 0 && nombre.find("_cifrado.txt") != std::string::npos) {
-            std::string timestampStr = nombre.substr(16, 15);
+        if (nombre.find("cifrado_") == 0 && nombre.find(".txt") == nombre.size() - 4) {
+            std::string timestampStr = nombre.substr(8, 15);
             std::tm tm = {};
             std::istringstream ss(timestampStr);
             ss >> std::get_time(&tm, "%Y%m%d_%H%M%S");
@@ -342,15 +354,13 @@ void RespaldoDatos::listarArchivosTxtCifrados() {
     for (const auto& backup : backupsTxt) {
         std::tm* tm = std::localtime(&backup.second);
         std::cout << contador << ". " << backup.first << std::endl;
-        std::cout << "   Fecha: " << std::put_time(tm, "%d/%m/%Y %H:%M:%S") << std::endl;
-        std::cout << "   Tamaño: ";
+        std::cout << "• Fecha: " << std::put_time(tm, "%d/%m/%Y %H:%M:%S") << "       • Tamaño: ";
         try {
             auto tamanio = fs::file_size(backup.first);
             std::cout << tamanio << " bytes" << std::endl;
         } catch (...) {
             std::cout << "N/A" << std::endl;
         }
-        std::cout << std::endl;
         contador++;
     }
 }
@@ -359,8 +369,8 @@ void RespaldoDatos::seleccionarYDescifrarTxt() {
     std::vector<std::pair<std::string, std::time_t>> backupsTxt;
     for (const auto& entry : fs::directory_iterator(".")) {
         std::string nombre = entry.path().filename().string();
-        if (nombre.find("backup_clientes_") == 0 && nombre.find("_cifrado.txt") != std::string::npos) {
-            std::string timestampStr = nombre.substr(16, 15);
+        if (nombre.find("cifrado_") == 0 && nombre.find(".txt") == nombre.size() - 4) {
+            std::string timestampStr = nombre.substr(8, 15);
             std::tm tm = {};
             std::istringstream ss(timestampStr);
             ss >> std::get_time(&tm, "%Y%m%d_%H%M%S");
@@ -381,15 +391,21 @@ void RespaldoDatos::seleccionarYDescifrarTxt() {
         [](const auto& a, const auto& b) { return a.second > b.second; });
     listarArchivosTxtCifrados();
 
-    std::cout << "Seleccione el archivo a descifrar (1-" << backupsTxt.size() << "): ";
     int seleccion;
-    std::cin >> seleccion;
-
-    if (seleccion < 1 || seleccion > static_cast<int>(backupsTxt.size())) {
-        std::cout << "Selección inválida." << std::endl;
-        pausar_consola();
-        return;
-    }
+    std::string numero;
+    do {
+        limpiar_linea("Seleccione el archivo a descifrar (1-" + std::to_string(backupsTxt.size()) + "): ");
+        numero = ingresar_dni("");
+        if (numero == "__ESC__") return;
+        if (!numero.empty()) {
+            try {
+                seleccion = std::stoi(numero);
+            } catch (...) {
+                seleccion = 0;
+            }
+        }
+    } while (seleccion < 1 || seleccion > static_cast<int>(backupsTxt.size()));
+    cout << endl;
 
     std::string archivoSeleccionado = backupsTxt[seleccion - 1].first;
     // No se pide numCesar por teclado, se usa el valor fijo de 3
@@ -400,8 +416,7 @@ void RespaldoDatos::seleccionarYDescifrarTxt() {
     try {
         descifrarTxtSolamente(archivoSeleccionado, numCesar);
         std::cout << "Archivo descifrado exitosamente." << std::endl;
-        std::string archivoDescifrado = archivoSeleccionado.substr(0, archivoSeleccionado.find("_cifrado.txt")) + "_descifrado.txt";
-        std::cout << "Archivo descifrado guardado como: " << archivoDescifrado << std::endl;
+        std::cout << "Archivo descifrado guardado como: " << archivoSeleccionado << std::endl;
         
     } catch (const std::exception& e) {
         std::cout << "Error al descifrar el archivo: " << e.what() << std::endl;
@@ -410,26 +425,33 @@ void RespaldoDatos::seleccionarYDescifrarTxt() {
     pausar_consola();
 }
 
-
 void RespaldoDatos::descifrarTxtSolamente(const std::string& archivoTxt, int numCesar) {
     std::ifstream in(archivoTxt, std::ios::in);
     if (!in) {
         throw std::runtime_error("No se pudo abrir el archivo: " + archivoTxt);
     }
-    
-    // Leer el contenido cifrado
-    std::string contenido;
-    char c;
-    while (in.get(c)) {
-        contenido += c;
+
+    // Leer el contenido cifrado, ignorando saltos de línea
+    std::string contenido, linea;
+    while (std::getline(in, linea)) {
+        contenido += linea;
     }
     in.close();
 
     // Aplicar descifrado César con desplazamiento fijo de 3
-    DecifradoCesar(contenido, 3);
+    DecifradoCesar(contenido, numCesar);
 
-    // Convertir la representación hexadecimal de vuelta a binario
-    std::string archivoDescifrado = archivoTxt.substr(0, archivoTxt.find("_cifrado.txt")) + "_descifrado.txt";
+    // Extraer timestamp de forma segura
+    std::string timestamp;
+    size_t pos1 = archivoTxt.find("cifrado_");
+    size_t pos2 = archivoTxt.rfind(".txt");
+    if (pos1 != std::string::npos && pos2 != std::string::npos && pos2 > pos1 + 8) {
+        timestamp = archivoTxt.substr(pos1 + 8, pos2 - (pos1 + 8));
+    } else {
+        timestamp = "error_timestamp";
+    }
+
+    std::string archivoDescifrado = "decifrado_" + timestamp + ".bin";
     std::ofstream out(archivoDescifrado, std::ios::binary | std::ios::trunc);
     if (out) {
         for (size_t i = 0; i < contenido.length(); i += 2) {

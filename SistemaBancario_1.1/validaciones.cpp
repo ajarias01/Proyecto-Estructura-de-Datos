@@ -1,13 +1,4 @@
 #include "Validaciones.h"
-#include "Fecha.h"
-#include "Banco.h"
-#include <iostream>
-#include <limits>
-#include <cctype>
-#include <random>
-#include <conio.h>
-#include <algorithm>
-#include <fstream>
 using namespace std;
 void limpiar_linea(const string& mensaje) {
     cout << "\r\033[K" << mensaje;
@@ -163,22 +154,22 @@ string ingresar_email(const std::string& mensaje) {
     string palabra;
     cout << mensaje;
     int arroba_count = 0;
-    int punto_count = 0;
     bool arroba_encontrado = false;
     while (true) {
         c = getch();
-        if (isalnum(c) || c == '-' || c == '_' || c == '+') {
+        if (isalnum(c) || c == '-' || c == '_' || c == '+' || (c == '.' && !palabra.empty() && !arroba_encontrado && palabra.back() != '.')) {
+            // Permitir '.' solo antes del @ y no al inicio ni dos puntos seguidos
             palabra += c;
             cout << c;
-        } else if (c == '@' && arroba_count == 0) {
+        } else if (c == '@' && arroba_count == 0 && !palabra.empty() && palabra.back() != '.') {
             palabra += c;
             cout << c;
             arroba_count++;
             arroba_encontrado = true;
-        } else if (c == '.' && arroba_encontrado && punto_count == 0) {
+        } else if (c == '.' && arroba_encontrado && palabra.back() != '@' && palabra.back() != '.') {
+            // Permitir '.' después del @, pero no justo después del @ ni dos puntos seguidos
             palabra += c;
             cout << c;
-            punto_count++;
         } else if (c == 13 && palabra.length() >= 6 && validar_email(palabra)) { // Enter
             transform(palabra.begin(), palabra.end(), palabra.begin(), ::tolower);
             return palabra;
@@ -187,15 +178,12 @@ string ingresar_email(const std::string& mensaje) {
                 arroba_count--;
                 arroba_encontrado = false;
             }
-            if (palabra.back() == '.') {
-                punto_count--;
-            }
             palabra.pop_back();
             cout << "\b \b";
         } else if (c == 13) { // Enter con entrada corta
             palabra.clear();
             return palabra;
-        }else if (c == 27) { // ESC
+        } else if (c == 27) { // ESC
             return "__ESC__"; // Valor especial para ESC
         }
     }
@@ -359,11 +347,11 @@ string ingresar_contrasenia_administrador(const string& mensaje) {
     cout<<mensaje;
     while (true) {
         char c = getch();
-        if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) && index < 25) {
+        if (((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) && index < 10) {
             *(palabra + index) = c;
             printf("%c", c);
             index++;
-            if (index % 5 == 0 && index < 25) {
+            if (index % 5 == 0 && index < 10) {
                 cout << "-";
             }
         } else if (c == 13) { // ENTER
@@ -372,7 +360,7 @@ string ingresar_contrasenia_administrador(const string& mensaje) {
         } else if (c == 8 && index > 0) { // BACKSPACE
             *(palabra + index) = '\0'; // borrar último carácter
             printf("\b \b");
-            if (index % 5 == 0 && index < 25 ) {
+            if (index % 5 == 0 && index < 10 ) {
                 printf("\b \b"); // Borrar guion si era uno
             }
             index--;
@@ -412,17 +400,26 @@ bool validar_contrasenia(const string& contrasenia) {
 }
 bool validar_email(const string& email) {
     size_t at_pos = email.find('@');
-    size_t dot_pos = email.find('.', at_pos);
-    
-    if (at_pos == string::npos || dot_pos == string::npos || at_pos > dot_pos) {
+    if (at_pos == string::npos || at_pos == 0 || at_pos == email.length() - 1) {
         return false;
     }
-    
-    // Verificar que no haya espacios
+    // No espacios
     if (email.find(' ') != string::npos) {
         return false;
     }
-    
+    // No dos puntos seguidos
+    if (email.find("..") != string::npos) {
+        return false;
+    }
+    // Debe haber al menos un punto después del @
+    size_t dot_pos = email.find('.', at_pos);
+    if (dot_pos == string::npos || dot_pos == at_pos + 1 || dot_pos == email.length() - 1) {
+        return false;
+    }
+    // No debe terminar en punto
+    if (email.back() == '.') {
+        return false;
+    }
     return true;
 }
 bool validar_estado_civil(const string& estado_civil) {
@@ -567,5 +564,18 @@ bool validar_hora_minuto_segundo(int hora, int minuto, int segundo) {
            (minuto >= 0 && minuto <= 59) &&
            (segundo >= 0 && segundo <= 59);
 }
-
+bool validar_valor_busqueda(int campo, const std::string& valor) {
+    switch (campo) {
+        case 1: // DNI
+            return validarCedulaEcuatoriana(valor);
+        case 2: // Nombre
+            return !valor.empty() && std::all_of(valor.begin(), valor.end(), [](char c){ return std::isalpha(c) || std::isspace(c); });
+        case 3: // Apellido
+            return !valor.empty() && std::all_of(valor.begin(), valor.end(), [](char c){ return std::isalpha(c) || std::isspace(c); });
+        case 4: // Teléfono
+            return validar_telefono(valor);
+        default:
+            return false;
+    }
+}
 

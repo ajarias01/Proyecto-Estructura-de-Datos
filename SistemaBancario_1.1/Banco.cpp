@@ -84,28 +84,52 @@ void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::
             },
             [&](Cliente* c) {
             encontrado = true;
+            const int ancho_consola = 80;
+            auto centrar = [&](const std::string& texto) {
+                int espacios = (ancho_consola - static_cast<int>(texto.length())) / 2;
+                if (espacios < 0) espacios = 0;
+                std::cout << std::string(espacios, ' ') << texto << std::endl;
+            };
+
             mover_cursor(1, fila_actual++);
-            std::cout << "=== DATOS DEL CLIENTE ===" << std::endl;
+            centrar("╔══════════════════════════════════════════════════════════════════════╗");
             mover_cursor(1, fila_actual++);
-            std::cout << "DNI: " << c->get_dni() << std::endl;
+            centrar("        === DATOS DEL CLIENTE ===        ");
             mover_cursor(1, fila_actual++);
-            std::cout << "Nombre: " << c->get_nombres() << std::endl;
+            centrar("╚══════════════════════════════════════════════════════════════════════╝");
             mover_cursor(1, fila_actual++);
-            std::cout << "Apellido: " << c->get_apellidos() << std::endl;
+            centrar("DNI: " + c->get_dni());
             mover_cursor(1, fila_actual++);
-            std::cout << "Dirección: " << c->get_direccion() << std::endl;
+            centrar("Nombre: " + c->get_nombres());
             mover_cursor(1, fila_actual++);
-            std::cout << "Teléfono: " << c->get_telefono() << std::endl;
+            centrar("Apellido: " + c->get_apellidos());
             mover_cursor(1, fila_actual++);
-            std::cout << "Email: " << c->get_email() << std::endl;
+            centrar("Dirección: " + c->get_direccion());
             mover_cursor(1, fila_actual++);
-            std::cout << "Fecha de Nacimiento: " << c->get_fecha_nacimiento().to_string() << std::endl;
+            centrar("Teléfono: " + c->get_telefono());
             mover_cursor(1, fila_actual++);
-            std::cout << "Cuentas asociadas:" << std::endl;
+            centrar("Email: " + c->get_email());
+            mover_cursor(1, fila_actual++);
+            centrar("Fecha de Nacimiento: " + c->get_fecha_nacimiento().to_string());
+            mover_cursor(1, fila_actual++);
+            centrar("──────────────────────────────────────────────────────────────────────");
+            mover_cursor(1, fila_actual++);
+            centrar("Cuentas asociadas:");
+            mover_cursor(1, fila_actual++);
+
+            // Imprimir tabla alineada a la izquierda
+            std::cout << "┌───────────────┬───────────────┬───────────────┬───────────────┐" << std::endl;
+            std::cout << "│   Tipo        │   ID Cuenta   │   Saldo       │   Detalles    │" << std::endl;
+            std::cout << "├───────────────┼───────────────┼───────────────┼───────────────┤" << std::endl;
             c->get_cuentas()->recorrer([&](Cuenta* cuenta) {
-                mover_cursor(3, fila_actual++);
-                std::cout << cuenta->to_string() << std::endl;
+                std::cout << "│ "
+                        << std::setw(13) << std::left << cuenta->get_tipo() << " │ "
+                        << std::setw(13) << std::left << cuenta->get_id_cuenta() << " │ $"
+                        << std::setw(11) << std::right << cuenta->get_saldo() << " │ "
+                        << std::setw(13) << std::left << cuenta->to_string().substr(0,13) << " │"
+                        << std::endl;
             });
+            std::cout << "└───────────────┴───────────────┴───────────────┴───────────────┘" << std::endl;
         }
         );
        if (!encontrado) {

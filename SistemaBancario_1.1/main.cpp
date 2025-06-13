@@ -3,6 +3,7 @@
 #include "Menus.h"
 
 int main() {
+    system("chcp 65001 > nul");
     Banco banco;
     try {
     banco.cargar_datos_binario("datos.bin");

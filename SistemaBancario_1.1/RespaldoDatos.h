@@ -5,7 +5,14 @@
 #include "Cliente.h"
 #include "Ahorro.h"
 #include "Corriente.h"
+#include <fstream>
 #include <string>
+#include <stdexcept> 
+#include <iomanip>
+#include <ctime>
+#include <filesystem>
+#include <algorithm>
+#include <vector>
 
 class RespaldoDatos {
 public:
@@ -15,7 +22,7 @@ public:
     static void respaldoClientesBinario(const std::string& nombreArchivo, const ListaDoble<Cliente*>& clientes);
     static ListaDoble<Cliente*>* restaurarClientesDesdeTxt(const std::string& archivoTxt, int numCesar);
     static void cifrarArchivoABaseTxt(const std::string& archivoBin, int numCesar);
-    static void decifrarTxtABinario(const std::string& archivoTxt, int numCesar) ;
+    static std::string decifrarTxtABinario(const std::string& archivoTxt, int numCesar) ;
     static std::string obtenerUltimoTxtCifrado();
     static void listarArchivosTxtCifrados();
     static void seleccionarYDescifrarTxt();
