@@ -5,6 +5,7 @@
 #include "validaciones.h"
 #include "RespaldoDatos.h"
 #include "GestorClientes.h"
+#include "Marquesina.h"
 #include <stdexcept>
 #include <conio.h>
 #include <random>
@@ -45,13 +46,16 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
     int opcionSeleccionada = 1; 
     int tecla;
 
+    // Ajustar la fila de inicio para dejar espacio para la marquesina
+    int fila_ajustada = std::max(fila_inicio, 3); // Asegurar que nunca sea menor que 3
+
     // Dibujar el título, alineado a la izquierda, en la fila especificada
-    mover_cursor(1, fila_inicio);
+    mover_cursor(1, fila_ajustada);
     cout << titulo;
 
     // Dibujar las opciones iniciales, empezando justo debajo del título
     for (int e = 0; e < n; e++) {
-        mover_cursor(10, fila_inicio + 2 + e); // +2 para dejar un espacio entre título y opciones
+        mover_cursor(10, fila_ajustada + 2 + e); // +2 para dejar un espacio entre título y opciones
         if (e + 1 == opcionSeleccionada) {
             cout << " ➤ " << e + 1 << " " << opciones[e];
         } else {
@@ -64,25 +68,25 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
         switch (tecla) {
             case TECLA_ARRIBA:
                 // Actualizar la opción seleccionada
-                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
 
                 opcionSeleccionada--;
                 if (opcionSeleccionada < 1) opcionSeleccionada = n;
 
-                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << " ➤ " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
                 break;
 
             case TECLA_ABAJO:
                 // Actualizar la opción seleccionada
-                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
 
                 opcionSeleccionada++;
                 if (opcionSeleccionada > n) opcionSeleccionada = 1;
 
-                mover_cursor(10, fila_inicio + 2 + (opcionSeleccionada - 1));
+                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << " ➤ " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
                 break;
         }
@@ -111,9 +115,10 @@ int desplegar_menu(const char** opciones, int nopciones)
 {
     const short int ANCHO_BOTON = 35;
     visibilidad_cursor(false);
+    
     char tecla;
     HANDLE manejo_consola = GetStdHandle(STD_OUTPUT_HANDLE);
-    short int cursor_x = 0, cursor_y = 1, color_act = 0, opcion = 1;
+    short int cursor_x = 0, cursor_y = 3, color_act = 0, opcion = 1;
     int colores[2] = {15, 191};
 
     auto imprimir_opciones = [&]()
@@ -159,12 +164,14 @@ int desplegar_menu(const char** opciones, int nopciones)
 
         for (int i = 0; i < nopciones; i++)
         {
-            color_act = (i * 3) + 1 == cursor_y ? 1 : 0;
-            mover_cursor(cursor_x, (i * 3));
+            color_act = (i * 3) + 3 == cursor_y ? 1 : 0; // Ajustar para empezar desde línea 3
+            mover_cursor(cursor_x, (i * 3) + 3); // Ajustar posición Y para dejar espacio a la marquesina
             SetConsoleTextAttribute(manejo_consola, colores[color_act]);
             imprimir_boton(opciones[i]);
         }
-        SetConsoleTextAttribute(manejo_consola, colores[0]);
+        // Restaurar colores por defecto y asegurar que el cursor esté en posición correcta
+        SetConsoleTextAttribute(manejo_consola, 15); // Color blanco por defecto
+        std::cout.flush(); // Forzar el vaciado del buffer
     };
 
     imprimir_opciones();
@@ -174,8 +181,9 @@ int desplegar_menu(const char** opciones, int nopciones)
         else if (tecla == 80 && opcion < nopciones) cursor_y += 3;
         imprimir_opciones();
         mover_cursor(cursor_x, cursor_y);
-        opcion = ((cursor_y - 1) / 3) + 1;
+        opcion = ((cursor_y - 3) / 3) + 1; // Ajustar cálculo para empezar desde línea 3
     }
+    
     return opcion;
 }
 
@@ -504,6 +512,7 @@ void menu_administrador(Banco& banco)
     };
 
     system("cls");
+    ajustar_cursor_para_marquesina();
     visibilidad_cursor(true);
     std::string usuario, contrasenia;
     try
@@ -533,6 +542,7 @@ void menu_administrador(Banco& banco)
         do
         {
             system("cls");
+            ajustar_cursor_para_marquesina();
             opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
             switch (opcion)
             {
@@ -579,6 +589,7 @@ void menu_cliente(Banco& banco)
     };
 
     system("cls");
+    ajustar_cursor_para_marquesina();
     visibilidad_cursor(true);
     std::string dni, contrasenia;
     try
@@ -617,6 +628,7 @@ void menu_cliente(Banco& banco)
         do
         {
             system("cls");
+            ajustar_cursor_para_marquesina();
             opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
             switch (opcion)
             {
@@ -643,6 +655,9 @@ void menu_cliente(Banco& banco)
 
 void menu_principal(Banco& banco)
 {
+    // Inicializar la marquesina al comenzar el programa
+    inicializar_marquesina();
+    
     const int NUM_OPCIONES = 5;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Crear cuenta",
@@ -656,6 +671,7 @@ void menu_principal(Banco& banco)
     do
     {
         system("cls");
+        ajustar_cursor_para_marquesina();
         opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
         switch (opcion)
         {
@@ -672,6 +688,7 @@ void menu_principal(Banco& banco)
                 mostrar_ayuda_tecnica();
                 break;
             case 5:
+                detener_marquesina();
                 return;
         }
     } while (opcion != NUM_OPCIONES);
@@ -711,8 +728,9 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
     double saldo_inicial = 0;
     visibilidad_cursor(true);
     system("cls");
+    ajustar_cursor_para_marquesina();
     try {
-        int fila_actual = 2; // Declaración única al inicio del try
+        int fila_actual = 4; // Ajustar para dejar espacio para la marquesina
 
         do {
             mover_cursor(1, fila_actual);
@@ -1332,12 +1350,12 @@ void menu_cuenta(Banco& banco) {
         "Cuenta Corriente",
         "Menú Principal"
     };
-    int opcion;
 
     // Selección de sucursal al inicio
     visibilidad_cursor(true);
     system("cls");
-    int fila_actual = 2;
+    ajustar_cursor_para_marquesina();
+    int fila_actual = 4; // Aumentar para dejar espacio para la marquesina
     const char* sucursales[] = {
         "Sucursal Norte - Av. 10 de Agosto y Mariana de Jesús",
         "Sucursal Centro - Av. 12 de Octubre y Veintimilla",
@@ -1355,15 +1373,38 @@ void menu_cuenta(Banco& banco) {
     int branchChoice = seleccionar_opcion("Seleccione la sucursal más cercana:", sucursales, 3, fila_actual);
     int branchId = branchChoice;
     string sucursal_seleccionada = sucursales[branchChoice - 1]; // Guardar el nombre de la sucursal
-    fila_actual += 4;
 
+    int opcion;
     do {
         system("cls");
+        ajustar_cursor_para_marquesina();
         opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
         switch (opcion) {
-            case 1: abrir_cuenta(banco, 1, branchId, sucursal_seleccionada); break; // Pasar sucursal
-            case 2: abrir_cuenta(banco, 2, branchId, sucursal_seleccionada); break; // Pasar sucursal
-            case 3: return;
+            case 1: 
+                abrir_cuenta(banco, 1, branchId, sucursal_seleccionada); 
+                break;
+            case 2: 
+                abrir_cuenta(banco, 2, branchId, sucursal_seleccionada); 
+                break;
+            case 3: 
+                return;
         }
     } while (opcion != NUM_OPCIONES);
+}
+
+// Variable global para la marquesina
+Marquesina marquesina_global;
+
+void inicializar_marquesina() {
+    marquesina_global.iniciar("SISTEMA BANCARIO");
+}
+
+void detener_marquesina() {
+    marquesina_global.detener();
+}
+
+void ajustar_cursor_para_marquesina() {
+    // Mover el cursor a la línea 2 para dejar espacio para la marquesina
+    // y asegurar que no interfiera con el contenido del menú
+    mover_cursor(0, 2);
 }

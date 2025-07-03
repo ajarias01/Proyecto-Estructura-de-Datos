@@ -4,15 +4,22 @@
 #include <iostream>
 #include <conio.h>
 #include <windows.h>
-#include "Validaciones.h"
+#include "validaciones.h"
 #include "Banco.h"
+#include "Marquesina.h"
 #define TECLA_ARRIBA 72
 #define TECLA_ABAJO 80
 #define ENTER 13
 
+// Variable global para la marquesina
+extern Marquesina marquesina_global;
+
 void pausar_consola();
 void visibilidad_cursor(bool visible);
 void mover_cursor(int x, int y);
+void inicializar_marquesina();
+void detener_marquesina();
+void ajustar_cursor_para_marquesina();
 int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fila_inicio);
 bool seleccionar_Si_No(int fila_inicio);
 int desplegar_menu(const char** opciones, int nopciones);
