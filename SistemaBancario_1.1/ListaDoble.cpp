@@ -162,11 +162,52 @@ void ListaDoble<T>::eliminar(Nodo<T>* nodo) {
         std::cerr << "Error en eliminar: " << e.what() << std::endl;
     }
 }
+
 template <typename T>
 bool ListaDoble<T>::esta_vacia() const { // Añadir const aquí
     return (cabeza == nullptr);
 }
 
+template <typename T>
+T ListaDoble<T>::get_contador(int index) const {
+    if (esta_vacia()) throw std::out_of_range("Lista vacía");
+    Nodo<T>* aux = cabeza;
+    int i = 0;
+    do {
+        if (i == index) return aux->get_valor();
+        aux = aux->get_siguiente();
+        i++;
+    } while (aux != cabeza);
+    throw std::out_of_range("Índice fuera de rango");
+}
+
+template <typename T>
+void ListaDoble<T>::set_contador(int index, T valor) {
+    if (esta_vacia()) throw std::out_of_range("Lista vacía");
+    Nodo<T>* aux = cabeza;
+    int i = 0;
+    do {
+        if (i == index) {
+            aux->set_valor(valor);
+            return;
+        }
+        aux = aux->get_siguiente();
+        i++;
+    } while (aux != cabeza);
+    throw std::out_of_range("Índice fuera de rango");
+}
+
+template <typename T>
+int ListaDoble<T>::getTam() const {
+    if (esta_vacia()) return 0;
+    int count = 0;
+    Nodo<T>* aux = cabeza;
+    do {
+        count++;
+        aux = aux->get_siguiente();
+    } while (aux != cabeza);
+    return count;
+}
 // Instanciaciones explícitas
 template class ListaDoble<int>;
 template class ListaDoble<double>;

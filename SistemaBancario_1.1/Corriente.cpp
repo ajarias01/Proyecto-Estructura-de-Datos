@@ -38,7 +38,6 @@ std::string Corriente::to_string() {
 void Corriente::guardar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
-        // NO guardar el tipo aquí
         size_t len = id_cuenta.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(id_cuenta.c_str(), sizeof(char), len + 1, archivo);
@@ -47,6 +46,9 @@ void Corriente::guardar_binario(FILE* archivo) {
         fwrite(&monto_retirado_hoy, sizeof(double), 1, archivo);
         fwrite(&ultimo_dia_retiro, sizeof(Fecha), 1, archivo);
         fwrite(&fecha_apertura, sizeof(Fecha), 1, archivo);
+        fwrite(&branchId, sizeof(int), 1, archivo); // Guardar branchId
+        time_t tt = std::chrono::system_clock::to_time_t(appointmentTime); // Convertir a time_t
+        fwrite(&tt, sizeof(time_t), 1, archivo); // Guardar appointmentTime
         int num_movimientos = 0;
         movimientos->recorrer([&](Movimiento) { num_movimientos++; });
         fwrite(&num_movimientos, sizeof(int), 1, archivo);
@@ -73,6 +75,10 @@ void Corriente::cargar_binario(FILE* archivo) {
         if (fread(&monto_retirado_hoy, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer monto_retirado_hoy");
         if (fread(&ultimo_dia_retiro, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer ultimo_dia_retiro");
         if (fread(&fecha_apertura, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer fecha_apertura");
+        if (fread(&branchId, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer branchId");
+        time_t tt;
+        if (fread(&tt, sizeof(time_t), 1, archivo) != 1) throw std::runtime_error("Error al leer appointmentTime");
+        appointmentTime = std::chrono::system_clock::from_time_t(tt);
         int num_movimientos;
         if (fread(&num_movimientos, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer número de movimientos");
         if (movimientos) {

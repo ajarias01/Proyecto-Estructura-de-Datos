@@ -1,0 +1,78 @@
+/*
+template <typename T>
+T ListaDoble<T>::get_contador(int index) const {
+    if (esta_vacia()) throw std::out_of_range("Lista vacía");
+    Nodo<T>* aux = cabeza;
+    int i = 0;
+    do {
+        if (i == index) return aux->get_valor();
+        aux = aux->get_siguiente();
+        i++;
+    } while (aux != cabeza);
+    throw std::out_of_range("Índice fuera de rango");
+}
+
+template <typename T>
+void ListaDoble<T>::set_contador(int index, T valor) {
+    if (esta_vacia()) throw std::out_of_range("Lista vacía");
+    Nodo<T>* aux = cabeza;
+    int i = 0;
+    do {
+        if (i == index) {
+            aux->set_valor(valor);
+            return;
+        }
+        aux = aux->get_siguiente();
+        i++;
+    } while (aux != cabeza);
+    throw std::out_of_range("Índice fuera de rango");
+}
+
+template <typename T>
+int ListaDoble<T>::getTam() const {
+    if (esta_vacia()) return 0;
+    int count = 0;
+    Nodo<T>* aux = cabeza;
+    do {
+        count++;
+        aux = aux->get_siguiente();
+    } while (aux != cabeza);
+    return count;
+}
+*/
+
+    //int getTam() const;
+    //T get_contador(int index) const;
+    //void set_contador(int index, T valor);
+
+
+
+
+    /* void countingSortByChar(ListaDoble<Cliente*>& clientes, int n, int pos, std::function<std::string(Cliente*)> getter) {
+    std::vector<Cliente*> output(n);
+    int count[256] = {0};
+    for (int i = 0; i < n; i++) {
+        std::string clave = getter(clientes.get_contador(i));
+        char c = (pos < clave.length()) ? tolower(clave[clave.length() - 1 - pos]) : 0;
+        count[(unsigned char)c]++;
+    }
+    for (int i = 1; i < 256; i++)
+        count[i] += count[i - 1];
+    for (int i = n - 1; i >= 0; i--) {
+        std::string clave = getter(clientes.get_contador(i));
+        char c = (pos < clave.length()) ? tolower(clave[clave.length() - 1 - pos]) : 0;
+        output[--count[(unsigned char)c]] = clientes.get_contador(i);
+    }
+    for (int i = 0; i < n; i++)
+        clientes.set_contador(i, output[i]); // Debes tener un método set(int, Cliente*)
+}
+
+void radixSortStringCampo(ListaDoble<Cliente*>& clientes, int n, std::function<std::string(Cliente*)> getter) {
+    int maxLen = 0;
+    for (int i = 0; i < n; i++) {
+        int len = getter(clientes.get_contador(i)).length();
+        if (len > maxLen) maxLen = len;
+    }
+    for (int pos = 0; pos < maxLen; pos++)
+        countingSortByChar(clientes, n, pos, getter);
+}*/

@@ -11,6 +11,8 @@
 Banco::Banco() {
     clientes = new ListaDoble<Cliente*>();
     datos_cargados = false; // Inicializar bandera
+    appointments.resize(4);
+
 }
 
 Banco::~Banco() {
@@ -53,7 +55,8 @@ Cliente* Banco::buscar_cliente(std::string dni) {
     }
 }
 
-void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido,int fila_actual) {
+void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido, int fila_actual,
+                                      std::function<void(Cuenta*)> callback) {
     try {
         // Verificar que al menos un criterio de búsqueda esté presente
         if (dni.empty() && nombre.empty() && apellido.empty()) {
@@ -83,32 +86,69 @@ void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::
                 return dni_match || nombre_match || apellido_match;
             },
             [&](Cliente* c) {
-            encontrado = true;
-            mover_cursor(1, fila_actual++);
-            std::cout << "=== DATOS DEL CLIENTE ===" << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "DNI: " << c->get_dni() << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "Nombre: " << c->get_nombres() << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "Apellido: " << c->get_apellidos() << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "Dirección: " << c->get_direccion() << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "Teléfono: " << c->get_telefono() << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "Email: " << c->get_email() << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "Fecha de Nacimiento: " << c->get_fecha_nacimiento().to_string() << std::endl;
-            mover_cursor(1, fila_actual++);
-            std::cout << "Cuentas asociadas:" << std::endl;
-            c->get_cuentas()->recorrer([&](Cuenta* cuenta) {
-                mover_cursor(3, fila_actual++);
-                std::cout << cuenta->to_string() << std::endl;
-            });
-        }
+                encontrado = true;
+                const int ancho_consola = 80;
+                auto centrar = [&](const std::string& texto) {
+                    int espacios = (ancho_consola - static_cast<int>(texto.length())) / 2;
+                    if (espacios < 0) espacios = 0;
+                    std::cout << std::string(espacios, ' ') << texto << std::endl;
+                };
+
+                mover_cursor(1, fila_actual++);
+                centrar("╔══════════════════════════════════════════════════════════════════════╗");
+                mover_cursor(1, fila_actual++);
+                centrar("        === DATOS DEL CLIENTE ===        ");
+                mover_cursor(1, fila_actual++);
+                centrar("╚══════════════════════════════════════════════════════════════════════╝");
+                mover_cursor(1, fila_actual++);
+                centrar("DNI: " + c->get_dni());
+                mover_cursor(1, fila_actual++);
+                centrar("Nombre: " + c->get_nombres());
+                mover_cursor(1, fila_actual++);
+                centrar("Apellido: " + c->get_apellidos());
+                mover_cursor(1, fila_actual++);
+                centrar("Dirección: " + c->get_direccion());
+                mover_cursor(1, fila_actual++);
+                centrar("Teléfono: " + c->get_telefono());
+                mover_cursor(1, fila_actual++);
+                centrar("Email: " + c->get_email());
+                mover_cursor(1, fila_actual++);
+                centrar("Fecha de Nacimiento: " + c->get_fecha_nacimiento().to_string());
+                mover_cursor(1, fila_actual++);
+                centrar("──────────────────────────────────────────────────────────────────────");
+                mover_cursor(1, fila_actual++);
+                centrar("Cuentas asociadas:");
+                mover_cursor(1, fila_actual++);
+
+                // Definir arreglo de sucursales
+                const char* sucursales[] = {
+                    "Sucursal Norte - Av. 10 de Agosto y Mariana de Jesús",
+                    "Sucursal Centro - Av. 12 de Octubre y Veintimilla",
+                    "Sucursal Sur - Av. Morán Valverde y Rumichaca"
+                };
+
+                // Imprimir tabla con Tipo y Sucursal
+                std::cout << "┌───────────────┬───────────────┬───────────────┬───────────────┐" << std::endl;
+                std::cout << "│   Tipo        │   ID Cuenta   │   Saldo       │   Sucursal    │" << std::endl;
+                std::cout << "├───────────────┼───────────────┼───────────────┼───────────────┤" << std::endl;
+                c->get_cuentas()->recorrer([&](Cuenta* cuenta) {
+                    int branchId = cuenta->get_branchId();
+                    // Asignar Sucursal Sur por defecto si branchId es inválido
+                    if (branchId < 1 || branchId > 3) {
+                        cuenta->set_branchId(3); // Asignar Sucursal Sur (índice 2, ID 3)
+                        branchId = 3;
+                    }
+                    std::string sucursal = sucursales[branchId - 1];
+                    std::cout << "│ " << std::left << std::setw(13) << cuenta->get_tipo() << " │ "
+                              << std::left << std::setw(13) << cuenta->get_id_cuenta() << " │ $"
+                              << std::left << std::setw(13) << cuenta->get_saldo() << " │ "
+                              << std::left << std::setw(13) << sucursal.substr(0, 13) << " │" << std::endl;
+                });
+                std::cout << "└───────────────┴───────────────┴───────────────┴───────────────┘" << std::endl;
+                std::cout << std::endl; // Espaciado adicional
+            }
         );
-       if (!encontrado) {
+        if (!encontrado) {
             mover_cursor(1, fila_actual++);
             std::cout << "=== NO SE ENCONTRARON CLIENTES ===" << std::endl;
             mover_cursor(1, fila_actual++);
@@ -153,6 +193,7 @@ void Banco::guardar_datos_binario(std::string archivo) {
         std::cerr << "Error al guardar datos: " << e.what() << std::endl;
     }
 }
+
 void Banco::guardar_datos_binario_sin_backup(std::string archivo) {
     FILE* file = fopen(archivo.c_str(), "wb");
     if (!file) throw std::runtime_error("No se pudo abrir/crear el archivo para escritura");
@@ -162,6 +203,7 @@ void Banco::guardar_datos_binario_sin_backup(std::string archivo) {
     clientes->recorrer([&](Cliente* c) { c->guardar_binario(file); });
     fclose(file);
 }
+
 void Banco::cargar_datos_binario(std::string archivo) {
     try {
         if (datos_cargados) return;
@@ -288,3 +330,49 @@ void Banco::restaurar_desde_respaldo(const std::string& nombreArchivo) {
         throw;
     }
 }
+
+std::chrono::system_clock::time_point Banco::findNextAvailableSlot(int branchId) {
+    if (branchId < 1 || branchId > 3) throw std::invalid_argument("Sucursal inválida");
+    auto now = std::chrono::system_clock::now();
+    time_t tt = std::chrono::system_clock::to_time_t(now);
+    tm local_tm = *localtime(&tt);
+    local_tm.tm_hour = 9; // Comenzar a las 9:00 del día actual o siguiente
+    local_tm.tm_min = 0;
+    local_tm.tm_sec = 0;
+    auto start = std::chrono::system_clock::from_time_t(mktime(&local_tm));
+
+    // Si estamos fuera del horario laboral (17:00-9:00) o es fin de semana, mover al próximo lunes 9:00
+    if (local_tm.tm_hour >= 17 || local_tm.tm_wday == 0 || local_tm.tm_wday == 6) {
+        start += std::chrono::hours(24 * (8 - local_tm.tm_wday % 7)); // Avanzar al lunes
+    }
+
+    auto& branchAppointments = appointments[branchId];
+    std::sort(branchAppointments.begin(), branchAppointments.end());
+
+    auto nextSlot = start;
+    while (true) {
+        bool available = true;
+        for (const auto& apt : branchAppointments) {
+            if (std::abs(std::chrono::duration_cast<std::chrono::minutes>(apt - nextSlot).count()) < 30) {
+                available = false;
+                break;
+            }
+        }
+        if (available && isWorkingHour(nextSlot)) return nextSlot;
+        nextSlot += std::chrono::minutes(30);
+    }
+}
+
+bool Banco::isWorkingHour(const std::chrono::system_clock::time_point& tp) {
+    time_t tt = std::chrono::system_clock::to_time_t(tp);
+    tm local_tm = *localtime(&tt);
+    int hour = local_tm.tm_hour;
+    int wday = local_tm.tm_wday; // 0 = domingo, 1 = lunes, etc.
+    return (wday >= 1 && wday <= 5 && hour >= 9 && hour < 17);
+}
+
+void Banco::addAppointment(int branchId, std::chrono::system_clock::time_point time) {
+    if (branchId < 1 || branchId > 3) throw std::invalid_argument("Sucursal inválida");
+    appointments[branchId].push_back(time);
+}
+

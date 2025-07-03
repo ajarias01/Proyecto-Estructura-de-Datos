@@ -10,26 +10,11 @@ Cliente::Cliente() {
     cuentas = new ListaDoble<Cuenta*>();
 }
 
-Cliente::Cliente(std::string _dni, std::string _nombre, std::string _apellido, std::string _direccion, std::string _telefono,
-                std::string _email, Fecha _fecha_nacimiento, std::string _contrasenia) {
-    try {
-        if (_dni.empty()) throw std::invalid_argument("DNI no puede estar vacío");
-        if (_nombre.empty()) throw std::invalid_argument("Nombre no puede estar vacío");
-        if (_apellido.empty()) throw std::invalid_argument("Apellido no puede estar vacío");
-        if (_contrasenia.empty()) throw std::invalid_argument("Contraseña no puede estar vacía");
-        dni = _dni;
-        nombres = _nombre;
-        apellidos = _apellido;
-        direccion = _direccion;
-        telefono = _telefono;
-        email = _email;
-        fecha_nacimiento = _fecha_nacimiento;
-        contrasenia = _contrasenia;
-        cuentas = new ListaDoble<Cuenta*>();
-    } catch (const std::exception& e) {
-        std::cerr << "Error al crear Cliente: " << e.what() << std::endl;
-        throw;
-    }
+Cliente::Cliente(std::string _dni, std::string _nombres, std::string _apellidos, std::string _direccion,
+                std::string _telefono, std::string _email, Fecha _fecha_nacimiento, std::string _contrasenia)
+                : dni(_dni), nombres(_nombres), apellidos(_apellidos), direccion(_direccion),
+                  telefono(_telefono), email(_email), fecha_nacimiento(_fecha_nacimiento), contrasenia(_contrasenia) {
+    cuentas = new ListaDoble<Cuenta*>();
 }
 
 Cliente::Cliente(const Cliente& otro) {
@@ -42,18 +27,26 @@ Cliente::Cliente(const Cliente& otro) {
     fecha_nacimiento = otro.fecha_nacimiento;
     contrasenia = otro.contrasenia;
     cuentas = new ListaDoble<Cuenta*>();
-    otro.cuentas->recorrer([this](Cuenta* c) {
-        if (auto ahorro = dynamic_cast<Ahorro*>(c)) {
-            cuentas->insertar_cola(new Ahorro(*ahorro));
-        } else if (auto corriente = dynamic_cast<Corriente*>(c)) {
-            cuentas->insertar_cola(new Corriente(*corriente));
-        }
-    });
+    if (otro.cuentas) {
+        otro.cuentas->recorrer([this](Cuenta* c) {
+            if (Ahorro* ahorro = dynamic_cast<Ahorro*>(c)) {
+                this->agregar_cuenta(new Ahorro(*ahorro)); // Copia de Ahorro
+            } else if (Corriente* corriente = dynamic_cast<Corriente*>(c)) {
+                this->agregar_cuenta(new Corriente(*corriente)); // Copia de Corriente
+            }
+        });
+    }
+}
+
+Cliente::~Cliente() {
+    if (cuentas) {
+        cuentas->recorrer([](Cuenta* c) { delete c; });
+        delete cuentas;
+    }
 }
 
 Cliente& Cliente::operator=(const Cliente& otro) {
     if (this != &otro) {
-        delete cuentas;
         dni = otro.dni;
         nombres = otro.nombres;
         apellidos = otro.apellidos;
@@ -62,22 +55,22 @@ Cliente& Cliente::operator=(const Cliente& otro) {
         email = otro.email;
         fecha_nacimiento = otro.fecha_nacimiento;
         contrasenia = otro.contrasenia;
+        if (cuentas) {
+            cuentas->recorrer([](Cuenta* c) { delete c; });
+            delete cuentas;
+        }
         cuentas = new ListaDoble<Cuenta*>();
-        otro.cuentas->recorrer([this](Cuenta* c) {
-            if (auto ahorro = dynamic_cast<Ahorro*>(c)) {
-                cuentas->insertar_cola(new Ahorro(*ahorro));
-            } else if (auto corriente = dynamic_cast<Corriente*>(c)) {
-                cuentas->insertar_cola(new Corriente(*corriente));
-            }
-        });
+        if (otro.cuentas) {
+            otro.cuentas->recorrer([this](Cuenta* c) {
+                if (Ahorro* ahorro = dynamic_cast<Ahorro*>(c)) {
+                    this->agregar_cuenta(new Ahorro(*ahorro)); // Copia de Ahorro
+                } else if (Corriente* corriente = dynamic_cast<Corriente*>(c)) {
+                    this->agregar_cuenta(new Corriente(*corriente)); // Copia de Corriente
+                }
+            });
+        }
     }
     return *this;
-}
-
-Cliente::~Cliente() {
-    if (cuentas) {
-        delete cuentas;
-    }
 }
 
 std::string Cliente::get_dni() const { return dni; }
@@ -100,107 +93,101 @@ void Cliente::set_fecha_nacimiento(Fecha _fecha) { fecha_nacimiento = _fecha; }
 void Cliente::set_contrasenia(std::string _contrasenia) { contrasenia = _contrasenia; }
 
 void Cliente::agregar_cuenta(Cuenta* cuenta) {
-    try {
-        if (cuenta->get_id_cuenta().empty()) throw std::invalid_argument("ID de cuenta inválido");
-        cuentas->insertar_cola(cuenta);
-    } catch (const std::exception& e) {
-        std::cerr << "Error en agregar_cuenta: " << e.what() << std::endl;
-    }
-}
-
-Cuenta* Cliente::buscar_cuenta(const std::string id_cuenta) {
-    try {
-        Cuenta* resultado = nullptr;
-        std::string id_buscado = id_cuenta;
-        // Elimina espacios y convierte a mayúsculas
-        id_buscado.erase(0, id_buscado.find_first_not_of(" \t\n\r\f\v"));
-        id_buscado.erase(id_buscado.find_last_not_of(" \t\n\r\f\v") + 1);
-        std::transform(id_buscado.begin(), id_buscado.end(), id_buscado.begin(), ::toupper);
-
-        cuentas->filtrar(
-            [&](Cuenta* c) {
-                std::string id_actual = c->get_id_cuenta();
-                id_actual.erase(0, id_actual.find_first_not_of(" \t\n\r\f\v"));
-                id_actual.erase(id_actual.find_last_not_of(" \t\n\r\f\v") + 1);
-                std::transform(id_actual.begin(), id_actual.end(), id_actual.begin(), ::toupper);
-                return id_actual == id_buscado;
-            },
-            [&](Cuenta* c) { resultado = c; }
-        );
-        if (!resultado) throw std::runtime_error("Cuenta no encontrada");
-        return resultado;
-    } catch (const std::exception& e) {
-        std::cerr << "Error en buscar_cuenta: " << e.what() << std::endl;
-        return nullptr;
-    }
-}
-
-std::string Cliente::to_string() const {
-    std::string result = "Cliente: DNI=" + dni + ", Nombre=" + nombres + ", Apellido=" + apellidos +
-                         ", Dirección=" + direccion + ", Teléfono=" + telefono + ", Email=" + email +
-                         ", Fecha Nacimiento=" + fecha_nacimiento.to_string();
-    return result;
+    if (cuentas) cuentas->insertar_cola(cuenta);
 }
 
 void Cliente::guardar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
-        // Escribir longitud de las cadenas seguido de las cadenas
-        size_t len;
-        len = dni.length();
+
+        size_t len = dni.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(dni.c_str(), sizeof(char), len + 1, archivo);
+
         len = nombres.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(nombres.c_str(), sizeof(char), len + 1, archivo);
+
         len = apellidos.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(apellidos.c_str(), sizeof(char), len + 1, archivo);
+
         len = direccion.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(direccion.c_str(), sizeof(char), len + 1, archivo);
+
         len = telefono.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(telefono.c_str(), sizeof(char), len + 1, archivo);
+
         len = email.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(email.c_str(), sizeof(char), len + 1, archivo);
+
         len = contrasenia.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(contrasenia.c_str(), sizeof(char), len + 1, archivo);
+
         fwrite(&fecha_nacimiento, sizeof(Fecha), 1, archivo);
-        // Guardar número de cuentas como int
+
         int num_cuentas = 0;
         cuentas->recorrer([&](Cuenta* c) { num_cuentas++; });
         fwrite(&num_cuentas, sizeof(int), 1, archivo);
-        cuentas->recorrer([&](Cuenta* c) {
-            char tipo = dynamic_cast<Ahorro*>(c) ? 'A' : 'C';
-            fwrite(&tipo, sizeof(char), 1, archivo);
-            c->guardar_binario(archivo);
+
+        cuentas->recorrer([&](Cuenta* cuenta) {
+            int accountType = (dynamic_cast<Ahorro*>(cuenta) != nullptr) ? 1 : 2; // 1 para Ahorro, 2 para Corriente
+            fwrite(&accountType, sizeof(int), 1, archivo);
+            std::string id_cuenta = cuenta->get_id_cuenta();
+            size_t id_len = id_cuenta.length();
+            fwrite(&id_len, sizeof(size_t), 1, archivo);
+            fwrite(id_cuenta.c_str(), sizeof(char), id_len + 1, archivo);
+            double saldo = cuenta->get_saldo();
+            fwrite(&saldo, sizeof(double), 1, archivo);
+            Fecha fecha_apertura = cuenta->get_fecha_apertura();
+            fwrite(&fecha_apertura, sizeof(Fecha), 1, archivo);
+            int branchId = cuenta->get_branchId();
+            fwrite(&branchId, sizeof(int), 1, archivo);
+            time_t tt = std::chrono::system_clock::to_time_t(cuenta->get_appointmentTime());
+            fwrite(&tt, sizeof(time_t), 1, archivo);
+
+            if (accountType == 1) {
+                Ahorro* ahorro = dynamic_cast<Ahorro*>(cuenta);
+                if (ahorro) {
+                    double tasa_interes = ahorro->get_tasa_interes();
+                    fwrite(&tasa_interes, sizeof(double), 1, archivo);
+                }
+            } else if (accountType == 2) {
+                Corriente* corriente = dynamic_cast<Corriente*>(cuenta);
+                if (corriente) {
+                    double limite_retiro_diario = corriente->get_limite_retiro_diario();
+                    fwrite(&limite_retiro_diario, sizeof(double), 1, archivo);
+                }
+            }
+
+            int num_movimientos = 0;
+            cuenta->get_movimientos()->recorrer([&](Movimiento) { num_movimientos++; });
+            fwrite(&num_movimientos, sizeof(int), 1, archivo);
+            cuenta->get_movimientos()->recorrer([&](Movimiento m) { m.guardar_binario(archivo); });
         });
     } catch (const std::exception& e) {
         std::cerr << "Error en guardar_binario: " << e.what() << std::endl;
     }
 }
 
-
 void Cliente::cargar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para lectura");
-        size_t len;
-        char* buffer;
 
-        // Leer DNI
-        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de DNI");
-        buffer = new char[len + 1];
+        size_t len;
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de dni");
+        char* buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
             delete[] buffer;
-            throw std::runtime_error("Error al leer DNI");
+            throw std::runtime_error("Error al leer dni");
         }
         dni = std::string(buffer);
         delete[] buffer;
 
-        // Leer nombres
         if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de nombres");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
@@ -210,7 +197,6 @@ void Cliente::cargar_binario(FILE* archivo) {
         nombres = std::string(buffer);
         delete[] buffer;
 
-        // Leer apellidos
         if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de apellidos");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
@@ -220,27 +206,24 @@ void Cliente::cargar_binario(FILE* archivo) {
         apellidos = std::string(buffer);
         delete[] buffer;
 
-        // Leer dirección
-        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de dirección");
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de direccion");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
             delete[] buffer;
-            throw std::runtime_error("Error al leer dirección");
+            throw std::runtime_error("Error al leer direccion");
         }
         direccion = std::string(buffer);
         delete[] buffer;
 
-        // Leer teléfono
-        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de teléfono");
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de telefono");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
             delete[] buffer;
-            throw std::runtime_error("Error al leer teléfono");
+            throw std::runtime_error("Error al leer telefono");
         }
         telefono = std::string(buffer);
         delete[] buffer;
 
-        // Leer email
         if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de email");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
@@ -250,30 +233,76 @@ void Cliente::cargar_binario(FILE* archivo) {
         email = std::string(buffer);
         delete[] buffer;
 
-        // Leer contraseña
-        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de contraseña");
+        if (fread(&len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de contrasenia");
         buffer = new char[len + 1];
         if (fread(buffer, sizeof(char), len + 1, archivo) != len + 1) {
             delete[] buffer;
-            throw std::runtime_error("Error al leer contraseña");
+            throw std::runtime_error("Error al leer contrasenia");
         }
         contrasenia = std::string(buffer);
         delete[] buffer;
 
-        // Leer fecha de nacimiento
-        if (fread(&fecha_nacimiento, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer fecha de nacimiento");
+        if (fread(&fecha_nacimiento, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer fecha_nacimiento");
 
-        // Leer número de cuentas como int
         int num_cuentas;
-        fread(&num_cuentas, sizeof(int), 1, archivo);
+        if (fread(&num_cuentas, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer número de cuentas");
+
+        if (cuentas) {
+            cuentas->recorrer([](Cuenta* c) { delete c; });
+            delete cuentas;
+        }
+        cuentas = new ListaDoble<Cuenta*>();
+
         for (int i = 0; i < num_cuentas; i++) {
-            char tipo;
-            fread(&tipo, sizeof(char), 1, archivo);
             Cuenta* cuenta = nullptr;
-            if (tipo == 'A') cuenta = new Ahorro();
-            else if (tipo == 'C') cuenta = new Corriente();
-            else throw std::runtime_error("Tipo de cuenta desconocido");
-            cuenta->cargar_binario(archivo);
+            int accountType;
+            if (fread(&accountType, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer tipo de cuenta");
+            std::string id_cuenta;
+            size_t id_len;
+            if (fread(&id_len, sizeof(size_t), 1, archivo) != 1) throw std::runtime_error("Error al leer longitud de id_cuenta");
+            char* id_buffer = new char[id_len + 1];
+            if (fread(id_buffer, sizeof(char), id_len + 1, archivo) != id_len + 1) {
+                delete[] id_buffer;
+                throw std::runtime_error("Error al leer id_cuenta");
+            }
+            id_cuenta = std::string(id_buffer);
+            delete[] id_buffer;
+
+            double saldo;
+            if (fread(&saldo, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer saldo");
+
+            Fecha fecha_apertura;
+            if (fread(&fecha_apertura, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer fecha_apertura");
+
+            int branchId;
+            if (fread(&branchId, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer branchId");
+
+            time_t tt;
+            if (fread(&tt, sizeof(time_t), 1, archivo) != 1) throw std::runtime_error("Error al leer appointmentTime");
+            auto appointmentTime = std::chrono::system_clock::from_time_t(tt);
+
+            if (accountType == 1) {
+                double tasa_interes;
+                if (fread(&tasa_interes, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer tasa_interes");
+                cuenta = new Ahorro(id_cuenta, saldo, fecha_apertura, tasa_interes);
+            } else if (accountType == 2) {
+                double limite_retiro_diario;
+                if (fread(&limite_retiro_diario, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer limite_retiro_diario");
+                cuenta = new Corriente(id_cuenta, saldo, fecha_apertura, limite_retiro_diario);
+            } else {
+                throw std::runtime_error("Tipo de cuenta desconocido");
+            }
+
+            cuenta->set_branchId(branchId);
+            cuenta->set_appointmentTime(appointmentTime);
+
+            int num_movimientos;
+            if (fread(&num_movimientos, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer número de movimientos");
+            for (int j = 0; j < num_movimientos; j++) {
+                Movimiento movimiento;
+                movimiento.cargar_binario(archivo);
+                cuenta->get_movimientos()->insertar_cola(movimiento);
+            }
             cuentas->insertar_cola(cuenta);
         }
     } catch (const std::exception& e) {
@@ -282,7 +311,16 @@ void Cliente::cargar_binario(FILE* archivo) {
     }
 }
 
-std::ostream& operator<<(std::ostream& os, const Cliente& cliente) {
-    os << cliente.to_string();
-    return os;
+Cuenta* Cliente::buscar_cuenta(const std::string id_cuenta) {
+    if (!cuentas) return nullptr;
+    Cuenta* resultado = nullptr;
+    cuentas->filtrar(
+        [&](Cuenta* c) { return c->get_id_cuenta() == id_cuenta; },
+        [&](Cuenta* c) { resultado = c; }
+    );
+    return resultado;
+}
+
+std::string Cliente::to_string() const {
+    return "DNI: " + dni + ", Nombre: " + nombres + ", Apellido: " + apellidos;
 }

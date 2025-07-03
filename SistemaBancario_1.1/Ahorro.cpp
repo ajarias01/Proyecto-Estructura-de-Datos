@@ -36,13 +36,15 @@ std::string Ahorro::to_string() {
 void Ahorro::guardar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
-        // NO guardar el tipo aquí
         size_t len = id_cuenta.length();
         fwrite(&len, sizeof(size_t), 1, archivo);
         fwrite(id_cuenta.c_str(), sizeof(char), len + 1, archivo);
         fwrite(&saldo, sizeof(double), 1, archivo);
         fwrite(&tasa_interes, sizeof(double), 1, archivo);
         fwrite(&fecha_apertura, sizeof(Fecha), 1, archivo);
+        fwrite(&branchId, sizeof(int), 1, archivo); // Guardar branchId
+        time_t tt = std::chrono::system_clock::to_time_t(appointmentTime); // Convertir a time_t
+        fwrite(&tt, sizeof(time_t), 1, archivo); // Guardar appointmentTime
         int num_movimientos = 0;
         movimientos->recorrer([&](Movimiento) { num_movimientos++; });
         fwrite(&num_movimientos, sizeof(int), 1, archivo);
@@ -51,7 +53,6 @@ void Ahorro::guardar_binario(FILE* archivo) {
         std::cerr << "Error en guardar_binario: " << e.what() << std::endl;
     }
 }
-
 
 void Ahorro::cargar_binario(FILE* archivo) {
     try {
@@ -68,6 +69,10 @@ void Ahorro::cargar_binario(FILE* archivo) {
         if (fread(&saldo, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer saldo");
         if (fread(&tasa_interes, sizeof(double), 1, archivo) != 1) throw std::runtime_error("Error al leer tasa_interes");
         if (fread(&fecha_apertura, sizeof(Fecha), 1, archivo) != 1) throw std::runtime_error("Error al leer fecha_apertura");
+        if (fread(&branchId, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer branchId");
+        time_t tt;
+        if (fread(&tt, sizeof(time_t), 1, archivo) != 1) throw std::runtime_error("Error al leer appointmentTime");
+        appointmentTime = std::chrono::system_clock::from_time_t(tt);
         int num_movimientos;
         if (fread(&num_movimientos, sizeof(int), 1, archivo) != 1) throw std::runtime_error("Error al leer número de movimientos");
         if (movimientos) {

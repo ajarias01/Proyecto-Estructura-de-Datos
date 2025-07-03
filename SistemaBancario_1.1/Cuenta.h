@@ -5,6 +5,7 @@
 #include "Fecha.h"
 #include "ListaDoble.h"
 #include <string>
+#include <chrono> // Para time_point
 
 class Cuenta {
 public:
@@ -26,11 +27,20 @@ public:
     void depositar(double monto, Fecha fecha);
     double consultar_saldo();
     void consultar_movimientos_rango(Fecha inicio, Fecha fin);
+
+    // Nuevos métodos para sucursales y citas
+    int get_branchId() const { return branchId; }
+    void set_branchId(int id) { branchId = id; }
+    std::chrono::system_clock::time_point get_appointmentTime() const { return appointmentTime; }
+    void set_appointmentTime(std::chrono::system_clock::time_point time) { appointmentTime = time; }
+
 protected:
     std::string id_cuenta;
     double saldo;
     Fecha fecha_apertura;
     ListaDoble<Movimiento>* movimientos;
+    int branchId; // 1 = Norte, 2 = Centro, 3 = Sur
+    std::chrono::system_clock::time_point appointmentTime; // Hora de la cita
 };
 
 #endif
