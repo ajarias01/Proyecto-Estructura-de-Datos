@@ -3,6 +3,11 @@
 
 #include <iostream>
 #include <conio.h>
+// Incluir winsock2.h antes que windows.h para evitar conflictos
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 #include <windows.h>
 #include "validaciones.h"
 #include "Banco.h"
@@ -34,7 +39,12 @@ void menu_cliente(Banco& banco);
 void menu_principal(Banco& banco);
 void mostrar_ayuda_tecnica();
 void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& sucursal);
+void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta);
 void menu_cuenta(Banco& banco);
+void menu_cuenta_aplicacion(Banco& banco);
+void menu_cita_presencial(Banco& banco);
+void mostrar_sucursales_cercanas();
+void agendar_cita_presencial();
 void realizar_deposito(Banco& banco, const std::string& dni);
 void realizar_retiro(Banco& banco, const std::string& dni);
 void consultar_movimientos(Banco& banco);

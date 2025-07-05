@@ -7,6 +7,7 @@
 #include "GestorClientes.h"
 #include "Marquesina.h"
 #include "ArbolBinario.h"
+#include "Ubicacion.h"
 #include <stdexcept>
 #include <conio.h>
 #include <random>
@@ -15,9 +16,14 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>   
-#include <thread> 
+#include <thread>
+#include <cmath>
+#include <filesystem>
 
 using namespace std;
+
+// Variable global del sistema de geolocalización
+SimpleGeolocationSystem geoSystem;
 
 void pausar_consola()
 {
@@ -770,6 +776,219 @@ void mostrar_ayuda_tecnica()
 // ... (mantén todas las funciones anteriores hasta menu_cuenta sin cambios)
 
 
+void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
+    string dni, nombre, apellido, direccion, telefono, email, depositar_inicial, saldo_inicial1, contrasenia;
+    Fecha fecha_nacimiento;
+    double saldo_inicial = 0;
+    visibilidad_cursor(true);
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    try {
+        int fila_actual = 4; // Ajustar para dejar espacio para la marquesina
+
+        do {
+            mover_cursor(1, fila_actual);
+            limpiar_linea("➤ Ingrese el DNI del cliente: ");
+            dni = ingresar_dni("");
+            if (dni == "__ESC__") return;
+        } while (!validarCedulaEcuatoriana(dni));
+        cout << endl;
+        fila_actual += 2;
+
+        Cliente* cliente_existe = banco.buscar_cliente(dni);
+        bool ya_tiene = false;
+        if (cliente_existe) {
+            cliente_existe->get_cuentas()->recorrer([&](Cuenta* cuenta) {
+                if ((tipo_cuenta == 1 && cuenta->get_tipo() == "Ahorros") ||
+                    (tipo_cuenta == 2 && cuenta->get_tipo() == "Corriente")) {
+                    ya_tiene = true;
+                }
+            });
+            if (ya_tiene) {
+                throw std::runtime_error("El cliente con DNI " + dni + " ya tiene una cuenta de este tipo.");
+            }
+        }
+
+        if (cliente_existe) {
+            nombre = cliente_existe->get_nombres();
+            apellido = cliente_existe->get_apellidos();
+            direccion = cliente_existe->get_direccion();
+            telefono = cliente_existe->get_telefono();
+            email = cliente_existe->get_email();
+            fecha_nacimiento = cliente_existe->get_fecha_nacimiento();
+            contrasenia = cliente_existe->get_contrasenia();
+        } else {
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el nombre del cliente: ");
+                nombre = ingresar_alfabetico("");
+                if (nombre == "__ESC__") return;
+            } while (nombre.empty() || nombre.length() < 3);
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el apellido del cliente: ");
+                apellido = ingresar_alfabetico("");
+                if (apellido == "__ESC__") return;
+            } while (apellido.empty() || apellido.length() < 3);
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese la dirección del cliente: ");
+                direccion = ingresar_direccion("");
+                if (direccion == "__ESC__") return;
+            } while (direccion.empty() || direccion.length() < 5);
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el teléfono del cliente: ");
+                telefono = ingresar_dni("");
+                if (telefono == "__ESC__") return;
+            } while (!validar_telefono(telefono) || telefono_existe(banco, telefono));
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese el email del cliente: ");
+                email = ingresar_email("");
+                if (email == "__ESC__") return;
+            } while (!validar_email(email) || email_existe(banco, email));
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese la fecha de nacimiento (DD/MM/YYYY): ");
+                fecha_nacimiento = validarFecha("");
+            } while (fecha_nacimiento.empty());
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ Ingrese la contraseña (mínimo 20 caracteres, al menos una mayúscula, minúscula, dígito y carácter especial): ");
+                contrasenia = ingresar_contrasenia("");
+                if (contrasenia == "__ESC__") return;
+            } while (!validar_contrasenia(contrasenia));
+            cout << endl;
+            fila_actual += 2;
+
+            do {
+                mover_cursor(1, fila_actual);
+                limpiar_linea("➤ ¿Desea depositar un monto inicial? (S/N): ");
+                depositar_inicial = ingresar_alfabetico("");
+                if (depositar_inicial == "__ESC__") return;
+                transform(depositar_inicial.begin(), depositar_inicial.end(), depositar_inicial.begin(), ::toupper);
+            } while (depositar_inicial != "S" && depositar_inicial != "N");
+            cout << endl;
+            fila_actual += 2;
+
+            if (depositar_inicial == "S") {
+                do {
+                    mover_cursor(1, fila_actual);
+                    limpiar_linea("➤ Ingrese el saldo inicial: ");
+                    saldo_inicial1 = ingresar_decimales("");
+                    if (saldo_inicial1 == "__ESC__") return;
+                } while (!validar_monto(saldo_inicial1));
+                saldo_inicial = stod(saldo_inicial1);
+                cout << endl;
+                fila_actual += 2;
+            }
+        }
+
+        mover_cursor(1, fila_actual);
+        cout << "¿Está seguro que desea crear la cuenta con estos datos?" << endl;
+        fila_actual += 1;
+
+        bool resultado = seleccionar_Si_No();
+        if (!resultado) {
+            cout << "Operación cancelada. No se creó la cuenta." << endl;
+            cout << "Presione Enter para regresar al menú principal...";
+            cin.get();
+            return;
+        }
+
+        std::string id_cuenta_base = "";
+        id_cuenta_base += toupper(nombre[0]);
+        id_cuenta_base += toupper(apellido[0]);
+        id_cuenta_base += (tipo_cuenta == 1) ? "A" : "C";
+        std::string ultimos_dni = dni.substr(dni.length() - 6, 6);
+        std::transform(ultimos_dni.begin(), ultimos_dni.end(), ultimos_dni.begin(), ::toupper);
+        id_cuenta_base += ultimos_dni;
+        id_cuenta_base += generar_cadena_aleatoria(3);
+        std::string id_cuenta = id_cuenta_base;
+
+        Fecha fecha_apertura;
+        Cuenta* cuenta = nullptr;
+        if (tipo_cuenta == 1) {
+            mover_cursor(1, fila_actual + 4);
+            cout << "La tasa de interés para la cuenta de ahorros es 5%" << endl;
+            double tasa_interes = 5.0;
+            cuenta = new Ahorro(id_cuenta, saldo_inicial, fecha_apertura, tasa_interes);
+            fila_actual += 5;
+        } else if (tipo_cuenta == 2) {
+            int limite_retiro_diario;
+            do {
+                mover_cursor(1, fila_actual + 4);
+                limpiar_linea("!!!Ingrese el límite de retiro diario: ");
+                limite_retiro_diario = ingresar_enteros("");
+            } while (limite_retiro_diario <= 0);
+            cout << endl;
+            cuenta = new Corriente(id_cuenta, saldo_inicial, fecha_apertura, limite_retiro_diario);
+            fila_actual += 5;
+        }
+
+        if (!cuenta) {
+            throw std::runtime_error("Error al crear la cuenta");
+        }
+
+        if (cliente_existe) {
+            cliente_existe->agregar_cuenta(cuenta);
+            banco.guardar_datos_binario("datos.bin");
+            mover_cursor(1, fila_actual);
+            cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
+            mover_cursor(1, fila_actual + 1);
+            cout << "ID de cuenta: " << id_cuenta << endl;
+            mover_cursor(1, fila_actual + 2);
+            cout << "Tipo: " << (tipo_cuenta == 1 ? "Cuenta de Ahorros" : "Cuenta Corriente") << endl;
+            mover_cursor(1, fila_actual + 3);
+            cout << "¡Cuenta creada vía aplicación móvil!" << endl;
+        } else {
+            Cliente* cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
+            cliente->agregar_cuenta(cuenta);
+            banco.agregar_cliente(cliente);
+            banco.guardar_datos_binario("datos.bin");
+            mover_cursor(1, fila_actual);
+            cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
+            mover_cursor(1, fila_actual + 1);
+            cout << "ID de cuenta: " << id_cuenta << endl;
+            mover_cursor(1, fila_actual + 2);
+            cout << "Tipo: " << (tipo_cuenta == 1 ? "Cuenta de Ahorros" : "Cuenta Corriente") << endl;
+            mover_cursor(1, fila_actual + 3);
+            cout << "¡Cuenta creada vía aplicación móvil!" << endl;
+        }
+        
+        pausar_consola();
+    } catch (const std::exception& e) {
+        int fila_actual = 3;
+        mover_cursor(1, fila_actual);
+        cout << "=== ERROR AL CREAR CUENTA ===" << endl;
+        mover_cursor(1, fila_actual + 1);
+        cout << "Error: " << e.what() << endl;
+        mover_cursor(1, fila_actual + 2);
+        cout << "Presione Enter para regresar al menú principal...";
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.get();
+    }
+}
+
 void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& sucursal) {
     string dni, nombre, apellido, direccion, telefono, email, depositar_inicial, saldo_inicial1, contrasenia;
     Fecha fecha_nacimiento;
@@ -1406,43 +1625,28 @@ void consultar_cuentas(Banco& banco)
 }
 
 void menu_cuenta(Banco& banco) {
-    // Selección de sucursal al inicio
-    const int NUM_SUCURSALES = 3;
-    const char* SUCURSALES[NUM_SUCURSALES] = {
-        "Sucursal Norte - Av. 10 de Agosto y Mariana de Jesús",
-        "Sucursal Centro - Av. 12 de Octubre y Veintimilla", 
-        "Sucursal Sur - Av. Morán Valverde y Rumichaca"
+    // Primero seleccionar el método de apertura
+    const int NUM_METODOS = 3;
+    const char* METODOS[NUM_METODOS] = {
+        "Crear cuenta vía aplicación",
+        "Agendar cita presencial",
+        "Menú Principal"
     };
 
     system("cls");
     ajustar_cursor_para_marquesina();
-    int branchChoice = seleccionar_opcion("===== SELECCIÓN DE SUCURSAL =====", SUCURSALES, NUM_SUCURSALES, 4);
-    int branchId = branchChoice;
-    string sucursal_seleccionada = SUCURSALES[branchChoice - 1]; // Guardar el nombre de la sucursal
-
-    const int NUM_OPCIONES = 3;
-    const char* OPCIONES[NUM_OPCIONES] = {
-        "Cuenta de Ahorros",
-        "Cuenta Corriente",
-        "Menú Principal"
-    };
-
-    int opcion;
-    do {
-        system("cls");
-        ajustar_cursor_para_marquesina();
-        opcion = seleccionar_opcion("===== TIPO DE CUENTA =====", OPCIONES, NUM_OPCIONES, 4);
-        switch (opcion) {
-            case 1: 
-                abrir_cuenta(banco, 1, branchId, sucursal_seleccionada); 
-                break;
-            case 2: 
-                abrir_cuenta(banco, 2, branchId, sucursal_seleccionada); 
-                break;
-            case 3: 
-                return;
-        }
-    } while (opcion != NUM_OPCIONES);
+    int metodo = seleccionar_opcion("===== MÉTODO DE APERTURA =====", METODOS, NUM_METODOS, 4);
+    
+    switch (metodo) {
+        case 1:
+            menu_cuenta_aplicacion(banco);
+            break;
+        case 2:
+            menu_cita_presencial(banco);
+            break;
+        case 3:
+            return;
+    }
 }
 
 // Variable global para la marquesina
@@ -1460,4 +1664,139 @@ void ajustar_cursor_para_marquesina() {
     // Mover el cursor a la línea 2 para dejar espacio para la marquesina
     // y asegurar que no interfiera con el contenido del menú
     mover_cursor(0, 2);
+}
+
+// Función para el menú de apertura vía aplicación (método tradicional)
+void menu_cuenta_aplicacion(Banco& banco) {
+    const int NUM_OPCIONES = 3;
+    const char* OPCIONES[NUM_OPCIONES] = {
+        "Cuenta de Ahorros",
+        "Cuenta Corriente",
+        "Regresar"
+    };
+
+    int opcion;
+    do {
+        system("cls");
+        ajustar_cursor_para_marquesina();
+        opcion = seleccionar_opcion("===== TIPO DE CUENTA - VÍA APLICACIÓN =====", OPCIONES, NUM_OPCIONES, 4);
+        switch (opcion) {
+            case 1: 
+                abrir_cuenta_sin_sucursal(banco, 1); 
+                break;
+            case 2: 
+                abrir_cuenta_sin_sucursal(banco, 2); 
+                break;
+            case 3: 
+                return;
+        }
+    } while (opcion != NUM_OPCIONES);
+}
+
+// Función para el menú de cita presencial con API real
+void menu_cita_presencial(Banco& banco) {
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    visibilidad_cursor(true);
+    
+    cout << "\n=== SISTEMA DE CITAS PRESENCIALES ===" << endl;
+    cout << "Bienvenido al sistema de agendamiento de citas" << endl;
+    cout << "Servicio: Apertura de cuenta presencial\n" << endl;
+    
+    // Usar el sistema de geolocalización real
+    mostrar_sucursales_cercanas();
+    
+    // Preguntar si desea agendar cita
+    string respuesta;
+    do {
+        limpiar_linea("¿Desea agendar una cita presencial? (S/N): ");
+        respuesta = ingresar_alfabetico("");
+        if (respuesta == "__ESC__") return;
+        transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
+    } while (respuesta != "S" && respuesta != "N");
+    
+    if (respuesta == "S") {
+        agendar_cita_presencial();
+    } else {
+        cout << "\nGracias por usar nuestro servicio." << endl;
+        pausar_consola();
+    }
+}
+
+// Función para mostrar las sucursales más cercanas usando selección manual
+void mostrar_sucursales_cercanas() {
+    // Usar el sistema de geolocalización con menús manuales
+    geoSystem.runGeolocationSystem();
+}
+
+// Función para agendar la cita presencial usando selección manual
+void agendar_cita_presencial() {
+    string sucursal_num, horario_num;
+    
+    cout << "\n=== AGENDAR CITA PRESENCIAL ===" << endl;
+    
+    // Usar el sistema completo de selección manual y mostrar sucursales
+    auto result = geoSystem.runGeolocationSystem();
+    Branch selected_branch = result.first;
+    double distance = result.second;
+    
+    // Mostrar horarios disponibles para la sucursal más cercana
+    auto horarios = geoSystem.generateTimeSlots(selected_branch.queue_position);
+    
+    cout << "\nSucursal más cercana: " << selected_branch.name << endl;
+    cout << "Distancia: " << fixed << setprecision(2) << distance << " km" << endl;
+    
+    if (selected_branch.queue_position == 0) {
+        cout << "Estado: ¡Excelente! No hay cola - Atención inmediata" << endl;
+        cout << "Tiempo de espera estimado: 0 minutos" << endl;
+    } else {
+        cout << "Personas en cola: " << selected_branch.queue_position << endl;
+        cout << "Tiempo de espera estimado: " << (selected_branch.queue_position * 40) << " minutos" << endl;
+    }
+    cout << "\nHorarios disponibles:" << endl;
+    for (size_t i = 0; i < horarios.size(); i++) {
+        cout << (i + 1) << ". " << horarios[i] << endl;
+    }
+    
+    // Seleccionar horario
+    int horario_elegido;
+    do {
+        limpiar_linea("Seleccione el horario (1-" + to_string(horarios.size()) + "): ");
+        horario_num = ingresar_dni("");
+        if (horario_num == "__ESC__") return;
+        try {
+            horario_elegido = stoi(horario_num);
+        } catch (...) {
+            horario_elegido = 0;
+        }
+    } while (horario_elegido < 1 || horario_elegido > static_cast<int>(horarios.size()));
+    
+    // Obtener fecha actual
+    string fecha_actual = geoSystem.getCurrentDate();
+    
+    // Confirmación final
+    cout << "\n=== CONFIRMACIÓN DE CITA ===" << endl;
+    cout << "Sucursal: " << selected_branch.name << endl;
+    cout << "Dirección: " << selected_branch.address << endl;
+    cout << "Fecha: " << fecha_actual << endl;
+    cout << "Hora: " << horarios[horario_elegido - 1] << endl;
+    cout << "Servicio: Apertura de cuenta presencial" << endl;
+    cout << "Distancia desde su ubicación: " << fixed << setprecision(2) << distance << " km" << endl;
+    
+    // Confirmar la cita
+    bool confirmar = seleccionar_Si_No();
+    if (confirmar) {
+        // Actualizar la cola de la sucursal (simular que se agendó una cita)
+        geoSystem.updateBranchQueue(selected_branch.id, selected_branch.queue_position + 1);
+        
+        cout << "\n=== CITA CONFIRMADA ===" << endl;
+        cout << "¡Su cita ha sido agendada exitosamente!" << endl;
+        cout << "Recuerde llegar 10 minutos antes." << endl;
+        cout << "Traiga consigo: cédula, comprobante de ingresos y $25 mínimo para depósito inicial." << endl;
+        cout << "Número de confirmación: " << selected_branch.id << horario_elegido << time(nullptr) % 10000 << endl;
+    } else {
+        cout << "\nCita cancelada." << endl;
+    }
+    
+    pausar_consola();
 }
