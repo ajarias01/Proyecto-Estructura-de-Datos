@@ -8,7 +8,8 @@
 #include <vector>
 
 template<typename T>
-struct NodoArbol {
+class NodoArbol {
+public:
     Cliente* cliente;
     T valor_comparacion;
     NodoArbol* izquierda;

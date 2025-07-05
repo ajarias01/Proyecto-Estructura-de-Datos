@@ -33,8 +33,9 @@ int rprofile[MAX_HEIGHT];
 int print_next;
 int gap = 3;
 
-// Estructura para nodos ASCII
-struct asciinode_struct {
+// Clase para nodos ASCII
+class asciinode_struct {
+public:
     asciinode_struct* left, *right;
     int edge_length;
     int height;
@@ -43,10 +44,11 @@ struct asciinode_struct {
     char label[20]; // Aumentado para nombres más largos
 };
 
-typedef struct asciinode_struct asciinode;
+typedef class asciinode_struct asciinode;
 
-// Estructura del árbol AVL
-struct Tree {
+// Clase del árbol AVL
+class Tree {
+public:
     Tree* left, *right;
     string element; // Cambiado a string para manejar texto
     Cliente* cliente;
