@@ -6,6 +6,7 @@
 #include "RespaldoDatos.h"
 #include "GestorClientes.h"
 #include "Marquesina.h"
+#include "hash.h"
 #include "ArbolBinario.h"
 #include "Ubicacion.h"
 #include <stdexcept>
@@ -16,9 +17,16 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>   
+<<<<<<< HEAD
 #include <thread>
 #include <cmath>
 #include <filesystem>
+=======
+#include <thread> 
+#include <openssl/md5.h>
+#include <fstream>
+#include <ctime>
+>>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
 
 using namespace std;
 
@@ -53,15 +61,16 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
     int opcionSeleccionada = 1; 
     int tecla;
 
-    // Ajustar la fila de inicio para dejar espacio para la marquesina
-    int fila_ajustada = std::max(fila_inicio, 3); // Asegurar que nunca sea menor que 3
+    int fila_ajustada = std::max(fila_inicio, 3);
 
+
+    mover_cursor(1, fila_ajustada);
     // Dibujar el título, alineado a la izquierda, en la fila especificada
     mover_cursor(2, fila_ajustada);
     cout << titulo;
 
-    // Dibujar las opciones iniciales, empezando justo debajo del título
     for (int e = 0; e < n; e++) {
+        mover_cursor(10, fila_ajustada + 2 + e);
         mover_cursor(2, fila_ajustada + 2 + e); // +2 para dejar un espacio entre título y opciones
         // Limpiar la línea completa antes de escribir
         cout << string(80, ' ');
@@ -77,6 +86,8 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
         tecla = getch();
         switch (tecla) {
             case TECLA_ARRIBA:
+                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
                 // Limpiar y actualizar la opción anterior
                 mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << string(80, ' ');
@@ -94,6 +105,9 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
                 break;
 
             case TECLA_ABAJO:
+                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
+
                 // Limpiar y actualizar la opción anterior
                 mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << string(80, ' ');
@@ -186,14 +200,13 @@ int desplegar_menu(const char** opciones, int nopciones)
 
         for (int i = 0; i < nopciones; i++)
         {
-            color_act = (i * 3) + 3 == cursor_y ? 1 : 0; // Ajustar para empezar desde línea 3
-            mover_cursor(cursor_x, (i * 3) + 3); // Ajustar posición Y para dejar espacio a la marquesina
+            color_act = (i * 3) + 3 == cursor_y ? 1 : 0;
+            mover_cursor(cursor_x, (i * 3) + 3);
             SetConsoleTextAttribute(manejo_consola, colores[color_act]);
             imprimir_boton(opciones[i]);
         }
-        // Restaurar colores por defecto y asegurar que el cursor esté en posición correcta
-        SetConsoleTextAttribute(manejo_consola, 15); // Color blanco por defecto
-        std::cout.flush(); // Forzar el vaciado del buffer
+        SetConsoleTextAttribute(manejo_consola, 15);
+        std::cout.flush();
     };
 
     imprimir_opciones();
@@ -203,7 +216,7 @@ int desplegar_menu(const char** opciones, int nopciones)
         else if (tecla == 80 && opcion < nopciones) cursor_y += 3;
         imprimir_opciones();
         mover_cursor(cursor_x, cursor_y);
-        opcion = ((cursor_y - 3) / 3) + 1; // Ajustar cálculo para empezar desde línea 3
+        opcion = ((cursor_y - 3) / 3) + 1;
     }
     
     return opcion;
@@ -224,7 +237,6 @@ void recuperar_backup_por_fecha(Banco& banco)
     try
     {
         Fecha fecha;
-        // Validar fecha
         do {
             std::cout << std::endl;
             limpiar_linea("➤ Ingrese la fecha del backup (DD/MM/YYYY): ");
@@ -233,7 +245,6 @@ void recuperar_backup_por_fecha(Banco& banco)
         } while (!fecha.validar());
         std::cout << std::endl;
 
-        // Validar hora
         do {
             limpiar_linea("➤ Ingrese la hora del backup (HH:MM:SS): ");
             fecha_hora = validarHora("");
@@ -244,15 +255,12 @@ void recuperar_backup_por_fecha(Banco& banco)
         } while (!validar_hora_minuto_segundo(horas, minutos, segundos));
         cout << endl;
 
-        // Formato de nombre: backup_YYYYMMDD_HHMMSS.bin
         char buffer[100];
-        // Usar guiones en lugar de espacios para compatibilidad
         snprintf(buffer, sizeof(buffer), "backup_clientes_%04d%02d%02d_%02d%02d%02d.bin",
                 fecha.get_anuario(), fecha.get_mes(), fecha.get_dia(),
                 horas, minutos, segundos);
         std::string nombre_archivo = buffer;
 
-        // Validar si el archivo existe
         std::ifstream test_file(nombre_archivo, std::ios::binary);
         if (!test_file.good()) {
             std::cout << "\n=== ERROR: El backup no existe para esa fecha y hora ===" << std::endl;
@@ -270,7 +278,6 @@ void recuperar_backup_por_fecha(Banco& banco)
             return;
         }
 
-        // Actualizar el banco con los nuevos clientes
         if (banco.getClientes()) {
             delete banco.getClientes();
         }
@@ -300,6 +307,40 @@ void cargar_base_datos(Banco& banco) {
         cout << "No hay clientes registrados en la base de datos.\n";
         pausar_consola();
         return;
+    }
+
+    const char* campos[] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
+    int campo = seleccionar_opcion("Ordenar/buscar por:", campos, 5, 2);
+
+    const char* ordenes[] = {"Ascendente", "Descendente"};
+    int orden = seleccionar_opcion("Orden:", ordenes, 2, 10);
+
+    GestorClientes gestor;
+    auto& lista = *clientes;
+    int n = lista.getTam();
+
+    switch (campo) {
+        case 1:
+            gestor.radixSortCampoNumerico(lista, n, [](Cliente* c){ return std::stoi(c->get_dni()); });
+            break;
+        case 2:
+            gestor.radixSortStringCampo(lista, n, [](Cliente* c){ return c->get_nombres(); });
+            break;
+        case 3:
+            gestor.radixSortStringCampo(lista, n, [](Cliente* c){ return c->get_apellidos(); });
+            break;
+        case 4:
+            gestor.radixSortCampoNumerico(lista, n, [](Cliente* c){ return std::stoi(c->get_telefono()); });
+            break;
+        case 5:
+            gestor.radixSortStringCampo(lista, n, [](Cliente* c){ return c->get_email(); });
+            break;
+    }
+    if (orden == 2) {
+        std::vector<Cliente*> temp;
+        for (int i = 0; i < n; ++i) temp.push_back(lista.get_contador(i));
+        std::reverse(temp.begin(), temp.end());
+        for (int i = 0; i < n; ++i) lista.set_contador(i, temp[i]);
     }
 
     // Menú de selección de campo
@@ -409,6 +450,9 @@ void cargar_base_datos(Banco& banco) {
     std::cout << "\nTotal de clientes: " << n << std::endl;
     std::cout << "===========================================" << std::endl;
 
+    string respuesta,valor_buscar;
+    do {
+        limpiar_linea("➤ ¿Desea depositar un monto inicial? (S/N): ");
     // --- BÚSQUEDA DE CLIENTE POR CÉDULA ---
     string respuesta, cedula_buscar;
     do {
@@ -417,6 +461,55 @@ void cargar_base_datos(Banco& banco) {
         if (respuesta == "__ESC__") return;
         transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
     } while (respuesta != "S" && respuesta != "N");
+    cout << endl;
+    if (respuesta == "S" || respuesta == "s") {
+        do {
+            limpiar_linea("➤ Ingrese el valor a buscar: ");
+            if (campo == 1 || campo == 4) {
+                valor_buscar = ingresar_dni("");
+            } else if (campo == 2 || campo == 3) {
+                valor_buscar = ingresar_alfabetico("");
+            } else {
+                valor_buscar = ingresar_alfabetico("");
+            }
+            if (valor_buscar == "__ESC__") return;
+        } while (!validar_valor_busqueda(campo, valor_buscar));
+        
+        int pos = -1;
+        if (campo == 1 || campo == 4) {
+            int valor = std::stoi(valor_buscar);
+            int left = 0, right = n - 1;
+            while (left <= right) {
+                int mid = left + (right - left) / 2;
+                int cmp = (campo == 1) ? std::stoi(lista.get_contador(mid)->get_dni())
+                                       : std::stoi(lista.get_contador(mid)->get_telefono());
+                if (cmp == valor) { pos = mid; break; }
+                if (cmp < valor) left = left + ((orden == 1) ? 1 : 0), right = (orden == 1) ? right : mid - 1;
+                else right = right - ((orden == 1) ? 1 : 0), left = (orden == 1) ? mid + 1 : left;
+                if (orden == 1) {
+                    if (cmp < valor) left = mid + 1;
+                    else right = mid - 1;
+                } else {
+                    if (cmp > valor) left = mid + 1;
+                    else right = mid - 1;
+                }
+            }
+        } else {
+            int left = 0, right = n - 1;
+            while (left <= right) {
+                int mid = left + (right - left) / 2;
+                std::string cmp = (campo == 2) ? lista.get_contador(mid)->get_nombres()
+                                   : (campo == 3) ? lista.get_contador(mid)->get_apellidos()
+                                   : lista.get_contador(mid)->get_email();
+                int res = cmp.compare(valor_buscar);
+                if (res == 0) { pos = mid; break; }
+                if (orden == 1) {
+                    if (res < 0) left = mid + 1;
+                    else right = mid - 1;
+                } else {
+                    if (res > 0) left = mid + 1;
+                    else right = mid - 1;
+                }
     
     cout << endl;
     if (respuesta == "S") {
@@ -489,8 +582,6 @@ void cifrar_archivos_txt(Banco& banco) {
     std::cout << "===    CIFRAR ARCHIVO DE RESPALDO    ===" << std::endl;
     std::cout << "===========================================" << std::endl;
 
-
-    // 1. Buscar todos los backups disponibles
     std::vector<std::string> backups;
     for (const auto& entry : std::filesystem::directory_iterator(".")) {
         std::string nombre = entry.path().filename().string();
@@ -505,7 +596,6 @@ void cifrar_archivos_txt(Banco& banco) {
         return;
     }
 
-    // 2. Mostrar lista para seleccionar
     std::cout << "\n=== SELECCIONE EL ARCHIVO DE RESPALDO A CIFRAR ===\n";
     for (size_t i = 0; i < backups.size(); ++i) {
         std::cout << (i + 1) << ". " << backups[i] << std::endl;
@@ -535,7 +625,6 @@ void cifrar_archivos_txt(Banco& banco) {
     respaldo.cifrarArchivoABaseTxt(nombre_archivo, numCesar);
     std::cout << "-------------------------------------------" << std::endl;
     std::cout << "=== ¡CIFRADO COMPLETADO CON ÉXITO! ===" << std::endl;
-    // Mostrar nombre del archivo cifrado
     size_t pos1 = nombre_archivo.find("backup_clientes_");
     size_t pos2 = nombre_archivo.find(".bin");
     std::string timestamp = (pos1 != std::string::npos && pos2 != std::string::npos)
@@ -558,6 +647,7 @@ void menu_administrador(Banco& banco)
         "Recuperar backup por fecha y hora",
         "Cifrar archivos",
         "Descifrar archivos",
+        "Verificar integridad de datos (Hash)",
         "Salir"
     };
 
@@ -615,6 +705,7 @@ void menu_administrador(Banco& banco)
                     cifrar_archivos_txt(banco);
                     break;
                 case 7:
+                    verificar_hash(banco);
                     descifrar_archivos_txt(banco);
                     break;
                 case 8:
@@ -648,7 +739,6 @@ void menu_cliente(Banco& banco)
     try
     {
 
-        // Validación de DNI
         do{
             limpiar_linea("➤ Ingrese su DNI: ");
             dni = ingresar_dni("");
@@ -656,7 +746,6 @@ void menu_cliente(Banco& banco)
         } while (!validarCedulaEcuatoriana(dni));
         cout << endl;
 
-        // Validación de contraseña
         do
         {
             limpiar_linea("➤ Ingrese su contraseña: ");
@@ -665,7 +754,6 @@ void menu_cliente(Banco& banco)
         } while (!validar_contrasenia(contrasenia));
         cout << endl;
 
-        // Verificar cliente y contraseña
         Cliente* cliente = banco.buscar_cliente(dni);
         if (!cliente)
         {
@@ -676,7 +764,6 @@ void menu_cliente(Banco& banco)
             throw std::runtime_error("Contraseña incorrecta");
         }
 
-        // Mostrar menú cliente si la autenticación es exitosa
         int opcion;
         do
         {
@@ -708,7 +795,6 @@ void menu_cliente(Banco& banco)
 
 void menu_principal(Banco& banco)
 {
-    // Inicializar la marquesina al comenzar el programa
     inicializar_marquesina();
     
     const int NUM_OPCIONES = 5;
@@ -773,6 +859,7 @@ void mostrar_ayuda_tecnica()
     pausar_consola();
 }
 
+<<<<<<< HEAD
 // ... (mantén todas las funciones anteriores hasta menu_cuenta sin cambios)
 
 
@@ -989,6 +1076,8 @@ void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
     }
 }
 
+=======
+>>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
 void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& sucursal) {
     string dni, nombre, apellido, direccion, telefono, email, depositar_inicial, saldo_inicial1, contrasenia;
     Fecha fecha_nacimiento;
@@ -997,7 +1086,7 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
     system("cls");
     ajustar_cursor_para_marquesina();
     try {
-        int fila_actual = 4; // Ajustar para dejar espacio para la marquesina
+        int fila_actual = 4;
 
         do {
             mover_cursor(1, fila_actual);
@@ -1209,15 +1298,6 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
     }
 }
 
-// Función auxiliar isWorkingHour (puedes moverla a un archivo separado)
-//bool isWorkingHour(const std::chrono::system_clock::time_point& tp) {
-//    time_t tt = std::chrono::system_clock::to_time_t(tp);
-//    tm local_tm = *localtime(&tt);
-//    int hour = local_tm.tm_hour;
-//    int wday = local_tm.tm_wday; // 0 = domingo, 1 = lunes, etc.
-//    return (wday >= 1 && wday <= 5 && hour >= 9 && hour < 17);
-//}
-
 void realizar_deposito(Banco& banco, const std::string& dni)
 {
     string salario, id_cuenta;
@@ -1227,7 +1307,6 @@ void realizar_deposito(Banco& banco, const std::string& dni)
     try
     {
         int fila_actual = 2;
-        // Encabezado bonito
         mover_cursor(1, fila_actual);
         cout << "==============================================" << endl;
         mover_cursor(1, ++fila_actual);
@@ -1236,16 +1315,13 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         cout << "==============================================" << endl;
         fila_actual += 2;
 
-        // Obtener cliente autenticado
         Cliente* cliente = banco.buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente no encontrado");
 
-        // Mostrar datos del cliente
         mover_cursor(1, fila_actual++);
         cout << "Cliente: " << cliente->get_nombres() << " " << cliente->get_apellidos() << " | DNI: " << cliente->get_dni() << endl;
         fila_actual++;
 
-        // Validación de ID de cuenta
         do {
             mover_cursor(1, fila_actual);
             limpiar_linea("➤ Ingrese el ID de la cuenta: ");
@@ -1256,12 +1332,10 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         fila_actual += 2;
         Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
 
-        // Mostrar saldo actual
         mover_cursor(1, fila_actual++);
         cout << "Saldo actual: $" << cuenta->get_saldo() << endl;
         fila_actual++;
 
-        // Validación de monto
         do
         {
             mover_cursor(1, fila_actual);
@@ -1273,11 +1347,13 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         cout << endl;
         fila_actual += 2;
 
-        // Confirmación
         mover_cursor(1, fila_actual);
         cout << "¿Está seguro que desea realizar el depósito?" << endl;
-        fila_actual += 1; // Avanzar una fila para el título del menú
+        fila_actual += 1;
 
+        bool resultado = seleccionar_Si_No(fila_actual);
+        if (!resultado) {
+            mover_cursor(1, fila_actual + 4);
         // Confirmación de depósito
         bool resultado = seleccionar_Si_No();
         if (!resultado) {
@@ -1334,7 +1410,6 @@ void realizar_retiro(Banco& banco, const std::string& dni)
     try
     {
         int fila_actual = 2;
-        // Encabezado bonito
         mover_cursor(1, fila_actual);
         cout << "==============================================" << endl;
         mover_cursor(1, ++fila_actual);
@@ -1343,16 +1418,13 @@ void realizar_retiro(Banco& banco, const std::string& dni)
         cout << "==============================================" << endl;
         fila_actual += 2;
 
-        // Obtener cliente autenticado
         Cliente* cliente = banco.buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente no encontrado");
 
-        // Mostrar datos del cliente
         mover_cursor(1, fila_actual++);
         cout << "Cliente: " << cliente->get_nombres() << " " << cliente->get_apellidos() << " | DNI: " << cliente->get_dni() << endl;
         fila_actual++;
 
-        // Validación de ID de cuenta
         do {
             mover_cursor(1, fila_actual);
             limpiar_linea("➤ Ingrese el ID de la cuenta: ");
@@ -1363,12 +1435,10 @@ void realizar_retiro(Banco& banco, const std::string& dni)
         fila_actual += 2;
         Cuenta* cuenta = cliente->buscar_cuenta(id_cuenta);
 
-        // Mostrar saldo actual
         mover_cursor(1, fila_actual++);
         cout << "Saldo actual: $" << cuenta->get_saldo() << endl;
         fila_actual++;
 
-        // Validación de monto
         do
         {
             mover_cursor(1, fila_actual);
@@ -1380,11 +1450,13 @@ void realizar_retiro(Banco& banco, const std::string& dni)
         cout << endl;
         fila_actual += 2;
 
-        // Confirmación
         mover_cursor(1, fila_actual);
         cout << "¿Está seguro que desea realizar el retiro?" << endl;
-        fila_actual += 1; // Avanzar una fila para el título del menú
+        fila_actual += 1;
 
+        bool resultado = seleccionar_Si_No(fila_actual);
+        if (!resultado) {
+            mover_cursor(1, fila_actual + 4);
         // Confirmación de retiro
         bool resultado = seleccionar_Si_No();
         if (!resultado) {
@@ -1458,7 +1530,6 @@ void consultar_movimientos(Banco& banco)
         std::string dni;
         Fecha fecha_inicio, fecha_fin;
 
-        // Encabezado bonito
         mover_cursor(1, fila_actual);
         cout << "==============================================" << endl;
         mover_cursor(1, ++fila_actual);
@@ -1467,7 +1538,6 @@ void consultar_movimientos(Banco& banco)
         cout << "==============================================" << endl;
         fila_actual += 2;
 
-        // Validación de DNI (obligatorio)
         do
         {
             mover_cursor(1, fila_actual);
@@ -1478,16 +1548,13 @@ void consultar_movimientos(Banco& banco)
         cout << endl;
         fila_actual += 2;
 
-        // Verificar si el cliente existe
         Cliente* cliente = banco.buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente con DNI " + dni + " no encontrado");
 
-        // Mostrar datos del cliente
         mover_cursor(1, fila_actual++);
         cout << "Cliente: " << cliente->get_nombres() << " " << cliente->get_apellidos() << " | DNI: " << cliente->get_dni() << endl;
         fila_actual++;
 
-        // Validación de fecha de inicio
         do
         {
             mover_cursor(1, fila_actual);
@@ -1497,7 +1564,6 @@ void consultar_movimientos(Banco& banco)
         cout << endl;
         fila_actual += 2;
 
-        // Validación de fecha de fin
         do
         {
             mover_cursor(1, fila_actual);
@@ -1549,7 +1615,6 @@ void consultar_cuentas(Banco& banco)
         string dni, nombre, apellido;
         bool criterio_valido = false;
 
-        // Encabezado bonito
         mover_cursor(1, fila_actual);
         cout << "==============================================" << endl;
         mover_cursor(1, ++fila_actual);
@@ -1558,7 +1623,6 @@ void consultar_cuentas(Banco& banco)
         cout << "==============================================" << endl;
         fila_actual += 2;
 
-        // Validación de DNI (opcional)
         mover_cursor(1, fila_actual);
         limpiar_linea("➤ Ingrese el DNI del cliente (o deje vacío): ");
         dni = ingresar_dni("");
@@ -1567,7 +1631,6 @@ void consultar_cuentas(Banco& banco)
         cout << endl;
         fila_actual += 2;
 
-        // Validación de nombre (opcional)
         mover_cursor(1, fila_actual);
         limpiar_linea("➤ Ingrese el nombre del cliente (o deje vacío): ");
         nombre = ingresar_alfabetico("");
@@ -1576,7 +1639,6 @@ void consultar_cuentas(Banco& banco)
         cout << endl;
         fila_actual += 2;
 
-        // Validación de apellido (opcional)
         mover_cursor(1, fila_actual);
         limpiar_linea("➤ Ingrese el apellido del cliente (o deje vacío): ");
         apellido = ingresar_alfabetico("");
@@ -1585,7 +1647,6 @@ void consultar_cuentas(Banco& banco)
         cout << endl;
         fila_actual += 2;
 
-        // Verificar que al menos un criterio sea válido
         if (!criterio_valido)
         {
             mover_cursor(1, fila_actual++);
@@ -1635,6 +1696,7 @@ void menu_cuenta(Banco& banco) {
 
     system("cls");
     ajustar_cursor_para_marquesina();
+<<<<<<< HEAD
     int metodo = seleccionar_opcion("===== MÉTODO DE APERTURA =====", METODOS, NUM_METODOS, 4);
     
     switch (metodo) {
@@ -1647,9 +1709,59 @@ void menu_cuenta(Banco& banco) {
         case 3:
             return;
     }
+=======
+    int branchChoice = seleccionar_opcion("===== SELECCIÓN DE SUCURSAL =====", SUCURSALES, NUM_SUCURSALES, 4);
+    int branchId = branchChoice;
+    string sucursal_seleccionada = SUCURSALES[branchChoice - 1]; // Guardar el nombre de la sucursal
+
+    const int NUM_OPCIONES = 3;
+    const char* OPCIONES[NUM_OPCIONES] = {
+        "Cuenta de Ahorros",
+        "Cuenta Corriente",
+        "Menú Principal"
+    };
+
+    visibilidad_cursor(true);
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    int fila_actual = 4;
+    const char* sucursales[] = {
+        "Sucursal Norte - Av. 10 de Agosto y Mariana de Jesús",
+        "Sucursal Centro - Av. 12 de Octubre y Veintimilla",
+        "Sucursal Sur - Av. Morán Valverde y Rumichaca"
+    };
+
+    mover_cursor(1, fila_actual);
+    cout << "==============================================" << endl;
+    mover_cursor(1, ++fila_actual);
+    cout << "         SELECCIÓN DE SUCURSAL                " << endl;
+    mover_cursor(1, ++fila_actual);
+    cout << "==============================================" << endl;
+    fila_actual += 2;
+
+    int branchChoice = seleccionar_opcion("Seleccione la sucursal más cercana:", sucursales, 3, fila_actual);
+    int branchId = branchChoice;
+    string sucursal_seleccionada = sucursales[branchChoice - 1];
+
+    int opcion;
+    do {
+        system("cls");
+        ajustar_cursor_para_marquesina();
+        opcion = seleccionar_opcion("===== TIPO DE CUENTA =====", OPCIONES, NUM_OPCIONES, 4);
+        switch (opcion) {
+            case 1: 
+                abrir_cuenta(banco, 1, branchId, sucursal_seleccionada); 
+                break;
+            case 2: 
+                abrir_cuenta(banco, 2, branchId, sucursal_seleccionada); 
+                break;
+            case 3: 
+                return;
+        }
+    } while (opcion != NUM_OPCIONES);
+>>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
 }
 
-// Variable global para la marquesina
 Marquesina marquesina_global;
 
 void inicializar_marquesina() {
@@ -1661,11 +1773,10 @@ void detener_marquesina() {
 }
 
 void ajustar_cursor_para_marquesina() {
-    // Mover el cursor a la línea 2 para dejar espacio para la marquesina
-    // y asegurar que no interfiera con el contenido del menú
     mover_cursor(0, 2);
 }
 
+<<<<<<< HEAD
 // Función para el menú de apertura vía aplicación (método tradicional)
 void menu_cuenta_aplicacion(Banco& banco) {
     const int NUM_OPCIONES = 3;
@@ -1799,4 +1910,123 @@ void agendar_cita_presencial() {
     }
     
     pausar_consola();
+=======
+std::string getCurrentTime() {
+    auto now = std::chrono::system_clock::now();
+    auto time = std::chrono::system_clock::to_time_t(now); // Sin ajuste manual a UTC-5
+    std::tm* localTime = std::localtime(&time);
+    if (!localTime) {
+        std::cerr << "Error: No se pudo obtener el tiempo local." << std::endl;
+        return "Error en tiempo";
+    }
+    std::cout << "Tiempo raw: " << std::asctime(localTime) << std::endl; // Depuración
+    std::ostringstream oss;
+    oss << std::put_time(localTime, "%I:%M %p -05, %m/%d/%Y");
+    std::string timeStr = oss.str();
+    std::cout << "Hora generada: " << timeStr << std::endl; // Depuración
+    return timeStr;
+}
+
+void verificar_hash(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
+    try {
+        int fila_actual = 2;
+        std::string filePath = "datos.txt";
+        std::string hashFile = "hash_stored.txt";
+
+        // Depuración: Iniciar flujo
+        std::cout << "Iniciando verificacion de integridad..." << std::endl;
+
+        mover_cursor(1, fila_actual);
+        cout << "==============================================" << endl;
+        mover_cursor(1, ++fila_actual);
+        cout << "     VERIFICACIÓN DE INTEGRIDAD DE DATOS     " << endl;
+        mover_cursor(1, ++fila_actual);
+        cout << "==============================================" << endl;
+        fila_actual += 2;
+
+        // Calcular el hash actual del archivo
+        std::string currentHash = Hash::calculateMD5(filePath);
+        if (currentHash.empty()) {
+            throw std::runtime_error("No se pudo calcular el hash actual.");
+        }
+        std::cout << "Hash calculado: " << currentHash << std::endl; // Depuración
+
+        // Verificar si el archivo de hash existe
+        std::ifstream hashIn(hashFile);
+        std::string storedHash;
+        bool hashFileExists = hashIn.good();
+        if (hashIn.is_open()) {
+            std::string line;
+            while (std::getline(hashIn, line)) {
+                if (!line.empty()) {
+                    storedHash = line.substr(0, 32); // Tomar solo los 32 caracteres del hash
+                }
+            }
+            hashIn.close();
+        }
+        std::cout << "Hash almacenado: " << storedHash << std::endl; // Depuración
+
+        if (!hashFileExists) {
+            // Crear archivo y guardar el hash inicial
+            std::ofstream hashOut(hashFile);
+            if (hashOut.is_open()) {
+                std::string timeStr = getCurrentTime();
+                hashOut << currentHash << " (Actualizado: " << timeStr << ")" << std::endl;
+                hashOut.close();
+                mover_cursor(1, fila_actual++);
+                cout << "Hash inicial generado y guardado: " << currentHash << " a las " << timeStr << endl;
+            } else {
+                throw std::runtime_error("No se pudo crear el archivo de hash.");
+            }
+        } else {
+            // Comparar solo la parte del hash (ignorar la marca de tiempo)
+            std::string lastStoredHash = storedHash.substr(0, 32); // Extraer solo el hash de 32 caracteres
+            std::cout << "Comparando: " << currentHash << " vs " << lastStoredHash << std::endl; // Depuración
+            if (currentHash != lastStoredHash) {
+                std::ofstream hashOut(hashFile, std::ios::app); // Modo append
+                if (hashOut.is_open()) {
+                    std::string timeStr = getCurrentTime();
+                    hashOut << currentHash << " (Actualizado: " << timeStr << ")" << std::endl;
+                    hashOut.close();
+                    mover_cursor(1, fila_actual++);
+                    cout << "El archivo ha sido modificado. Nuevo hash añadido: " << currentHash << " a las " << timeStr << endl;
+                } else {
+                    throw std::runtime_error("No se pudo abrir el archivo para añadir hash.");
+                }
+            } else {
+                mover_cursor(1, fila_actual++);
+                cout << "El archivo no ha sido modificado. Hash actual: " << currentHash << endl;
+            }
+        }
+
+        // Depuración: Mostrar el contenido actual de hash_stored.txt
+        std::ifstream debugHash(hashFile);
+        std::string line;
+        mover_cursor(1, fila_actual++);
+        cout << "Contenido de hash_stored.txt:" << endl;
+        while (std::getline(debugHash, line)) {
+            mover_cursor(1, fila_actual++);
+            cout << line << endl;
+        }
+        debugHash.close();
+
+        mover_cursor(1, fila_actual++);
+        cout << "Presione Enter para regresar al menú principal..." << std::endl;
+        pausar_consola();
+    }
+    catch (const std::exception& e) {
+        int fila_error = 20;
+        mover_cursor(1, fila_error++);
+        std::cerr << "Error al verificar integridad: " << e.what() << std::endl;
+        mover_cursor(1, fila_error++);
+        std::cout << "\n=== ERROR AL VERIFICAR INTEGRIDAD ===" << std::endl;
+        mover_cursor(1, fila_error++);
+        std::cout << "Error: " << e.what() << std::endl;
+        mover_cursor(1, fila_error++);
+        std::cout << "\nRegresando al menú principal...\n";
+        pausar_consola();
+    }
+>>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
 }
