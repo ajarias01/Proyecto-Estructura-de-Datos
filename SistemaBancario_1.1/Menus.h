@@ -38,5 +38,6 @@ void realizar_deposito(Banco& banco, const std::string& dni);
 void realizar_retiro(Banco& banco, const std::string& dni);
 void consultar_movimientos(Banco& banco);
 void consultar_cuentas(Banco& banco);
+void verificar_hash(Banco& banco);
 
 #endif
