@@ -157,6 +157,7 @@ void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::
             if (!apellido.empty()) std::cout << ", Apellido=" << apellido;
             std::cout << std::endl;
         }
+        
     } catch (const std::exception& e) {
         mover_cursor(1, fila_actual++);
         std::cerr << "Error al consultar cuentas: " << e.what() << std::endl;
@@ -169,11 +170,13 @@ void Banco::consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin
         if (inicio > fin) throw std::invalid_argument("Rango de fechas inválido");
         Cliente* cliente = buscar_cliente(dni);
         if (!cliente) throw std::runtime_error("Cliente con DNI " + dni + " no encontrado");
+        
         std::cout << "\nMovimientos para el cliente: " << cliente->get_nombres() << " " << cliente->get_apellidos()
                   << " (DNI: " << dni << ") entre " << inicio.to_string() << " y " << fin.to_string() << ":\n";
         cliente->get_cuentas()->recorrer([&](Cuenta* cuenta) {
             cuenta->consultar_movimientos_rango(inicio, fin);
         });
+        
     } catch (const std::exception& e) {
         std::cerr << "Error al consultar movimientos: " << e.what() << std::endl;
     }

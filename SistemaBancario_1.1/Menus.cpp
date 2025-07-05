@@ -7,6 +7,7 @@
 #include "GestorClientes.h"
 #include "Marquesina.h"
 #include "hash.h"
+#include "ArbolBinario.h"
 #include <stdexcept>
 #include <conio.h>
 #include <random>
@@ -52,15 +53,22 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
 
     int fila_ajustada = std::max(fila_inicio, 3);
 
+
     mover_cursor(1, fila_ajustada);
+    // Dibujar el título, alineado a la izquierda, en la fila especificada
+    mover_cursor(2, fila_ajustada);
     cout << titulo;
 
     for (int e = 0; e < n; e++) {
         mover_cursor(10, fila_ajustada + 2 + e);
+        mover_cursor(2, fila_ajustada + 2 + e); // +2 para dejar un espacio entre título y opciones
+        // Limpiar la línea completa antes de escribir
+        cout << string(80, ' ');
+        mover_cursor(2, fila_ajustada + 2 + e);
         if (e + 1 == opcionSeleccionada) {
             cout << " ➤ " << e + 1 << " " << opciones[e];
         } else {
-            cout << "    " << e + 1 << " " << opciones[e];
+            cout << "   " << e + 1 << " " << opciones[e];
         }
     }
 
@@ -70,11 +78,19 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
             case TECLA_ARRIBA:
                 mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
+                // Limpiar y actualizar la opción anterior
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << string(80, ' ');
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << "   " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
 
                 opcionSeleccionada--;
                 if (opcionSeleccionada < 1) opcionSeleccionada = n;
 
-                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                // Limpiar y actualizar la nueva opción seleccionada
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << string(80, ' ');
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << " ➤ " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
                 break;
 
@@ -82,10 +98,19 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
                 mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << "    " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
 
+                // Limpiar y actualizar la opción anterior
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << string(80, ' ');
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << "   " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
+
                 opcionSeleccionada++;
                 if (opcionSeleccionada > n) opcionSeleccionada = 1;
 
-                mover_cursor(10, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                // Limpiar y actualizar la nueva opción seleccionada
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
+                cout << string(80, ' ');
+                mover_cursor(2, fila_ajustada + 2 + (opcionSeleccionada - 1));
                 cout << " ➤ " << opcionSeleccionada << " " << opciones[opcionSeleccionada - 1];
                 break;
         }
@@ -94,14 +119,16 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
     return opcionSeleccionada;
 }
 
-bool seleccionar_Si_No(int fila_inicio) {
-    const char *titulo = "------------------------------------------";
-    const char *opciones[] = {
+bool seleccionar_Si_No() {
+    const int NUM_OPCIONES = 2;
+    const char* OPCIONES[NUM_OPCIONES] = {
         "SÍ",
         "NO"
     };
-    int n = 2;
-    int opcion = seleccionar_opcion(titulo, opciones, n, fila_inicio);
+    
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    int opcion = seleccionar_opcion("===== CONFIRMAR OPERACIÓN =====", OPCIONES, NUM_OPCIONES, 4);
     
     if (opcion == 1) {
         return true;
@@ -201,6 +228,7 @@ void recuperar_backup_por_fecha(Banco& banco)
     {
         Fecha fecha;
         do {
+            std::cout << std::endl;
             limpiar_linea("➤ Ingrese la fecha del backup (DD/MM/YYYY): ");
             fecha = validarFecha("");
             if (fecha.get_dia() == -1) return;
@@ -305,6 +333,83 @@ void cargar_base_datos(Banco& banco) {
         for (int i = 0; i < n; ++i) lista.set_contador(i, temp[i]);
     }
 
+    // Menú de selección de campo
+    ajustar_cursor_para_marquesina();
+    const int NUM_CAMPOS = 5;
+    const char* CAMPOS[NUM_CAMPOS] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
+    int campo = seleccionar_opcion("===== SELECCIONAR CAMPO =====", CAMPOS, NUM_CAMPOS, 4);
+
+    // Menú de selección de orden
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    const int NUM_ORDENES = 2;
+    const char* ORDENES[NUM_ORDENES] = {"Ascendente", "Descendente"};
+    int orden = seleccionar_opcion("===== SELECCIONAR ORDEN =====", ORDENES, NUM_ORDENES, 4);
+
+    // Convertir lista a vector para ordenamiento más eficiente
+    auto& lista = *clientes;
+    int n = lista.getTam();
+    std::vector<Cliente*> vectorClientes;
+    for (int i = 0; i < n; ++i) {
+        vectorClientes.push_back(lista.get_contador(i));
+    }
+
+    // Función de comparación personalizada según el campo seleccionado
+    auto comparar = [campo, orden](Cliente* a, Cliente* b) -> bool {
+        bool resultado;
+        switch (campo) {
+            case 1: // DNI
+                resultado = std::stoi(a->get_dni()) < std::stoi(b->get_dni());
+                break;
+            case 2: { // Nombre
+                string nombre_a = a->get_nombres();
+                string nombre_b = b->get_nombres();
+                // Convertir a minúsculas para comparación insensible a mayúsculas
+                transform(nombre_a.begin(), nombre_a.end(), nombre_a.begin(), ::tolower);
+                transform(nombre_b.begin(), nombre_b.end(), nombre_b.begin(), ::tolower);
+                resultado = nombre_a < nombre_b;
+                break;
+            }
+            case 3: { // Apellido
+                string apellido_a = a->get_apellidos();
+                string apellido_b = b->get_apellidos();
+                // Convertir a minúsculas para comparación insensible a mayúsculas
+                transform(apellido_a.begin(), apellido_a.end(), apellido_a.begin(), ::tolower);
+                transform(apellido_b.begin(), apellido_b.end(), apellido_b.begin(), ::tolower);
+                resultado = apellido_a < apellido_b;
+                break;
+            }
+            case 4: // Teléfono
+                resultado = std::stoi(a->get_telefono()) < std::stoi(b->get_telefono());
+                break;
+            case 5: { // Email
+                string email_a = a->get_email();
+                string email_b = b->get_email();
+                // Convertir a minúsculas para comparación insensible a mayúsculas
+                transform(email_a.begin(), email_a.end(), email_a.begin(), ::tolower);
+                transform(email_b.begin(), email_b.end(), email_b.begin(), ::tolower);
+                resultado = email_a < email_b;
+                break;
+            }
+            default:
+                resultado = false;
+        }
+        // Si es orden descendente, invertir el resultado
+        return (orden == 1) ? resultado : !resultado;
+    };
+
+    // Ordenar usando std::sort con comparador personalizado
+    std::sort(vectorClientes.begin(), vectorClientes.end(), comparar);
+
+    // Devolver los elementos ordenados a la lista
+    for (int i = 0; i < n; ++i) {
+        lista.set_contador(i, vectorClientes[i]);
+    }
+
+    // DETENER LA MARQUESINA ANTES DE MOSTRAR LA TABLA
+    detener_marquesina();
+    
+    // Mostrar tabla alineada
     system("cls");
     cout << "\n\t\t===========================================" << std::endl;
     cout << "\t\t===    LISTADO DE CLIENTES Y CUENTAS    ===" << std::endl;
@@ -338,6 +443,10 @@ void cargar_base_datos(Banco& banco) {
     string respuesta,valor_buscar;
     do {
         limpiar_linea("➤ ¿Desea depositar un monto inicial? (S/N): ");
+    // --- BÚSQUEDA DE CLIENTE POR CÉDULA ---
+    string respuesta, cedula_buscar;
+    do {
+        limpiar_linea("➤ ¿Desea buscar un cliente específico? (S/N): ");
         respuesta = ingresar_alfabetico("");
         if (respuesta == "__ESC__") return;
         transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
@@ -391,23 +500,62 @@ void cargar_base_datos(Banco& banco) {
                     if (res > 0) left = mid + 1;
                     else right = mid - 1;
                 }
+    
+    cout << endl;
+    if (respuesta == "S") {
+        do {
+            limpiar_linea("➤ Ingrese la cédula a buscar: ");
+            cedula_buscar = ingresar_dni("");
+            if (cedula_buscar == "__ESC__") return;
+        } while (!validarCedulaEcuatoriana(cedula_buscar));
+        
+        // Buscar cliente por cédula
+        Cliente* clienteEncontrado = nullptr;
+        for (int i = 0; i < n; ++i) {
+            if (vectorClientes[i]->get_dni() == cedula_buscar) {
+                clienteEncontrado = vectorClientes[i];
+                break;
             }
         }
 
-        if (pos != -1) {
-            Cliente* encontrado = lista.get_contador(pos);
+        if (clienteEncontrado) {
             std::cout << "\n=== CLIENTE ENCONTRADO ===\n";
-            std::cout << "DNI: " << encontrado->get_dni() << "\n";
-            std::cout << "Nombre: " << encontrado->get_nombres() << "\n";
-            std::cout << "Apellido: " << encontrado->get_apellidos() << "\n";
-            std::cout << "Teléfono: " << encontrado->get_telefono() << "\n";
-            std::cout << "Email: " << encontrado->get_email() << "\n";
+            std::cout << "DNI: " << clienteEncontrado->get_dni() << "\n";
+            std::cout << "Nombre: " << clienteEncontrado->get_nombres() << "\n";
+            std::cout << "Apellido: " << clienteEncontrado->get_apellidos() << "\n";
+            std::cout << "Teléfono: " << clienteEncontrado->get_telefono() << "\n";
+            std::cout << "Email: " << clienteEncontrado->get_email() << "\n";
+            
+            // Mostrar las cuentas del cliente
+            auto* cuentas = clienteEncontrado->get_cuentas();
+            if (cuentas && !cuentas->esta_vacia()) {
+                std::cout << "\n=== CUENTAS DEL CLIENTE ===\n";
+                std::cout << std::left << std::setw(15) << "ID Cuenta" 
+                         << std::setw(12) << "Tipo" 
+                         << std::setw(15) << "Saldo" 
+                         << std::setw(20) << "Fecha Apertura" << std::endl;
+                std::cout << "--------------------------------------------------------------\n";
+                
+                cuentas->recorrer([](Cuenta* cuenta) {
+                    std::cout << std::left << std::setw(15) << cuenta->get_id_cuenta()
+                             << std::setw(12) << cuenta->get_tipo()
+                             << std::setw(15) << ("$" + std::to_string(cuenta->get_saldo()))
+                             << std::setw(20) << cuenta->get_fecha_apertura().to_string() << std::endl;
+                });
+                std::cout << "--------------------------------------------------------------\n";
+            } else {
+                std::cout << "\nEste cliente no tiene cuentas registradas.\n";
+            }
         } else {
-            std::cout << "\nNo se encontró ningún cliente con ese valor.\n";
+            std::cout << "\nNo se encontró ningún cliente con esa cédula.\n";
         }
     }
 
-    pausar_consola();
+    cout << "\nPresione cualquier tecla para continuar...";
+    getch();
+    
+    // REINICIAR LA MARQUESINA AL SALIR
+    inicializar_marquesina();
 }
 
 void descifrar_archivos_txt(Banco& banco) {
@@ -485,6 +633,7 @@ void menu_administrador(Banco& banco)
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
         "Base de datos",
+        "Árbol binario",
         "Recuperar backup por fecha y hora",
         "Cifrar archivos",
         "Descifrar archivos",
@@ -524,7 +673,7 @@ void menu_administrador(Banco& banco)
         {
             system("cls");
             ajustar_cursor_para_marquesina();
-            opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
+            opcion = seleccionar_opcion("===== MENÚ ADMINISTRADOR =====", OPCIONES, NUM_OPCIONES, 4);
             switch (opcion)
             {
                 case 1:
@@ -537,16 +686,17 @@ void menu_administrador(Banco& banco)
                     cargar_base_datos(banco);
                     break;
                 case 4:
-                    recuperar_backup_por_fecha(banco);
+                    mostrar_arbol_binario(banco);
                     break;
                 case 5:
-                    cifrar_archivos_txt(banco);
+                    recuperar_backup_por_fecha(banco);
                     break;
                 case 6:
-                    descifrar_archivos_txt(banco);
+                    cifrar_archivos_txt(banco);
                     break;
                 case 7:
                     verificar_hash(banco);
+                    descifrar_archivos_txt(banco);
                     break;
                 case 8:
                     return;
@@ -609,7 +759,7 @@ void menu_cliente(Banco& banco)
         {
             system("cls");
             ajustar_cursor_para_marquesina();
-            opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
+            opcion = seleccionar_opcion("===== MENÚ CLIENTE =====", OPCIONES, NUM_OPCIONES, 4);
             switch (opcion)
             {
                 case 1:
@@ -651,7 +801,7 @@ void menu_principal(Banco& banco)
     {
         system("cls");
         ajustar_cursor_para_marquesina();
-        opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
+        opcion = seleccionar_opcion("===== MENU PRINCIPAL =====", OPCIONES, NUM_OPCIONES, 4);
         switch (opcion)
         {
             case 1:
@@ -678,7 +828,8 @@ void mostrar_ayuda_tecnica()
     system("cls");
     visibilidad_cursor(true);
     try
-    {
+    {   
+        std::cout << std::endl;
         std::cout << "Abriendo el Manual de Ayuda Técnica...\n";
         this_thread::sleep_for(std::chrono::seconds(3));
         HINSTANCE result = ShellExecute(NULL, "open", "AyudaTecnicaBanco.chm", NULL, NULL, SW_SHOWNORMAL);
@@ -829,11 +980,9 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
         cout << "¿Está seguro que desea crear la cuenta con estos datos?" << endl;
         fila_actual += 1;
 
-        bool resultado = seleccionar_Si_No(fila_actual);
+        bool resultado = seleccionar_Si_No();
         if (!resultado) {
-            mover_cursor(1, fila_actual + 4);
             cout << "Operación cancelada. No se creó la cuenta." << endl;
-            mover_cursor(1, fila_actual + 5);
             cout << "Presione Enter para regresar al menú principal...";
             cin.get();
             return;
@@ -976,8 +1125,10 @@ void realizar_deposito(Banco& banco, const std::string& dni)
         bool resultado = seleccionar_Si_No(fila_actual);
         if (!resultado) {
             mover_cursor(1, fila_actual + 4);
+        // Confirmación de depósito
+        bool resultado = seleccionar_Si_No();
+        if (!resultado) {
             cout << "Operación cancelada. No se realizó el depósito." << endl;
-            mover_cursor(1, fila_actual + 5);
             cout << "Presione Enter para regresar al menú principal...";
             cin.get();
             return;
@@ -1077,8 +1228,10 @@ void realizar_retiro(Banco& banco, const std::string& dni)
         bool resultado = seleccionar_Si_No(fila_actual);
         if (!resultado) {
             mover_cursor(1, fila_actual + 4);
+        // Confirmación de retiro
+        bool resultado = seleccionar_Si_No();
+        if (!resultado) {
             cout << "Operación cancelada. No se realizó el retiro." << endl;
-            mover_cursor(1, fila_actual + 5);
             cout << "Presione Enter para regresar al menú principal...";
             cin.get();
             return;
@@ -1194,8 +1347,15 @@ void consultar_movimientos(Banco& banco)
         mover_cursor(1, fila_actual++);
         cout << "Consultando movimientos..." << endl;
         this_thread::sleep_for(std::chrono::seconds(3));
+        
+        // DETENER LA MARQUESINA ANTES DE CONSULTAR
+        detener_marquesina();
+        
         banco.consultar_movimientos_rango(dni, fecha_inicio, fecha_fin);
         getch();
+        
+        // REINICIAR LA MARQUESINA AL SALIR
+        inicializar_marquesina();
         return;
     }
     catch (const std::exception& e)
@@ -1210,6 +1370,9 @@ void consultar_movimientos(Banco& banco)
         mover_cursor(1, fila_error++);
         std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
+        
+        // REINICIAR LA MARQUESINA EN CASO DE ERROR
+        inicializar_marquesina();
     }
 }
 
@@ -1264,8 +1427,15 @@ void consultar_cuentas(Banco& banco)
         mover_cursor(1, fila_actual++);
         cout << "Buscando cuentas..." << endl;
         this_thread::sleep_for(std::chrono::seconds(3));
+        
+        // DETENER LA MARQUESINA ANTES DE CONSULTAR
+        detener_marquesina();
+        
         banco.consultar_cuentas_cliente(dni, nombre, apellido,fila_actual);
         getch();
+        
+        // REINICIAR LA MARQUESINA AL SALIR
+        inicializar_marquesina();
         return;
     }
     catch (const std::exception& e)
@@ -1280,10 +1450,27 @@ void consultar_cuentas(Banco& banco)
         mover_cursor(1, fila_error++);
         std::cout << "\nRegresando al menú principal...\n";
         pausar_consola();
+        
+        // REINICIAR LA MARQUESINA EN CASO DE ERROR
+        inicializar_marquesina();
     }
 }
 
 void menu_cuenta(Banco& banco) {
+    // Selección de sucursal al inicio
+    const int NUM_SUCURSALES = 3;
+    const char* SUCURSALES[NUM_SUCURSALES] = {
+        "Sucursal Norte - Av. 10 de Agosto y Mariana de Jesús",
+        "Sucursal Centro - Av. 12 de Octubre y Veintimilla", 
+        "Sucursal Sur - Av. Morán Valverde y Rumichaca"
+    };
+
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    int branchChoice = seleccionar_opcion("===== SELECCIÓN DE SUCURSAL =====", SUCURSALES, NUM_SUCURSALES, 4);
+    int branchId = branchChoice;
+    string sucursal_seleccionada = SUCURSALES[branchChoice - 1]; // Guardar el nombre de la sucursal
+
     const int NUM_OPCIONES = 3;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Cuenta de Ahorros",
@@ -1317,7 +1504,7 @@ void menu_cuenta(Banco& banco) {
     do {
         system("cls");
         ajustar_cursor_para_marquesina();
-        opcion = desplegar_menu(OPCIONES, NUM_OPCIONES);
+        opcion = seleccionar_opcion("===== TIPO DE CUENTA =====", OPCIONES, NUM_OPCIONES, 4);
         switch (opcion) {
             case 1: 
                 abrir_cuenta(banco, 1, branchId, sucursal_seleccionada); 
