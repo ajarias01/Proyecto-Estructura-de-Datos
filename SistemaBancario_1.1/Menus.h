@@ -50,5 +50,6 @@ void realizar_retiro(Banco& banco, const std::string& dni);
 void consultar_movimientos(Banco& banco);
 void consultar_cuentas(Banco& banco);
 void verificar_hash(Banco& banco);
+void buscar_con_tabla_hash(Banco& banco);
 
 #endif

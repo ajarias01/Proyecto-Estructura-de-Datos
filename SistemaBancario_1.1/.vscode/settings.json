@@ -64,7 +64,9 @@
     "thread": "cpp",
     "condition_variable": "cpp",
     "mutex": "cpp",
-    "list": "cpp"
+    "list": "cpp",
+    "bitset": "cpp",
+    "cinttypes": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled",
   "C_Cpp_Runner.cCompilerPath": "gcc",

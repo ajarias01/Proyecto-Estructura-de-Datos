@@ -9,6 +9,7 @@
 #include "hash.h"
 #include "ArbolBinario.h"
 #include "Ubicacion.h"
+#include "QR.h"
 #include <stdexcept>
 #include <conio.h>
 #include <random>
@@ -16,21 +17,15 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
-<<<<<<< HEAD
 #include <chrono>
 #include <thread>
-=======
 #include <chrono>   
-<<<<<<< HEAD
 #include <thread>
 #include <cmath>
 #include <filesystem>
-=======
 #include <thread> 
->>>>>>> 11f3c12f02274983eb8c8cb208ebdb5d7867f7b3
 #include <openssl/md5.h>
 #include <ctime>
->>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
 
 using namespace std;
 
@@ -579,7 +574,7 @@ void cifrar_archivos_txt(Banco& banco) {
 
 void menu_administrador(Banco& banco)
 {
-    const int NUM_OPCIONES = 9;
+    const int NUM_OPCIONES = 10;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
@@ -589,6 +584,7 @@ void menu_administrador(Banco& banco)
         "Cifrar archivos",
         "Descifrar archivos",
         "Verificar integridad de datos (Hash)",
+        "Generar tabla Hash",
         "Salir"
     };
 
@@ -652,6 +648,9 @@ void menu_administrador(Banco& banco)
                     verificar_hash(banco);
                     break;
                 case 8:
+                    buscar_con_tabla_hash(banco);
+                    break;
+                case 9:
                     return;
             }
         } while (opcion != 8); // Cambiado a 8 para coincidir con "Salir" (índice 8)
@@ -668,10 +667,11 @@ void menu_administrador(Banco& banco)
 
 void menu_cliente(Banco& banco)
 {
-    const int NUM_OPCIONES = 3;
+    const int NUM_OPCIONES = 4;
     const char* OPCIONES[NUM_OPCIONES] = {
         "Realizar depósito",
         "Realizar retiro",
+        "Generar QR",
         "Salir"
     };
 
@@ -721,9 +721,23 @@ void menu_cliente(Banco& banco)
                     realizar_retiro(banco, dni);
                     break;
                 case 2:
+                    {
+                        string id_cuenta;
+                        do {
+                            limpiar_linea("➤ Ingrese el ID de la cuenta para generar QR: ");
+                            id_cuenta = ingresar_id("");
+                            if (id_cuenta == "__ESC__") break;
+                        } while (!validar_id_cuenta(cliente, id_cuenta));
+                        if (id_cuenta != "__ESC__") {
+                            QR qr(cliente->get_nombres() + " " + cliente->get_apellidos(), id_cuenta);
+                            qr.generateQRAndPDF();
+                        }
+                    }
+                    break;
+                case 3:
                     return;
             }
-        } while (opcion != 2); // Cambiado a 2 para coincidir con "Salir" (índice 2)
+        } while (opcion != 3); // Cambiado a 3 para coincidir con "Salir" (índice 3)
     }
     catch (const std::exception& e)
     {
@@ -801,7 +815,6 @@ void mostrar_ayuda_tecnica()
     pausar_consola();
 }
 
-<<<<<<< HEAD
 // ... (mantén todas las funciones anteriores hasta menu_cuenta sin cambios)
 
 
@@ -1018,8 +1031,6 @@ void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
     }
 }
 
-=======
->>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
 void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& sucursal) {
     string dni, nombre, apellido, direccion, telefono, email, depositar_inicial, saldo_inicial1, contrasenia;
     Fecha fecha_nacimiento;
@@ -1611,38 +1622,35 @@ void consultar_cuentas(Banco& banco)
 }
 
 void menu_cuenta(Banco& banco) {
-<<<<<<< HEAD
     const int NUM_SUCURSALES = 3;
     const char* SUCURSALES[NUM_SUCURSALES] = {
         "Sucursal Norte - Av. 10 de Agosto y Mariana de Jesús",
-        "Sucursal Centro - Av. 12 de Octubre y Veintimilla", 
+        "Sucursal Centro - Av. 12 de Octubre y Veintimilla",
         "Sucursal Sur - Av. Morán Valverde y Rumichaca"
-=======
-    // Primero seleccionar el método de apertura
+    };
+
     const int NUM_METODOS = 3;
     const char* METODOS[NUM_METODOS] = {
         "Crear cuenta vía aplicación",
         "Agendar cita presencial",
         "Menú Principal"
->>>>>>> 11f3c12f02274983eb8c8cb208ebdb5d7867f7b3
     };
 
     system("cls");
     ajustar_cursor_para_marquesina();
-<<<<<<< HEAD
     int metodo = seleccionar_opcion("===== MÉTODO DE APERTURA =====", METODOS, NUM_METODOS, 4);
-    
+
     switch (metodo) {
-        case 1:
+        case 0: // Adjusted indices to 0-based
             menu_cuenta_aplicacion(banco);
             break;
-        case 2:
+        case 1:
             menu_cita_presencial(banco);
             break;
-        case 3:
+        case 2:
             return;
     }
-=======
+
     int branchChoice = seleccionar_opcion("===== SELECCIÓN DE SUCURSAL =====", SUCURSALES, NUM_SUCURSALES, 4);
     int branchId = branchChoice;
     string sucursal_seleccionada = SUCURSALES[branchChoice - 1];
@@ -1673,21 +1681,16 @@ void menu_cuenta(Banco& banco) {
         ajustar_cursor_para_marquesina();
         opcion = seleccionar_opcion("===== TIPO DE CUENTA =====", OPCIONES, NUM_OPCIONES, 4);
         switch (opcion) {
-            case 0: 
-                abrir_cuenta(banco, 1, branchId, sucursal_seleccionada); 
+            case 0:
+                abrir_cuenta(banco, 1, branchId, sucursal_seleccionada);
                 break;
-            case 1: 
-                abrir_cuenta(banco, 2, branchId, sucursal_seleccionada); 
+            case 1:
+                abrir_cuenta(banco, 2, branchId, sucursal_seleccionada);
                 break;
-            case 2: 
+            case 2:
                 return;
         }
-<<<<<<< HEAD
-    } while (opcion != 2); // Cambiado a 2 para coincidir con "Menú Principal" (índice 2)
-=======
-    } while (opcion != NUM_OPCIONES);
->>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
->>>>>>> 11f3c12f02274983eb8c8cb208ebdb5d7867f7b3
+    } while (opcion != 2); // Loop until "Menú Principal" is selected
 }
 
 Marquesina marquesina_global;
@@ -1704,13 +1707,19 @@ void ajustar_cursor_para_marquesina() {
     mover_cursor(0, 2);
 }
 
-<<<<<<< HEAD
 string getCurrentTime() {
     auto now = chrono::system_clock::now();
     auto time = chrono::system_clock::to_time_t(now);
     tm* localTime = localtime(&time);
-=======
-<<<<<<< HEAD
+    if (!localTime) {
+        cerr << "Error: No se pudo obtener el tiempo local." << endl;
+        return "Error en tiempo";
+    }
+    ostringstream oss;
+    oss << put_time(localTime, "%I:%M %p -05, %m/%d/%Y");
+    return oss.str(); // Return the formatted string
+}
+
 // Función para el menú de apertura vía aplicación (método tradicional)
 void menu_cuenta_aplicacion(Banco& banco) {
     const int NUM_OPCIONES = 3;
@@ -1726,16 +1735,16 @@ void menu_cuenta_aplicacion(Banco& banco) {
         ajustar_cursor_para_marquesina();
         opcion = seleccionar_opcion("===== TIPO DE CUENTA - VÍA APLICACIÓN =====", OPCIONES, NUM_OPCIONES, 4);
         switch (opcion) {
-            case 1: 
-                abrir_cuenta_sin_sucursal(banco, 1); 
+            case 0:
+                abrir_cuenta_sin_sucursal(banco, 1);
                 break;
-            case 2: 
-                abrir_cuenta_sin_sucursal(banco, 2); 
+            case 1:
+                abrir_cuenta_sin_sucursal(banco, 2);
                 break;
-            case 3: 
+            case 2:
                 return;
         }
-    } while (opcion != NUM_OPCIONES);
+    } while (opcion != 2);
 }
 
 // Función para el menú de cita presencial con API real
@@ -1743,14 +1752,14 @@ void menu_cita_presencial(Banco& banco) {
     system("cls");
     ajustar_cursor_para_marquesina();
     visibilidad_cursor(true);
-    
+
     cout << "\n=== SISTEMA DE CITAS PRESENCIALES ===" << endl;
     cout << "Bienvenido al sistema de agendamiento de citas" << endl;
     cout << "Servicio: Apertura de cuenta presencial\n" << endl;
-    
+
     // Usar el sistema de geolocalización real
     mostrar_sucursales_cercanas();
-    
+
     // Preguntar si desea agendar cita
     string respuesta;
     do {
@@ -1759,7 +1768,7 @@ void menu_cita_presencial(Banco& banco) {
         if (respuesta == "__ESC__") return;
         transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
     } while (respuesta != "S" && respuesta != "N");
-    
+
     if (respuesta == "S") {
         agendar_cita_presencial();
     } else {
@@ -1844,19 +1853,6 @@ void agendar_cita_presencial() {
     }
     
     pausar_consola();
-=======
-std::string getCurrentTime() {
-    auto now = std::chrono::system_clock::now();
-    auto time = std::chrono::system_clock::to_time_t(now); // Sin ajuste manual a UTC-5
-    std::tm* localTime = std::localtime(&time);
->>>>>>> 11f3c12f02274983eb8c8cb208ebdb5d7867f7b3
-    if (!localTime) {
-        cerr << "Error: No se pudo obtener el tiempo local." << endl;
-        return "Error en tiempo";
-    }
-    ostringstream oss;
-    oss << put_time(localTime, "%I:%M %p -05, %m/%d/%Y");
-    return oss.str();
 }
 
 void verificar_hash(Banco& banco) {
@@ -1949,5 +1945,132 @@ void verificar_hash(Banco& banco) {
         cout << "\nRegresando al menú principal...\n";
         pausar_consola();
     }
->>>>>>> b4fcc52419e9fbf430b68c8114e812b4cdb62d33
+}
+
+void buscar_con_tabla_hash(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
+    try {
+        int fila_actual = 2;
+        Hash hash;
+
+        mover_cursor(1, fila_actual);
+        cout << "==============================================" << endl;
+        mover_cursor(1, ++fila_actual);
+        cout << "         BÚSQUEDA CON TABLA HASH            " << endl;
+        mover_cursor(1, ++fila_actual);
+        cout << "==============================================" << endl;
+        fila_actual += 2;
+
+        // Seleccionar campo para la tabla hash
+        const char* campos[] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
+        int campo = seleccionar_opcion("Seleccione el campo para la tabla hash:", campos, 5, fila_actual);
+        fila_actual += 8;
+
+        // Construir la tabla hash usando los datos de Banco
+        hash.buildHashTable(banco, campo);
+        mover_cursor(1, fila_actual++);
+        cout << "Tabla hash creada con éxito usando el campo: " << campos[campo] << endl;
+        fila_actual += 2;
+
+        // Imprimir la tabla hash
+        mover_cursor(1, fila_actual++);
+        cout << "=== CONTENIDO DE LA TABLA HASH ===\n";
+        mover_cursor(1, fila_actual++);
+        cout << std::left << std::setw(20) << "Clave" << std::setw(30) << "Valor (Nombre)" << endl;
+        mover_cursor(1, fila_actual++);
+        cout << "------------------------------------------------\n";
+        auto contents = hash.getHashTableContents();
+        for (const auto& pair : contents) {
+            for (const auto* client : pair.second) {
+                mover_cursor(1, fila_actual++);
+                cout << std::left << std::setw(20) << pair.first << std::setw(30) << (client ? client->get_nombres() : "N/A") << endl;
+            }
+        }
+        mover_cursor(1, fila_actual++);
+        cout << "------------------------------------------------\n";
+        fila_actual += 2;
+
+        // Solicitar valor a buscar
+        string valor_buscar;
+        do {
+            mover_cursor(1, fila_actual);
+            limpiar_linea("➤ Ingrese el valor a buscar: ");
+            if (campo == 0 || campo == 3) {
+                valor_buscar = ingresar_dni("");
+            } else {
+                valor_buscar = ingresar_alfabetico("");
+            }
+            if (valor_buscar == "__ESC__") return;
+        } while (valor_buscar.empty());
+        cout << endl;
+        fila_actual += 2;
+
+        // Mostrar el valor a buscar
+        mover_cursor(1, fila_actual++);
+        cout << "Buscando el valor: \"" << valor_buscar << "\"\n";
+        fila_actual += 2;
+
+        // Realizar búsqueda
+        std::vector<Cliente*> clientes = hash.searchHash(valor_buscar);
+        if (!clientes.empty()) {
+            for (size_t i = 0; i < clientes.size(); ++i) {
+                Cliente* cliente = clientes[i];
+                mover_cursor(1, fila_actual++);
+                cout << "\n=== CLIENTE ENCONTRADO " << (i + 1) << " ===\n";
+                mover_cursor(1, fila_actual++);
+                cout << "DNI: " << cliente->get_dni() << "\n";
+                mover_cursor(1, fila_actual++);
+                cout << "Nombre: " << cliente->get_nombres() << "\n";
+                mover_cursor(1, fila_actual++);
+                cout << "Apellido: " << cliente->get_apellidos() << "\n";
+                mover_cursor(1, fila_actual++);
+                cout << "Teléfono: " << cliente->get_telefono() << "\n";
+                mover_cursor(1, fila_actual++);
+                cout << "Email: " << cliente->get_email() << "\n";
+                auto* cuentas = cliente->get_cuentas();
+                if (cuentas && !cuentas->esta_vacia()) {
+                    mover_cursor(1, fila_actual++);
+                    cout << "\n=== CUENTAS DEL CLIENTE ===\n";
+                    mover_cursor(1, fila_actual++);
+                    cout << std::left << std::setw(15) << "ID Cuenta" 
+                         << std::setw(12) << "Tipo" 
+                         << std::setw(15) << "Saldo" 
+                         << std::setw(20) << "Fecha Apertura" << std::endl;
+                    mover_cursor(1, fila_actual++);
+                    cout << "--------------------------------------------------------------\n";
+                    cuentas->recorrer([](Cuenta* cuenta) {
+                        cout << std::left << std::setw(15) << cuenta->get_id_cuenta()
+                             << std::setw(12) << cuenta->get_tipo()
+                             << std::setw(15) << ("$" + std::to_string(cuenta->get_saldo()))
+                             << std::setw(20) << cuenta->get_fecha_apertura().to_string() << std::endl;
+                    });
+                    mover_cursor(1, fila_actual++);
+                    cout << "--------------------------------------------------------------\n";
+                } else {
+                    mover_cursor(1, fila_actual++);
+                    cout << "\nEste cliente no tiene cuentas registradas.\n";
+                }
+            }
+        } else {
+            mover_cursor(1, fila_actual++);
+            cout << "\nNo se encontró ningún cliente con el valor: " << valor_buscar << "\n";
+        }
+
+        mover_cursor(1, fila_actual++);
+        cout << "Presione Enter para regresar al menú principal...";
+        getch();
+    }
+    catch (const std::exception& e) {
+        int fila_error = 20;
+        mover_cursor(1, fila_error++);
+        cerr << "Error al buscar con tabla hash: " << e.what() << endl;
+        mover_cursor(1, fila_error++);
+        cout << "\n=== ERROR AL BUSCAR CON TABLA HASH ===" << endl;
+        mover_cursor(1, fila_error++);
+        cout << "Error: " << e.what() << endl;
+        mover_cursor(1, fila_error++);
+        cout << "\nRegresando al menú principal...\n";
+        pausar_consola();
+    }
 }

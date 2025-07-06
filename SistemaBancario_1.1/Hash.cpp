@@ -1,67 +1,3 @@
-/*#include "MD5Util.h"
-#include <fstream>
-#include <iomanip>
-#include <openssl/md5.h>
-#include <sstream>
-
-std::string MD5Util::calcularMD5(const std::string& filename) {
-    unsigned char c[MD5_DIGEST_LENGTH];
-    std::ifstream file(filename, std::ios::binary);
-    if (!file) return "";
-
-    MD5_CTX mdContext;
-    MD5_Init(&mdContext);
-
-    char buf[1024 * 16];
-    while (file.good()) {
-        file.read(buf, sizeof(buf));
-        MD5_Update(&mdContext, buf, file.gcount());
-    }
-    MD5_Final(c, &mdContext);
-
-    std::ostringstream oss;
-    for (int i = 0; i < MD5_DIGEST_LENGTH; ++i)
-        oss << std::hex << std::setw(2) << std::setfill('0') << (int)c[i];
-    return oss.str();
-}
-
-void MD5Util::guardarHash(const std::string& hash, const std::string& hashFile) {
-    std::ofstream out(hashFile);
-    if (out) out << hash;
-}
-
-std::string MD5Util::leerHash(const std::string& hashFile) {
-    std::ifstream in(hashFile);
-    std::string hash;
-    if (in) in >> hash;
-    return hash;
-}
-
-bool MD5Util::verificarArchivo(const std::string& filename, const std::string& hashFile) {
-    std::string hashActual = calcularMD5(filename);
-    std::string hashGuardado = leerHash(hashFile);
-    return hashActual == hashGuardado;
-}
-
-#include <iostream>
-#include "MD5Util.h"
-
-int main() {
-    std::string archivo = "datos.txt";
-    std::string archivoHash = "Hash";
-
-    // Calcular y guardar hash
-    std::string hash = MD5Util::calcularMD5(archivo);
-    MD5Util::guardarHash(hash, archivoHash);
-
-    // Verificar integridad
-    if (MD5Util::verificarArchivo(archivo, archivoHash)) {
-        std::cout << "El archivo NO ha sido manipulado." << std::endl;
-    } else {
-        std::cout << "El archivo ha sido manipulado!" << std::endl;
-    }
-    return 0;
-}*/
 #include "hash.h"
 #include <fstream>
 #include <iostream>
@@ -124,4 +60,42 @@ bool Hash::verifyFileIntegrity(const std::string& filePath, const std::string& s
         return false;
     }
     return currentHash == storedHash;
+}
+
+void Hash::buildHashTable(Banco& banco, int fieldIndex) {
+    clearHashTable();
+    if (!banco.getClientes()) return;
+
+    banco.getClientes()->recorrer([this, fieldIndex](Cliente* client) {
+        std::string key;
+        switch (fieldIndex) {
+            case 0: key = client->get_dni(); break;
+            case 1: key = client->get_nombres(); break;
+            case 2: key = client->get_apellidos(); break;
+            case 3: key = client->get_telefono(); break;
+            case 4: key = client->get_email(); break;
+            default: return;
+        }
+        hashTable[key].push_back(client);
+    });
+}
+
+std::vector<Cliente*> Hash::searchHash(const std::string& key) {
+    auto it = hashTable.find(key);
+    return (it != hashTable.end()) ? it->second : std::vector<Cliente*>();
+}
+
+void Hash::clearHashTable() {
+    for (auto& pair : hashTable) {
+        pair.second.clear(); // No liberamos memoria, los clientes son manejados por Banco
+    }
+    hashTable.clear();
+}
+
+std::vector<std::pair<std::string, std::vector<Cliente*>>> Hash::getHashTableContents() const {
+    std::vector<std::pair<std::string, std::vector<Cliente*>>> contents;
+    for (const auto& pair : hashTable) {
+        contents.push_back(pair);
+    }
+    return contents;
 }
