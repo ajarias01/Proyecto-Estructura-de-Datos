@@ -1,9 +1,12 @@
+// pdf_generator.h
 #ifndef PDF_GENERATOR_H
 #define PDF_GENERATOR_H
 
-#include <string>
+#include "ListaDoble.h" // Asegúrate de incluir esto
+#include "Cliente.h"    // Para la declaración de Cliente
+#include "Cuenta.h"     // Para la declaración de Cuenta
+#include "hpdf.h"
 
-// Función para crear el PDF a partir del archivo datos.txt
-void generateClientDataPDF(const std::string &inputFile);
+void generateClientDataPDF(const ListaDoble<Cliente*>* clientes);
 
-#endif // PDF_GENERATOR_H
+#endif

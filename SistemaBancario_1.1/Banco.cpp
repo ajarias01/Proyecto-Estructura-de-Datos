@@ -379,3 +379,10 @@ void Banco::addAppointment(int branchId, std::chrono::system_clock::time_point t
     appointments[branchId].push_back(time);
 }
 
+// Banco.cpp
+ListaDoble<Cliente*>* Banco::getClientes() const {
+    if (!clientes) {
+        throw std::runtime_error("La lista de clientes no ha sido inicializada");
+    }
+    return clientes;
+}

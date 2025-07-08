@@ -272,7 +272,7 @@ void recuperar_backup_por_fecha(Banco& banco)
         }
         banco.setClientes(nuevos_clientes);
 
-        banco.guardar_datos_binario_sin_backup("datos.bin");
+        banco.guardar_datos_binario_sin_backup("datos.txt");
 
         cout << "\n=== BACKUP MÁS RECIENTE RECUPERADO EXITOSAMENTE ===" << endl;
         cout << "Datos cargados desde: " << nombre_archivo << endl;
@@ -382,7 +382,6 @@ void cargar_base_datos(Banco& banco) {
         return false;
     };
 
-    // Ordenar usando std::sort con comparador personalizado
     std::sort(vectorClientes.begin(), vectorClientes.end(), comparar);
 
     // Devolver los elementos ordenados a la lista
@@ -653,7 +652,7 @@ void menu_administrador(Banco& banco)
                     buscar_con_tabla_hash(banco);
                     break;
                 case 9: // Nueva opción para generar PDF
-                    generateClientDataPDF("datos.bin");
+                    generateClientDataPDF(banco.getClientes());
                     pausar_consola(); // Pausa para que el usuario vea el resultado
                     break;
                 case 10: // Nueva posición de "Salir"
@@ -999,7 +998,7 @@ void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
 
         if (cliente_existe) {
             cliente_existe->agregar_cuenta(cuenta);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1012,7 +1011,7 @@ void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
             Cliente* cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
             cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1217,7 +1216,7 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
 
         if (cliente_existe) {
             cliente_existe->agregar_cuenta(cuenta);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1232,7 +1231,7 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
             Cliente* cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
             cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1245,12 +1244,12 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
                  << " " << local_tm.tm_hour << ":" << (local_tm.tm_min < 10 ? "0" : "") << local_tm.tm_min << endl;
         }
     } catch (const std::exception& e) {
-        int fila_actual = 3;
-        mover_cursor(1, fila_actual);
+        int fila_error = 3;
+        mover_cursor(1, fila_error);
         cout << "=== ERROR AL CREAR CUENTA ===" << endl;
-        mover_cursor(1, fila_actual + 1);
+        mover_cursor(1, fila_error + 1);
         cout << "Error: " << e.what() << endl;
-        mover_cursor(1, fila_actual + 2);
+        mover_cursor(1, fila_error + 2);
         cout << "Presione Enter para regresar al menú principal...";
         cin.ignore(numeric_limits<streamsize>::max(), '\n');
         cin.get();
@@ -1320,7 +1319,7 @@ void realizar_deposito(Banco& banco, const string& dni)
 
         Fecha fecha;
         cuenta->depositar(monto, fecha);
-        banco.guardar_datos_binario("datos.bin");
+        banco.guardar_datos_binario("datos.txt");
         RespaldoDatos::respaldoClientesBinario("respaldo_clientes.bin", *banco.getClientes());
 
         fila_actual += 4;
@@ -1335,7 +1334,7 @@ void realizar_deposito(Banco& banco, const string& dni)
         mover_cursor(1, fila_actual++);
         cout << "   Nuevo saldo: $" << cuenta->get_saldo() << endl;
         mover_cursor(1, fila_actual++);
-        cout << "   Datos guardados en datos.bin" << endl;
+        cout << "   Datos guardados en datos.txt" << endl;
         mover_cursor(1, fila_actual++);
         cout << "==============================================" << endl;
         mover_cursor(1, fila_actual++);
@@ -1421,7 +1420,7 @@ void realizar_retiro(Banco& banco, const string& dni)
         Fecha fecha;
         if (cuenta->retirar(monto, fecha))
         {
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             RespaldoDatos::respaldoClientesBinario("respaldo_clientes.bin", *banco.getClientes());
             fila_actual += 4;
             mover_cursor(1, fila_actual++);
@@ -1435,7 +1434,7 @@ void realizar_retiro(Banco& banco, const string& dni)
             mover_cursor(1, fila_actual++);
             cout << "     Nuevo saldo: $" << cuenta->get_saldo() << endl;
             mover_cursor(1, fila_actual++);
-            cout << "     Datos guardados en datos.bin" << endl;
+            cout << "     Datos guardados en datos.txt" << endl;
             mover_cursor(1, fila_actual++);
             cout << "==============================================" << endl;
             mover_cursor(1, fila_actual++);
@@ -1606,7 +1605,11 @@ void consultar_cuentas(Banco& banco)
         
         detener_marquesina();
         
-        banco.consultar_cuentas_cliente(dni, nombre, apellido, fila_actual);
+        banco.consultar_cuentas_cliente(dni, nombre, apellido, fila_actual, [](Cuenta* cuenta) {
+            cout << "ID: " << cuenta->get_id_cuenta()
+                 << ", Tipo: " << cuenta->get_tipo()
+                 << ", Saldo: " << cuenta->get_saldo() << endl;
+        });
         getch();
         
         inicializar_marquesina();
