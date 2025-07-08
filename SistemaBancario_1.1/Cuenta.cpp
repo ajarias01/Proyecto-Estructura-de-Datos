@@ -1,3 +1,11 @@
+/**
+ * @file Cuenta.cpp
+ * @brief Implementación de la clase Cuenta y sus métodos para la gestión de cuentas bancarias.
+ *
+ * Este archivo contiene la implementación de la clase Cuenta, que administra los datos de una cuenta bancaria,
+ * operaciones de depósito, retiro, serialización y consulta de movimientos.
+ */
+
 #include "Cuenta.h"
 #include "GestorClientes.h"
 #include <stdexcept>
@@ -7,7 +15,10 @@
 #include <iostream>
 #include <stdexcept>
 
-
+/**
+ * @brief Constructor por defecto de Cuenta.
+ * Inicializa los atributos básicos y la lista de movimientos vacía.
+ */
 Cuenta::Cuenta() {
     id_cuenta = "";
     saldo = 0;
@@ -15,6 +26,13 @@ Cuenta::Cuenta() {
     branchId = 0;
     appointmentTime = std::chrono::system_clock::time_point();
 }
+
+/**
+ * @brief Constructor parametrizado de Cuenta.
+ * @param id ID de la cuenta
+ * @param saldo_inicial Saldo inicial de la cuenta
+ * @param fecha Fecha de apertura
+ */
 Cuenta::Cuenta(std::string id, double saldo_inicial, Fecha fecha) {
     try {
         if (id.empty()) throw std::invalid_argument("ID de cuenta inválido");
@@ -31,10 +49,18 @@ Cuenta::Cuenta(std::string id, double saldo_inicial, Fecha fecha) {
     }
 }
 
+/**
+ * @brief Destructor de Cuenta.
+ * Libera la memoria de la lista de movimientos.
+ */
 Cuenta::~Cuenta() {
     delete movimientos;
 }
 
+/**
+ * @brief Guarda los datos de la cuenta en un archivo binario.
+ * @param archivo Puntero al archivo binario abierto para escritura
+ */
 void Cuenta::guardar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
@@ -54,6 +80,10 @@ void Cuenta::guardar_binario(FILE* archivo) {
     }
 }
 
+/**
+ * @brief Carga los datos de la cuenta desde un archivo binario.
+ * @param archivo Puntero al archivo binario abierto para lectura
+ */
 void Cuenta::cargar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para lectura");
@@ -87,15 +117,48 @@ void Cuenta::cargar_binario(FILE* archivo) {
     }
 }
 
+/**
+ * @brief Obtiene el ID de la cuenta.
+ * @return ID de la cuenta como string
+ */
 std::string Cuenta::get_id_cuenta() { return id_cuenta; }
+/**
+ * @brief Obtiene el saldo de la cuenta.
+ * @return Saldo actual
+ */
 double Cuenta::get_saldo() { return saldo; }
+/**
+ * @brief Obtiene la fecha de apertura de la cuenta.
+ * @return Fecha de apertura
+ */
 Fecha Cuenta::get_fecha_apertura() { return fecha_apertura; }
+/**
+ * @brief Obtiene la lista de movimientos de la cuenta.
+ * @return Puntero a la lista doble de movimientos
+ */
 ListaDoble<Movimiento>* Cuenta::get_movimientos() { return movimientos; }
 
+/**
+ * @brief Establece el ID de la cuenta.
+ * @param id Nuevo ID de la cuenta
+ */
 void Cuenta::set_id_cuenta(std::string id) { id_cuenta = id; }
+/**
+ * @brief Establece el saldo de la cuenta.
+ * @param _saldo Nuevo saldo
+ */
 void Cuenta::set_saldo(double _saldo) { saldo = _saldo; }
+/**
+ * @brief Establece la fecha de apertura de la cuenta.
+ * @param fecha Nueva fecha de apertura
+ */
 void Cuenta::set_fecha_apertura(Fecha fecha) { fecha_apertura = fecha; }
 
+/**
+ * @brief Realiza un depósito en la cuenta.
+ * @param monto Monto a depositar
+ * @param fecha Fecha del depósito
+ */
 void Cuenta::depositar(double monto, Fecha fecha) {
     try {
         if (monto <= 0) throw std::invalid_argument("Monto de depósito debe ser mayor a 0");
@@ -108,6 +171,12 @@ void Cuenta::depositar(double monto, Fecha fecha) {
     }
 }
 
+/**
+ * @brief Realiza un retiro de la cuenta.
+ * @param monto Monto a retirar
+ * @param fecha Fecha del retiro
+ * @return true si el retiro fue exitoso, false en caso contrario
+ */
 bool Cuenta::retirar(double monto, Fecha fecha) {
     try {
         if (monto <= 0) throw std::invalid_argument("Monto de retiro debe ser mayor a 0");
@@ -123,9 +192,19 @@ bool Cuenta::retirar(double monto, Fecha fecha) {
     }
 }
 
+/**
+ * @brief Consulta el saldo actual de la cuenta.
+ * @return Saldo actual
+ */
 double Cuenta::consultar_saldo() {
     return saldo;
 }
+
+/**
+ * @brief Consulta e imprime los movimientos de la cuenta en un rango de fechas.
+ * @param inicio Fecha de inicio
+ * @param fin Fecha de fin
+ */
 void Cuenta::consultar_movimientos_rango(Fecha inicio, Fecha fin) {
     try {
         if (inicio > fin) throw std::invalid_argument("Rango de fechas inválido");

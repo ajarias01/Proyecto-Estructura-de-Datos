@@ -1,3 +1,11 @@
+/**
+ * @file Cliente.cpp
+ * @brief Implementación de la clase Cliente y sus métodos para la gestión de datos y cuentas.
+ *
+ * Este archivo contiene la implementación de la clase Cliente, que administra los datos personales,
+ * las cuentas asociadas y la serialización/deserialización de la información del cliente.
+ */
+
 #include "Cliente.h"
 #include "Ahorro.h"
 #include "Corriente.h"
@@ -6,10 +14,25 @@
 #include <algorithm>
 #include <conio.h>
 
+/**
+ * @brief Constructor por defecto de Cliente.
+ * Inicializa la lista de cuentas vacía.
+ */
 Cliente::Cliente() {
     cuentas = new ListaDoble<Cuenta*>();
 }
 
+/**
+ * @brief Constructor parametrizado de Cliente.
+ * @param _dni DNI del cliente
+ * @param _nombres Nombres del cliente
+ * @param _apellidos Apellidos del cliente
+ * @param _direccion Dirección del cliente
+ * @param _telefono Teléfono del cliente
+ * @param _email Email del cliente
+ * @param _fecha_nacimiento Fecha de nacimiento
+ * @param _contrasenia Contraseña del cliente
+ */
 Cliente::Cliente(std::string _dni, std::string _nombres, std::string _apellidos, std::string _direccion,
                 std::string _telefono, std::string _email, Fecha _fecha_nacimiento, std::string _contrasenia)
                 : dni(_dni), nombres(_nombres), apellidos(_apellidos), direccion(_direccion),
@@ -17,6 +40,11 @@ Cliente::Cliente(std::string _dni, std::string _nombres, std::string _apellidos,
     cuentas = new ListaDoble<Cuenta*>();
 }
 
+/**
+ * @brief Constructor de copia de Cliente.
+ * Realiza una copia profunda de los datos y las cuentas asociadas.
+ * @param otro Cliente a copiar
+ */
 Cliente::Cliente(const Cliente& otro) {
     dni = otro.dni;
     nombres = otro.nombres;
@@ -38,6 +66,10 @@ Cliente::Cliente(const Cliente& otro) {
     }
 }
 
+/**
+ * @brief Destructor de Cliente.
+ * Libera la memoria de todas las cuentas asociadas.
+ */
 Cliente::~Cliente() {
     if (cuentas) {
         cuentas->recorrer([](Cuenta* c) { delete c; });
@@ -45,6 +77,12 @@ Cliente::~Cliente() {
     }
 }
 
+/**
+ * @brief Operador de asignación para Cliente.
+ * Realiza una copia profunda de los datos y las cuentas asociadas.
+ * @param otro Cliente a asignar
+ * @return Referencia a este objeto
+ */
 Cliente& Cliente::operator=(const Cliente& otro) {
     if (this != &otro) {
         dni = otro.dni;
@@ -73,29 +111,105 @@ Cliente& Cliente::operator=(const Cliente& otro) {
     return *this;
 }
 
+/**
+ * @brief Obtiene el DNI del cliente.
+ * @return DNI como string
+ */
 std::string Cliente::get_dni() const { return dni; }
+/**
+ * @brief Obtiene los nombres del cliente.
+ * @return Nombres como string
+ */
 std::string Cliente::get_nombres() const { return nombres; }
+/**
+ * @brief Obtiene los apellidos del cliente.
+ * @return Apellidos como string
+ */
 std::string Cliente::get_apellidos() const { return apellidos; }
+/**
+ * @brief Obtiene la dirección del cliente.
+ * @return Dirección como string
+ */
 std::string Cliente::get_direccion() const { return direccion; }
+/**
+ * @brief Obtiene el teléfono del cliente.
+ * @return Teléfono como string
+ */
 std::string Cliente::get_telefono() const { return telefono; }
+/**
+ * @brief Obtiene el email del cliente.
+ * @return Email como string
+ */
 std::string Cliente::get_email() const { return email; }
+/**
+ * @brief Obtiene la fecha de nacimiento del cliente.
+ * @return Fecha de nacimiento
+ */
 Fecha Cliente::get_fecha_nacimiento() const { return fecha_nacimiento; }
+/**
+ * @brief Obtiene la contraseña del cliente.
+ * @return Contraseña como string
+ */
 std::string Cliente::get_contrasenia() const { return contrasenia; }
+/**
+ * @brief Obtiene la lista de cuentas asociadas al cliente.
+ * @return Puntero a la lista doble de cuentas
+ */
 ListaDoble<Cuenta*>* Cliente::get_cuentas() const { return cuentas; }
 
+/**
+ * @brief Establece el DNI del cliente.
+ * @param _dni Nuevo DNI
+ */
 void Cliente::set_dni(std::string _dni) { dni = _dni; }
+/**
+ * @brief Establece los nombres del cliente.
+ * @param _nombres Nuevos nombres
+ */
 void Cliente::set_nombres(std::string _nombres) { nombres = _nombres; }
+/**
+ * @brief Establece los apellidos del cliente.
+ * @param _apellidos Nuevos apellidos
+ */
 void Cliente::set_apellidos(std::string _apellidos) { apellidos = _apellidos; }
+/**
+ * @brief Establece la dirección del cliente.
+ * @param _direccion Nueva dirección
+ */
 void Cliente::set_direccion(std::string _direccion) { direccion = _direccion; }
+/**
+ * @brief Establece el teléfono del cliente.
+ * @param _telefono Nuevo teléfono
+ */
 void Cliente::set_telefono(std::string _telefono) { telefono = _telefono; }
+/**
+ * @brief Establece el email del cliente.
+ * @param _email Nuevo email
+ */
 void Cliente::set_email(std::string _email) { email = _email; }
+/**
+ * @brief Establece la fecha de nacimiento del cliente.
+ * @param _fecha Nueva fecha de nacimiento
+ */
 void Cliente::set_fecha_nacimiento(Fecha _fecha) { fecha_nacimiento = _fecha; }
+/**
+ * @brief Establece la contraseña del cliente.
+ * @param _contrasenia Nueva contraseña
+ */
 void Cliente::set_contrasenia(std::string _contrasenia) { contrasenia = _contrasenia; }
 
+/**
+ * @brief Agrega una cuenta a la lista de cuentas del cliente.
+ * @param cuenta Puntero a la cuenta a agregar
+ */
 void Cliente::agregar_cuenta(Cuenta* cuenta) {
     if (cuentas) cuentas->insertar_cola(cuenta);
 }
 
+/**
+ * @brief Guarda los datos del cliente y sus cuentas en un archivo binario.
+ * @param archivo Puntero al archivo binario abierto para escritura
+ */
 void Cliente::guardar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
@@ -174,6 +288,10 @@ void Cliente::guardar_binario(FILE* archivo) {
     }
 }
 
+/**
+ * @brief Carga los datos del cliente y sus cuentas desde un archivo binario.
+ * @param archivo Puntero al archivo binario abierto para lectura
+ */
 void Cliente::cargar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para lectura");
@@ -311,6 +429,11 @@ void Cliente::cargar_binario(FILE* archivo) {
     }
 }
 
+/**
+ * @brief Busca una cuenta del cliente por su ID.
+ * @param id_cuenta ID de la cuenta a buscar
+ * @return Puntero a la cuenta si se encuentra, nullptr en caso contrario
+ */
 Cuenta* Cliente::buscar_cuenta(const std::string id_cuenta) {
     if (!cuentas) return nullptr;
     Cuenta* resultado = nullptr;
@@ -321,6 +444,10 @@ Cuenta* Cliente::buscar_cuenta(const std::string id_cuenta) {
     return resultado;
 }
 
+/**
+ * @brief Devuelve una representación en string de los datos principales del cliente.
+ * @return String con DNI, nombre y apellido
+ */
 std::string Cliente::to_string() const {
     return "DNI: " + dni + ", Nombre: " + nombres + ", Apellido: " + apellidos;
 }

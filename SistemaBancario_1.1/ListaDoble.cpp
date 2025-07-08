@@ -1,3 +1,11 @@
+/**
+ * @file ListaDoble.cpp
+ * @brief Implementación de la clase template ListaDoble para listas doblemente enlazadas circulares.
+ *
+ * Este archivo contiene la implementación de la clase ListaDoble, que permite gestionar listas doblemente enlazadas
+ * circulares genéricas, con operaciones de inserción, eliminación, recorrido, filtrado y acceso por índice.
+ */
+
 #include "ListaDoble.h"
 #include "Fecha.h"
 #include "Movimiento.h"
@@ -5,6 +13,10 @@
 #include <iostream>
 #include <stdexcept>
 
+/**
+ * @brief Constructor de ListaDoble con cabeza inicial.
+ * @param _cabeza Nodo cabeza inicial
+ */
 template <typename T>
 ListaDoble<T>::ListaDoble(Nodo<T>* _cabeza) {
     cabeza = _cabeza;
@@ -15,12 +27,18 @@ ListaDoble<T>::ListaDoble(Nodo<T>* _cabeza) {
     }
 }
 
+/**
+ * @brief Constructor por defecto de ListaDoble.
+ */
 template <typename T>
 ListaDoble<T>::ListaDoble() {
     cabeza = nullptr;
     cola = nullptr;
 }
 
+/**
+ * @brief Destructor de ListaDoble. Libera todos los nodos y sus valores si son punteros.
+ */
 template <typename T>
 ListaDoble<T>::~ListaDoble() {
     if (!esta_vacia()) {
@@ -40,26 +58,46 @@ ListaDoble<T>::~ListaDoble() {
     }
 }
 
+/**
+ * @brief Obtiene el nodo cabeza de la lista.
+ * @return Puntero al nodo cabeza
+ */
 template <typename T>
 Nodo<T>* ListaDoble<T>::get_cabeza() {
     return cabeza;
 }
 
+/**
+ * @brief Establece el nodo cabeza de la lista.
+ * @param nueva_cabeza Nuevo nodo cabeza
+ */
 template <typename T>
 void ListaDoble<T>::set_cabeza(Nodo<T>* nueva_cabeza) {
     cabeza = nueva_cabeza;
 }
 
+/**
+ * @brief Obtiene el nodo cola de la lista.
+ * @return Puntero al nodo cola
+ */
 template <typename T>
 Nodo<T>* ListaDoble<T>::get_cola() {
     return cola;
 }
 
+/**
+ * @brief Establece el nodo cola de la lista.
+ * @param nueva_cola Nuevo nodo cola
+ */
 template <typename T>
 void ListaDoble<T>::set_cola(Nodo<T>* nueva_cola) {
     cola = nueva_cola;
 }
 
+/**
+ * @brief Inserta un valor al final de la lista.
+ * @param valor Valor a insertar
+ */
 template <typename T>
 void ListaDoble<T>::insertar_cola(T valor) {
     try {
@@ -81,6 +119,9 @@ void ListaDoble<T>::insertar_cola(T valor) {
     }
 }
 
+/**
+ * @brief Imprime todos los valores de la lista por consola.
+ */
 template <typename T>
 void ListaDoble<T>::imprimir() {
     if (esta_vacia()) {
@@ -95,11 +136,19 @@ void ListaDoble<T>::imprimir() {
     std::cout << std::endl;
 }
 
+/**
+ * @brief Verifica si la lista está vacía.
+ * @return true si la lista está vacía, false en caso contrario
+ */
 template <typename T>
 bool ListaDoble<T>::esta_vacia() {
     return (cabeza == nullptr);
 }
 
+/**
+ * @brief Recorre la lista y aplica una función a cada elemento.
+ * @param func Función a aplicar
+ */
 template <typename T>
 void ListaDoble<T>::recorrer(std::function<void(T)> func)const {
     if (esta_vacia()) return;
@@ -110,6 +159,11 @@ void ListaDoble<T>::recorrer(std::function<void(T)> func)const {
     } while (aux != cabeza);
 }
 
+/**
+ * @brief Filtra la lista aplicando un criterio y ejecuta una acción sobre los elementos que cumplen.
+ * @param criterio Función booleana de filtrado
+ * @param accion Acción a ejecutar sobre los elementos filtrados
+ */
 template <typename T>
 void ListaDoble<T>::filtrar(std::function<bool(T)> criterio, std::function<void(T)> accion) {
     if (esta_vacia()) return;
@@ -122,6 +176,11 @@ void ListaDoble<T>::filtrar(std::function<bool(T)> criterio, std::function<void(
     } while (aux != cabeza);
 }
 
+/**
+ * @brief Busca el primer nodo que cumple un criterio.
+ * @param criterio Función booleana de búsqueda
+ * @return Puntero al nodo encontrado o nullptr si no existe
+ */
 template <typename T>
 Nodo<T>* ListaDoble<T>::buscar(std::function<bool(T)> criterio) {
     if (esta_vacia()) return nullptr;
@@ -135,6 +194,10 @@ Nodo<T>* ListaDoble<T>::buscar(std::function<bool(T)> criterio) {
     return nullptr;
 }
 
+/**
+ * @brief Elimina un nodo de la lista, liberando memoria y el valor si es puntero.
+ * @param nodo Nodo a eliminar
+ */
 template <typename T>
 void ListaDoble<T>::eliminar(Nodo<T>* nodo) {
     try {
@@ -163,11 +226,21 @@ void ListaDoble<T>::eliminar(Nodo<T>* nodo) {
     }
 }
 
+/**
+ * @brief Verifica si la lista está vacía (versión const).
+ * @return true si la lista está vacía, false en caso contrario
+ */
 template <typename T>
 bool ListaDoble<T>::esta_vacia() const { // Añadir const aquí
     return (cabeza == nullptr);
 }
 
+/**
+ * @brief Obtiene el valor en la posición dada.
+ * @param index Índice del elemento
+ * @return Valor en la posición indicada
+ * @throws std::out_of_range si el índice es inválido
+ */
 template <typename T>
 T ListaDoble<T>::get_contador(int index) const {
     if (esta_vacia()) throw std::out_of_range("Lista vacía");
@@ -181,6 +254,12 @@ T ListaDoble<T>::get_contador(int index) const {
     throw std::out_of_range("Índice fuera de rango");
 }
 
+/**
+ * @brief Establece el valor en la posición dada.
+ * @param index Índice del elemento
+ * @param valor Nuevo valor a establecer
+ * @throws std::out_of_range si el índice es inválido
+ */
 template <typename T>
 void ListaDoble<T>::set_contador(int index, T valor) {
     if (esta_vacia()) throw std::out_of_range("Lista vacía");
@@ -197,6 +276,10 @@ void ListaDoble<T>::set_contador(int index, T valor) {
     throw std::out_of_range("Índice fuera de rango");
 }
 
+/**
+ * @brief Obtiene el tamaño (cantidad de elementos) de la lista.
+ * @return Número de elementos en la lista
+ */
 template <typename T>
 int ListaDoble<T>::getTam() const {
     if (esta_vacia()) return 0;

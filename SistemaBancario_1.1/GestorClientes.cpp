@@ -1,13 +1,39 @@
+/**
+ * @file GestorClientes.cpp
+ * @brief Implementación de utilidades para ordenamiento y búsqueda de clientes y movimientos.
+ *
+ * Este archivo contiene funciones para ordenar listas de clientes y movimientos por diferentes campos,
+ * utilizando algoritmos de radix sort y counting sort, así como funciones de búsqueda binaria.
+ */
+
 #include "GestorClientes.h"
 using namespace std;
 
+/**
+ * @brief Obtiene una clave numérica (YYYYMMDD) a partir de una fecha.
+ * @param f Fecha
+ * @return Clave numérica de la fecha
+ */
 int GestorClientes::dateKey(const Fecha& f) {
     return f.get_anuario() * 10000 + f.get_mes() * 100 + f.get_dia();
 }
 
+/**
+ * @brief Obtiene una clave numérica (YYYYMMDD) a partir de un movimiento.
+ * @param m Movimiento
+ * @return Clave numérica de la fecha del movimiento
+ */
 int GestorClientes::dateKey(const Movimiento& m) {
     return dateKey(m.get_fecha());
 }
+
+/**
+ * @brief Counting sort por carácter para ordenar clientes por un campo string.
+ * @param clientes Lista de clientes
+ * @param n Número de clientes
+ * @param pos Posición del carácter (de derecha a izquierda)
+ * @param getter Función para obtener el campo string del cliente
+ */
 void GestorClientes::countingSortByChar(ListaDoble<Cliente*>& clientes, int n, int pos, std::function<std::string(Cliente*)> getter) {
     std::vector<Cliente*> output(n);
     int count[256] = {0};
@@ -27,6 +53,12 @@ void GestorClientes::countingSortByChar(ListaDoble<Cliente*>& clientes, int n, i
         clientes.set_contador(i, output[i]); // Debes tener un método set(int, Cliente*)
 }
 
+/**
+ * @brief Radix sort para ordenar clientes por un campo string.
+ * @param clientes Lista de clientes
+ * @param n Número de clientes
+ * @param getter Función para obtener el campo string del cliente
+ */
 void GestorClientes::radixSortStringCampo(ListaDoble<Cliente*>& clientes, int n, std::function<std::string(Cliente*)> getter) {
     int maxLen = 0;
     for (int i = 0; i < n; i++) {
@@ -37,6 +69,13 @@ void GestorClientes::radixSortStringCampo(ListaDoble<Cliente*>& clientes, int n,
         countingSortByChar(clientes, n, pos, getter);
 }
 
+/**
+ * @brief Obtiene el valor máximo de un campo numérico en la lista de clientes.
+ * @param clientes Lista de clientes
+ * @param n Número de clientes
+ * @param getter Función para obtener el campo numérico del cliente
+ * @return Valor máximo encontrado
+ */
 int GestorClientes::getMaxCampoNumerico(const ListaDoble<Cliente*>& clientes, int n, std::function<int(Cliente*)> getter) {
     int mx = getter(clientes.get_contador(0));
     for (int i = 1; i < n; i++)
@@ -45,6 +84,13 @@ int GestorClientes::getMaxCampoNumerico(const ListaDoble<Cliente*>& clientes, in
     return mx;
 }
 
+/**
+ * @brief Counting sort para un dígito específico de un campo numérico.
+ * @param clientes Lista de clientes
+ * @param n Número de clientes
+ * @param exp Exponente del dígito (1, 10, 100, ...)
+ * @param getter Función para obtener el campo numérico del cliente
+ */
 void GestorClientes::countSortCampoNumerico(ListaDoble<Cliente*>& clientes, int n, int exp, std::function<int(Cliente*)> getter) {
     std::vector<Cliente*> output(n);
     int count[10] = {0};
@@ -60,11 +106,22 @@ void GestorClientes::countSortCampoNumerico(ListaDoble<Cliente*>& clientes, int 
         clientes.set_contador(i, output[i]);
 }
 
+/**
+ * @brief Radix sort para ordenar clientes por un campo numérico.
+ * @param clientes Lista de clientes
+ * @param n Número de clientes
+ * @param getter Función para obtener el campo numérico del cliente
+ */
 void GestorClientes::radixSortCampoNumerico(ListaDoble<Cliente*>& clientes, int n, std::function<int(Cliente*)> getter) {
     int m = getMaxCampoNumerico(clientes, n, getter);
     for (int exp = 1; m / exp > 0; exp *= 10)
         countSortCampoNumerico(clientes, n, exp, getter);
 }
+
+/**
+ * @brief Radix sort para ordenar un vector de movimientos por fecha.
+ * @param arr Vector de movimientos
+ */
 void GestorClientes::radixSortFecha(std::vector<Movimiento>& arr) {
     size_t n = arr.size();
     std::vector<Movimiento> output(n);
@@ -97,6 +154,12 @@ void GestorClientes::radixSortFecha(std::vector<Movimiento>& arr) {
     }
 }
 
+/**
+ * @brief Búsqueda binaria para encontrar el primer movimiento con fecha >= target.
+ * @param arr Vector de movimientos
+ * @param target Clave numérica de la fecha objetivo
+ * @return Índice del primer movimiento >= target
+ */
 int GestorClientes::lowerBound(const std::vector<Movimiento>& arr, int target) {
     int lo = 0, hi = (int)arr.size();
     while (lo < hi) {
@@ -107,6 +170,12 @@ int GestorClientes::lowerBound(const std::vector<Movimiento>& arr, int target) {
     return lo;
 }
 
+/**
+ * @brief Búsqueda binaria para encontrar el primer movimiento con fecha > target.
+ * @param arr Vector de movimientos
+ * @param target Clave numérica de la fecha objetivo
+ * @return Índice del primer movimiento > target
+ */
 int GestorClientes::upperBound(const std::vector<Movimiento>& arr, int target) {
     int lo = 0, hi = (int)arr.size();
     while (lo < hi) {
