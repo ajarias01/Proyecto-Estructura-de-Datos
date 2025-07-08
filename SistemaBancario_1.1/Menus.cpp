@@ -9,7 +9,8 @@
 #include "hash.h"
 #include "ArbolBinario.h"
 #include "Ubicacion.h"
-#include "QR.h"
+#include "QRCodeGenerator.h"
+#include "pdf_generator.h"
 #include <stdexcept>
 #include <conio.h>
 #include <random>
@@ -574,7 +575,7 @@ void cifrar_archivos_txt(Banco& banco) {
 
 void menu_administrador(Banco& banco)
 {
-    const int NUM_OPCIONES = 10;
+    const int NUM_OPCIONES = 11; // Incrementado a 11
     const char* OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
@@ -585,6 +586,7 @@ void menu_administrador(Banco& banco)
         "Descifrar archivos",
         "Verificar integridad de datos (Hash)",
         "Generar tabla Hash",
+        "Generar PDF de clientes", // Nueva opción
         "Salir"
     };
 
@@ -650,10 +652,14 @@ void menu_administrador(Banco& banco)
                 case 8:
                     buscar_con_tabla_hash(banco);
                     break;
-                case 9:
+                case 9: // Nueva opción para generar PDF
+                    generateClientDataPDF("datos.bin");
+                    pausar_consola(); // Pausa para que el usuario vea el resultado
+                    break;
+                case 10: // Nueva posición de "Salir"
                     return;
             }
-        } while (opcion != 8); // Cambiado a 8 para coincidir con "Salir" (índice 8)
+        } while (opcion != 10); // Cambiado a 10 para coincidir con "Salir"
     }
     catch (const std::exception& e)
     {
@@ -729,7 +735,7 @@ void menu_cliente(Banco& banco)
                             if (id_cuenta == "__ESC__") break;
                         } while (!validar_id_cuenta(cliente, id_cuenta));
                         if (id_cuenta != "__ESC__") {
-                            QR qr(cliente->get_nombres() + " " + cliente->get_apellidos(), id_cuenta);
+                            QRCodeGenerator qr(cliente->get_nombres() + " " + cliente->get_apellidos(), id_cuenta);
                             qr.generateQRAndPDF();
                         }
                     }
