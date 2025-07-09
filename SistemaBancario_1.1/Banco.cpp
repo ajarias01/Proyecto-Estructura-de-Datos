@@ -1,3 +1,11 @@
+/**
+ * @file Banco.cpp
+ * @brief Implementación de la clase Banco y sus métodos para la gestión de clientes, cuentas y respaldos.
+ *
+ * Este archivo contiene la implementación de la clase Banco, que administra la lista de clientes,
+ * operaciones de búsqueda, inserción, respaldo, restauración y gestión de turnos en sucursales.
+ */
+
 #include "Banco.h"
 #include "RespaldoDatos.h"
 #include "Menus.h"
@@ -8,18 +16,29 @@
 #include <fstream>
 #include <algorithm>
 
+/**
+ * @brief Constructor de la clase Banco.
+ * Inicializa la lista de clientes y variables auxiliares.
+ */
 Banco::Banco() {
     clientes = new ListaDoble<Cliente*>();
     datos_cargados = false; // Inicializar bandera
     appointments.resize(4);
-
 }
 
+/**
+ * @brief Destructor de la clase Banco.
+ * Libera la memoria de todos los clientes y la lista.
+ */
 Banco::~Banco() {
     clientes->recorrer([](Cliente* c) { delete c; });
     delete clientes;
 }
 
+/**
+ * @brief Agrega un cliente a la lista, validando duplicados por DNI.
+ * @param cliente Puntero al cliente a agregar
+ */
 void Banco::agregar_cliente(Cliente* cliente) {
     try {
         if (buscar_cliente(cliente->get_dni())) throw std::invalid_argument("Cliente ya existe");
@@ -29,10 +48,17 @@ void Banco::agregar_cliente(Cliente* cliente) {
     }
 }
 
+/**
+ * @brief Reemplaza la lista de clientes por una nueva.
+ * @param nuevos_clientes Puntero a la nueva lista de clientes
+ */
 void Banco::setClientes(ListaDoble<Cliente*>* nuevos_clientes) {
     clientes = nuevos_clientes;
 }
 
+/**
+ * @brief Elimina todos los clientes y reinicia la lista.
+ */
 void Banco::limpiar_clientes() {
     if (clientes) {
         clientes->recorrer([](Cliente* c) { delete c; });
@@ -41,6 +67,11 @@ void Banco::limpiar_clientes() {
     }
 }
 
+/**
+ * @brief Busca un cliente por DNI.
+ * @param dni DNI del cliente a buscar
+ * @return Puntero al cliente si se encuentra, nullptr en caso contrario
+ */
 Cliente* Banco::buscar_cliente(std::string dni) {
     try {
         Cliente* resultado = nullptr;
@@ -55,6 +86,14 @@ Cliente* Banco::buscar_cliente(std::string dni) {
     }
 }
 
+/**
+ * @brief Consulta y muestra las cuentas de un cliente según criterios de búsqueda.
+ * @param dni DNI del cliente
+ * @param nombre Nombre del cliente
+ * @param apellido Apellido del cliente
+ * @param fila_actual Fila de inicio para impresión en consola
+ * @param callback Función callback para procesar cada cuenta encontrada
+ */
 void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::string apellido, int fila_actual,
                                       std::function<void(Cuenta*)> callback) {
     try {
@@ -164,6 +203,12 @@ void Banco::consultar_cuentas_cliente(std::string dni, std::string nombre, std::
     }
 }
 
+/**
+ * @brief Consulta los movimientos de un cliente en un rango de fechas.
+ * @param dni DNI del cliente
+ * @param inicio Fecha de inicio
+ * @param fin Fecha de fin
+ */
 void Banco::consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin) {
     try {
         if (dni.empty()) throw std::invalid_argument("El DNI no puede estar vacío");
@@ -182,6 +227,10 @@ void Banco::consultar_movimientos_rango(std::string dni, Fecha inicio, Fecha fin
     }
 }
 
+/**
+ * @brief Guarda los datos de clientes en un archivo binario y realiza respaldo.
+ * @param archivo Nombre del archivo binario
+ */
 void Banco::guardar_datos_binario(std::string archivo) {
     try {
         FILE* file = fopen(archivo.c_str(), "wb");
@@ -197,6 +246,10 @@ void Banco::guardar_datos_binario(std::string archivo) {
     }
 }
 
+/**
+ * @brief Guarda los datos de clientes en un archivo binario sin crear respaldo.
+ * @param archivo Nombre del archivo binario
+ */
 void Banco::guardar_datos_binario_sin_backup(std::string archivo) {
     FILE* file = fopen(archivo.c_str(), "wb");
     if (!file) throw std::runtime_error("No se pudo abrir/crear el archivo para escritura");
@@ -207,6 +260,10 @@ void Banco::guardar_datos_binario_sin_backup(std::string archivo) {
     fclose(file);
 }
 
+/**
+ * @brief Carga los datos de clientes desde un archivo binario, restaurando desde respaldo si es necesario.
+ * @param archivo Nombre del archivo binario
+ */
 void Banco::cargar_datos_binario(std::string archivo) {
     try {
         if (datos_cargados) return;
@@ -273,6 +330,10 @@ void Banco::cargar_datos_binario(std::string archivo) {
     }
 }
 
+/**
+ * @brief Carga los datos de clientes desde un archivo binario recuperado (sin usar bandera de datos cargados).
+ * @param archivo Nombre del archivo binario
+ */
 void Banco::cargar_datos_recuperados_binario(std::string archivo) {
     // NO uses la bandera datos_cargados aquí
     try {
@@ -309,6 +370,11 @@ void Banco::cargar_datos_recuperados_binario(std::string archivo) {
         throw;
     }
 }
+
+/**
+ * @brief Restaura la lista de clientes desde un archivo de respaldo binario.
+ * @param nombreArchivo Nombre del archivo de respaldo
+ */
 void Banco::restaurar_desde_respaldo(const std::string& nombreArchivo) {
     try {
         std::cout << "Abriendo backup: " << nombreArchivo << std::endl;
@@ -334,6 +400,11 @@ void Banco::restaurar_desde_respaldo(const std::string& nombreArchivo) {
     }
 }
 
+/**
+ * @brief Busca el siguiente turno disponible en una sucursal.
+ * @param branchId ID de la sucursal (1, 2 o 3)
+ * @return Fecha y hora del siguiente turno disponible
+ */
 std::chrono::system_clock::time_point Banco::findNextAvailableSlot(int branchId) {
     if (branchId < 1 || branchId > 3) throw std::invalid_argument("Sucursal inválida");
     auto now = std::chrono::system_clock::now();
@@ -366,6 +437,11 @@ std::chrono::system_clock::time_point Banco::findNextAvailableSlot(int branchId)
     }
 }
 
+/**
+ * @brief Verifica si un horario es laboral (lunes a viernes, 9:00-17:00).
+ * @param tp Punto en el tiempo a verificar
+ * @return true si es horario laboral, false en caso contrario
+ */
 bool Banco::isWorkingHour(const std::chrono::system_clock::time_point& tp) {
     time_t tt = std::chrono::system_clock::to_time_t(tp);
     tm local_tm = *localtime(&tt);
@@ -374,12 +450,20 @@ bool Banco::isWorkingHour(const std::chrono::system_clock::time_point& tp) {
     return (wday >= 1 && wday <= 5 && hour >= 9 && hour < 17);
 }
 
+/**
+ * @brief Agrega un turno (cita) a la sucursal indicada.
+ * @param branchId ID de la sucursal
+ * @param time Fecha y hora de la cita
+ */
 void Banco::addAppointment(int branchId, std::chrono::system_clock::time_point time) {
     if (branchId < 1 || branchId > 3) throw std::invalid_argument("Sucursal inválida");
     appointments[branchId].push_back(time);
 }
 
-// Banco.cpp
+/**
+ * @brief Obtiene la lista de clientes del banco.
+ * @return Puntero a la lista doble de clientes
+ */
 ListaDoble<Cliente*>* Banco::getClientes() const {
     if (!clientes) {
         throw std::runtime_error("La lista de clientes no ha sido inicializada");

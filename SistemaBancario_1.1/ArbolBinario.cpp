@@ -1,3 +1,13 @@
+/**
+ * @file ArbolBinario.cpp
+ * @brief Implementación de las funciones para el manejo de árboles binarios y AVL de clientes.
+ *
+ * Este archivo contiene la implementación de las funciones para la creación, inserción,
+ * balanceo y visualización de árboles binarios y AVL, utilizados para organizar y mostrar
+ * clientes en el sistema bancario. Incluye algoritmos para impresión en formato ASCII y
+ * utilidades para estadísticas y manejo de memoria.
+ */
+
 #include "ArbolBinario.h"
 #include "validaciones.h" 
 #include "Banco.h"
@@ -15,7 +25,7 @@
 
 using namespace std;
 
-// Declaraciones de funciones externas (sin incluir Menus.h para evitar conflictos con windows.h)
+
 extern void ajustar_cursor_para_marquesina();
 extern int seleccionar_opcion(const char* titulo, const char* opciones[], int num_opciones, int fila_inicio);
 extern void detener_marquesina();
@@ -46,17 +56,36 @@ public:
 
 typedef class asciinode_struct asciinode;
 
-// Clase del árbol AVL
+/**
+ * @class Tree
+ * @brief Nodo de un árbol AVL de clientes.
+ *
+ * Esta clase representa un nodo de un árbol AVL, utilizado para almacenar y organizar
+ * clientes según diferentes campos (DNI, nombre, apellido, teléfono o email).
+ * Cada nodo contiene un puntero al cliente, el valor del campo por el que se ordena,
+ * y punteros a los hijos izquierdo y derecho, así como la altura para el balanceo AVL.
+ */
 class Tree {
 public:
-    Tree* left, *right;
-    string element; // Cambiado a string para manejar texto
-    Cliente* cliente;
-    int height; // Altura del nodo para balanceo AVL
+    Tree* left, *right; ///< Punteros a los hijos izquierdo y derecho
+    string element;     ///< Valor del campo por el que se ordena
+    Cliente* cliente;   ///< Puntero al cliente asociado
+    int height;         ///< Altura del nodo para balanceo AVL
+    /**
+     * @brief Constructor de Tree
+     * @param elem Valor del campo por el que se ordena
+     * @param cli Puntero al cliente asociado
+     */
     Tree(string elem, Cliente* cli) : element(elem), cliente(cli), left(nullptr), right(nullptr), height(1) {}
 };
 
 // Función para obtener el valor a mostrar según el campo
+/**
+ * @brief Obtiene el valor de un campo específico de un cliente.
+ * @param cliente Puntero al cliente
+ * @param campo Índice del campo (1: DNI, 2: Nombre, 3: Apellido, 4: Teléfono, 5: Email)
+ * @return Valor del campo como string
+ */
 string obtener_valor_campo(Cliente* cliente, int campo) {
     switch(campo) {
         case 1: // DNI completo
@@ -78,7 +107,14 @@ string obtener_valor_campo(Cliente* cliente, int campo) {
     }
 }
 
-// Función para insertar en BST
+/**
+ * @brief Inserta un nodo en un árbol binario de búsqueda (BST).
+ * @param nodo Nodo raíz actual
+ * @param valor Valor a insertar
+ * @param cliente Puntero al cliente
+ * @param campo Campo por el que se ordena
+ * @return Nueva raíz del subárbol
+ */
 Tree* insertar_bst(Tree* nodo, string valor, Cliente* cliente, int campo) {
     if (!nodo) {
         return new Tree(valor, cliente);
@@ -106,7 +142,11 @@ Tree* insertar_bst(Tree* nodo, string valor, Cliente* cliente, int campo) {
     return nodo;
 }
 
-// Función para crear etiqueta truncada si es muy larga
+/**
+ * @brief Crea una etiqueta truncada para visualización en el árbol ASCII.
+ * @param valor Valor original
+ * @return Etiqueta truncada a 8 caracteres
+ */
 string crear_etiqueta(string valor) {
     if (valor.length() <= 8) {
         return valor;
@@ -117,26 +157,41 @@ string crear_etiqueta(string valor) {
 
 // FUNCIONES PARA ÁRBOL AVL
 
-// Obtener altura de un nodo
+/**
+ * @brief Obtiene la altura de un nodo AVL.
+ * @param nodo Nodo a consultar
+ * @return Altura del nodo
+ */
 int obtener_altura(Tree* nodo) {
     if (nodo == nullptr) return 0;
     return nodo->height;
 }
 
-// Calcular factor de balanceo
+/**
+ * @brief Calcula el factor de balanceo de un nodo AVL.
+ * @param nodo Nodo a consultar
+ * @return Factor de balanceo (altura izquierda - altura derecha)
+ */
 int factor_balanceo(Tree* nodo) {
     if (nodo == nullptr) return 0;
     return obtener_altura(nodo->left) - obtener_altura(nodo->right);
 }
 
-// Actualizar altura de un nodo
+/**
+ * @brief Actualiza la altura de un nodo AVL.
+ * @param nodo Nodo a actualizar
+ */
 void actualizar_altura(Tree* nodo) {
     if (nodo != nullptr) {
         nodo->height = 1 + MAX(obtener_altura(nodo->left), obtener_altura(nodo->right));
     }
 }
 
-// Rotación derecha (LL)
+/**
+ * @brief Realiza una rotación simple a la derecha (LL) en un subárbol AVL.
+ * @param y Raíz del subárbol
+ * @return Nueva raíz tras la rotación
+ */
 Tree* rotacion_derecha(Tree* y) {
     Tree* x = y->left;
     Tree* T2 = x->right;
@@ -153,7 +208,11 @@ Tree* rotacion_derecha(Tree* y) {
     return x;
 }
 
-// Rotación izquierda (RR)
+/**
+ * @brief Realiza una rotación simple a la izquierda (RR) en un subárbol AVL.
+ * @param x Raíz del subárbol
+ * @return Nueva raíz tras la rotación
+ */
 Tree* rotacion_izquierda(Tree* x) {
     Tree* y = x->right;
     Tree* T2 = y->left;
@@ -170,7 +229,14 @@ Tree* rotacion_izquierda(Tree* x) {
     return y;
 }
 
-// Insertar en árbol AVL
+/**
+ * @brief Inserta un nodo en un árbol AVL, manteniendo el balanceo.
+ * @param nodo Nodo raíz actual
+ * @param valor Valor a insertar
+ * @param cliente Puntero al cliente
+ * @param campo Campo por el que se ordena
+ * @return Nueva raíz del subárbol
+ */
 Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
     // 1. Inserción BST normal
     if (nodo == nullptr) {
@@ -285,7 +351,11 @@ Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
     return nodo;
 }
 
-// Verificar si el árbol está balanceado (para debugging)
+/**
+ * @brief Verifica si un árbol es AVL (balanceado).
+ * @param nodo Nodo raíz
+ * @return true si está balanceado, false en caso contrario
+ */
 bool verificar_avl(Tree* nodo) {
     if (nodo == nullptr) return true;
     
@@ -295,7 +365,10 @@ bool verificar_avl(Tree* nodo) {
     return verificar_avl(nodo->left) && verificar_avl(nodo->right);
 }
 
-// Mostrar estadísticas del árbol
+/**
+ * @brief Muestra estadísticas del árbol AVL (altura, balanceo, etc).
+ * @param raiz Nodo raíz del árbol
+ */
 void mostrar_estadisticas_arbol(Tree* raiz) {
     if (raiz == nullptr) {
         cout << "Árbol vacío" << endl;
@@ -465,6 +538,10 @@ void free_ascii_tree(asciinode* node) {
     free(node);
 }
 
+/**
+ * @brief Imprime el árbol AVL en formato ASCII por consola.
+ * @param t Nodo raíz del árbol
+ */
 void imprimir_arbol_ascii(Tree* t) {
     asciinode* proot;
     int xmin, i;
@@ -490,6 +567,10 @@ void imprimir_arbol_ascii(Tree* t) {
     free_ascii_tree(proot);
 }
 
+/**
+ * @brief Libera la memoria de un árbol AVL.
+ * @param nodo Nodo raíz a liberar
+ */
 void liberar_arbol(Tree* nodo) {
     if (nodo) {
         liberar_arbol(nodo->left);
@@ -498,6 +579,10 @@ void liberar_arbol(Tree* nodo) {
     }
 }
 
+/**
+ * @brief Muestra el menú y visualiza el árbol AVL de clientes según el campo seleccionado.
+ * @param banco Referencia al objeto Banco
+ */
 void mostrar_arbol_binario(Banco& banco) {
     system("cls");
     auto* clientes = banco.getClientes();

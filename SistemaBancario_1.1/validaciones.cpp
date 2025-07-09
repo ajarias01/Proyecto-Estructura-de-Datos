@@ -1,8 +1,33 @@
+/**
+ * @file validaciones.cpp
+ * @brief Implementación de funciones de validación y entrada de datos del sistema bancario
+ * @author Sistema Bancario
+ * @date 2024
+ * @details Este archivo contiene la implementación de todas las funciones de validación
+ *          y entrada de datos utilizadas en el sistema bancario, incluyendo validaciones
+ *          de entrada, formateo de datos, verificaciones de integridad y funciones
+ *          especializadas para entrada segura de datos.
+ */
+
 #include "Validaciones.h"
 using namespace std;
+
+/**
+ * @brief Limpia la línea actual en la consola y muestra un mensaje
+ * @param mensaje El mensaje a mostrar después de limpiar la línea
+ * @details Utiliza secuencias de escape ANSI para limpiar la línea actual
+ *          y mostrar un nuevo mensaje en la misma posición
+ */
 void limpiar_linea(const string& mensaje) {
     cout << "\r\033[K" << mensaje;
 }
+/**
+ * @brief Solicita al usuario ingresar solo caracteres alfabéticos
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con solo caracteres alfabéticos o "__ESC__" si se presiona ESC
+ * @details Función que solo acepta letras mayúsculas y minúsculas, rechaza números y símbolos.
+ *          Permite usar backspace para correción y ESC para cancelar.
+ */
 string ingresar_alfabetico(const string& mensaje) {
     char c;
     string palabra;
@@ -22,6 +47,13 @@ string ingresar_alfabetico(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Solicita al usuario ingresar solo números para DNI/cédula
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con solo dígitos numéricos o "__ESC__" si se presiona ESC
+ * @details Función especializada para entrada de documentos de identidad.
+ *          Solo acepta dígitos del 0-9, permite backspace y ESC para cancelar.
+ */
 string ingresar_dni(const string& mensaje) {
     char c;
     string palabra;
@@ -41,6 +73,13 @@ string ingresar_dni(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Valida y formatea una opción de entrada
+ * @param opcion Referencia a la opción a validar y formatear
+ * @return String con la opción formateada
+ * @details Convierte el primer carácter a minúscula y el resto a mayúsculas
+ *          para estandarizar el formato de las opciones ingresadas
+ */
 string validarOpcion(string& opcion) {
     for (int i = 1; i < opcion.length(); i++) {
         opcion[0] = tolower(opcion[0]);
@@ -48,6 +87,13 @@ string validarOpcion(string& opcion) {
     }
     return opcion;
 }
+/**
+ * @brief Normaliza una dirección eliminando espacios extra y formateando
+ * @param direccion La dirección a normalizar
+ * @return String con la dirección normalizada
+ * @details Elimina espacios múltiples, capitaliza la primera letra de cada palabra
+ *          y formatea la dirección para mantener consistencia en el formato
+ */
 string normalizarDireccion(string direccion) {
     bool nuevaPalabra = true;
     for (size_t i = 0; i < direccion.length(); i++) {
@@ -63,6 +109,14 @@ string normalizarDireccion(string direccion) {
     }
     return direccion;
 }
+/**
+ * @brief Solicita al usuario ingresar una dirección válida
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con la dirección ingresada y validada
+ * @details Permite ingresar direcciones con caracteres alfanuméricos, espacios, guiones,
+ *          puntos, comas, símbolos especiales y caracteres con tildes. Valida que contenga
+ *          al menos una letra o número y tiene un límite máximo de 100 caracteres.
+ */
 string ingresar_direccion(const string& mensaje) {
     char c;
     string palabra;
@@ -107,6 +161,14 @@ string ingresar_direccion(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Valida y devuelve una fecha ingresada por el usuario
+ * @param mensaje Mensaje a mostrar al usuario para solicitar la fecha
+ * @return Fecha válida ingresada por el usuario
+ * @details Solicita al usuario ingresar una fecha en formato DD/MM/AAAA,
+ *          valida que la fecha sea correcta y devuelve un objeto Fecha.
+ *          Permite usar backspace para corrección y ESC para cancelar.
+ */
 Fecha validarFecha(const string& mensaje) {
     Fecha fecha;
     char buffer[11] = {0};
@@ -152,6 +214,14 @@ Fecha validarFecha(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Solicita al usuario ingresar un email válido
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con el email válido ingresado
+ * @details Valida el formato del email durante la entrada, asegurando que contenga
+ *          solo un símbolo @, caracteres alfanuméricos, guiones, puntos y símbolos
+ *          válidos para emails. Permite backspace y ESC para cancelar.
+ */
 string ingresar_email(const std::string& mensaje) {
     char c;
     string palabra;
@@ -191,6 +261,13 @@ string ingresar_email(const std::string& mensaje) {
         }
     }
 }
+/**
+ * @brief Genera una cadena aleatoria de caracteres alfanuméricos
+ * @param n Longitud de la cadena a generar
+ * @return String con la cadena aleatoria generada
+ * @details Utiliza caracteres alfanuméricos (A-Z, 0-9) para generar IDs únicos
+ *          o códigos aleatorios. Usa generadores seguros de números aleatorios.
+ */
 string generar_cadena_aleatoria(int n) {
     static const char alfabeto[] =
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -201,6 +278,13 @@ string generar_cadena_aleatoria(int n) {
         s += alfabeto[dist(rng)];
     return s;
 }
+/**
+ * @brief Solicita al usuario ingresar solo números enteros
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return Entero válido ingresado por el usuario
+ * @details Valida que la entrada sea un número entero válido, solo acepta dígitos
+ *          del 0-9. Permite backspace para corrección y convierte a entero.
+ */
 int ingresar_enteros(const string& mensaje) {
     char c;
     string palabra;
@@ -218,6 +302,13 @@ int ingresar_enteros(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Solicita al usuario ingresar números decimales
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con el número decimal válido
+ * @details Acepta números con punto decimal y valida el formato. Solo permite
+ *          un punto decimal y números válidos. Permite backspace y ESC para cancelar.
+ */
 string ingresar_decimales(const string& mensaje) {
     char c;
     string palabra;
@@ -243,6 +334,14 @@ string ingresar_decimales(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Solicita al usuario ingresar un ID alfanumérico
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con el ID válido ingresado
+ * @details Acepta combinaciones de letras y números para identificadores.
+ *          Convierte automáticamente a mayúsculas y elimina espacios.
+ *          Límite máximo de 20 caracteres, permite backspace y ESC para cancelar.
+ */
 string ingresar_id(const string& mensaje) {
     char c;
     string palabra;
@@ -266,6 +365,15 @@ string ingresar_id(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Valida una cédula ecuatoriana según el algoritmo oficial
+ * @param cedula String con la cédula a validar
+ * @return true si la cédula es válida, false en caso contrario
+ * @details Implementa el algoritmo oficial de validación de cédulas ecuatorianas:
+ *          - Verifica longitud de 10 dígitos
+ *          - Valida código de provincia (primeros 2 dígitos)
+ *          - Aplica algoritmo de módulo 10 para verificar dígito verificador
+ */
 bool validarCedulaEcuatoriana(const string& cedula) {
     // Verificar longitud
     if (cedula.length() != 10) {
@@ -311,6 +419,13 @@ bool validarCedulaEcuatoriana(const string& cedula) {
     
     return verificador == ultimoDigito;
 }
+/**
+ * @brief Valida el formato de un número telefónico
+ * @param telefono String con el teléfono a validar
+ * @return true si el formato es válido, false en caso contrario
+ * @details Valida que el número telefónico tenga exactamente 10 dígitos
+ *          y comience con 0 (formato ecuatoriano). Ej: 0987654321
+ */
 bool validar_telefono(const string& telefono) {
     // Verificar longitud
     if (telefono.length() != 10) {
@@ -324,6 +439,14 @@ bool validar_telefono(const string& telefono) {
     
     return true;
 }
+/**
+ * @brief Solicita al usuario ingresar una contraseña de forma segura
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con la contraseña ingresada
+ * @details Oculta los caracteres ingresados mostrando asteriscos para mantener
+ *          la seguridad. Acepta caracteres alfanuméricos y símbolos de puntuación.
+ *          Límite máximo de 20 caracteres, permite backspace y ESC para cancelar.
+ */
 string ingresar_contrasenia(const string& mensaje) {
     char c;
     string palabra;
@@ -343,6 +466,14 @@ string ingresar_contrasenia(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Solicita contraseña de administrador de forma segura
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con la contraseña de administrador
+ * @details Función especializada para autenticación de administrador con entrada
+ *          segura. Oculta los caracteres ingresados y tiene un límite de 25 caracteres.
+ *          Permite backspace para corrección y ESC para cancelar.
+ */
 string ingresar_contrasenia_administrador(const string& mensaje) {
     char buffer[26] = {0}; // 25 caracteres + terminador nulo
     char* palabra = buffer;  // puntero al inicio
@@ -372,6 +503,17 @@ string ingresar_contrasenia_administrador(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Valida la fortaleza de una contraseña
+ * @param contrasenia String con la contraseña a validar
+ * @return true si cumple los requisitos, false en caso contrario
+ * @details Verifica que la contraseña cumpla con los siguientes requisitos:
+ *          - Longitud mínima de 8 caracteres
+ *          - Al menos una letra mayúscula
+ *          - Al menos una letra minúscula
+ *          - Al menos un dígito
+ *          - Al menos un carácter especial (signos de puntuación)
+ */
 bool validar_contrasenia(const string& contrasenia) {
     // Verificar longitud mínima
     if (contrasenia.length() < 8) {
@@ -401,6 +543,17 @@ bool validar_contrasenia(const string& contrasenia) {
 
     return tieneMayuscula && tieneMinuscula && tieneDigito && tieneEspecial;
 }
+/**
+ * @brief Valida el formato de un email
+ * @param email String con el email a validar
+ * @return true si el formato es válido, false en caso contrario
+ * @details Verifica que el email tenga formato válido:
+ *          - Contiene exactamente un símbolo @
+ *          - No contiene espacios
+ *          - No tiene dos puntos seguidos
+ *          - Tiene al menos un punto después del @
+ *          - No termina en punto
+ */
 bool validar_email(const string& email) {
     size_t at_pos = email.find('@');
     if (at_pos == string::npos || at_pos == 0 || at_pos == email.length() - 1) {
@@ -425,6 +578,13 @@ bool validar_email(const string& email) {
     }
     return true;
 }
+/**
+ * @brief Valida si el estado civil ingresado es válido
+ * @param estado_civil String con el estado civil a validar
+ * @return true si es válido, false en caso contrario
+ * @details Verifica que el estado civil sea uno de los valores aceptados:
+ *          "Soltero", "Casado", "Divorciado", "Viudo", "Unión Libre"
+ */
 bool validar_estado_civil(const string& estado_civil) {
     // Lista de estados civiles válidos
     const string estados_validos[] = {"Soltero", "Casado", "Divorciado", "Viudo", "Unión Libre"};
@@ -436,6 +596,19 @@ bool validar_estado_civil(const string& estado_civil) {
     }
     return false;
 }
+/**
+ * @brief Valida si un monto monetario es válido
+ * @param montoStr String con el monto a validar
+ * @return true si es un monto válido, false en caso contrario
+ * @details Verifica que sea un número decimal positivo válido con las siguientes reglas:
+ *          - No puede ser negativo
+ *          - No puede comenzar con punto
+ *          - No puede tener ceros iniciales (excepto 0.xx)
+ *          - Máximo un punto decimal
+ *          - Máximo 2 decimales
+ *          - Máximo 10 dígitos antes del punto
+ *          - No puede terminar en punto
+ */
 bool validar_monto(const string& montoStr) {
     if (montoStr.empty()) {
         return false;
@@ -496,6 +669,15 @@ bool validar_monto(const string& montoStr) {
 
     return true;
 }
+/**
+ * @brief Valida si un ID de cuenta pertenece a un cliente
+ * @param cliente Puntero al cliente a verificar
+ * @param id_cuenta String con el ID de cuenta a validar
+ * @return true si la cuenta pertenece al cliente, false en caso contrario
+ * @details Verifica que el ID de cuenta exista en las cuentas del cliente.
+ *          Normaliza el ID ingresado (elimina espacios y convierte a mayúsculas)
+ *          antes de realizar la comparación.
+ */
 bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta) {
     if (id_cuenta.empty() || cliente == nullptr) return false;
 
@@ -517,6 +699,14 @@ bool validar_id_cuenta(Cliente* cliente, const string& id_cuenta) {
     });
     return resultado != nullptr;
 }
+/**
+ * @brief Valida y devuelve una hora ingresada por el usuario
+ * @param mensaje Mensaje a mostrar al usuario
+ * @return String con la hora en formato válido
+ * @details Valida formato de hora HH:MM:SS. Permite ingresar 6 dígitos
+ *          que se formatean automáticamente con dos puntos. Permite backspace
+ *          para corrección y ESC para cancelar.
+ */
 string validarHora(const string& mensaje) {
     char buffer[7] = {0};
     char* palabra = buffer;
@@ -546,6 +736,14 @@ string validarHora(const string& mensaje) {
         }
     }
 }
+/**
+ * @brief Verifica si un teléfono ya está registrado en el banco
+ * @param banco Referencia al objeto Banco
+ * @param telefono String con el teléfono a verificar
+ * @return true si el teléfono ya existe, false en caso contrario
+ * @details Busca en la base de datos de clientes del banco si el teléfono
+ *          ya está registrado para evitar duplicados.
+ */
 bool telefono_existe(Banco& banco, const std::string& telefono) {
     auto* clientes = banco.getClientes();
     bool existe = false;
@@ -554,6 +752,14 @@ bool telefono_existe(Banco& banco, const std::string& telefono) {
     });
     return existe;
 }
+/**
+ * @brief Verifica si un email ya está registrado en el banco
+ * @param banco Referencia al objeto Banco
+ * @param email String con el email a verificar
+ * @return true si el email ya existe, false en caso contrario
+ * @details Busca en la base de datos de clientes del banco si el email
+ *          ya está registrado para evitar duplicados.
+ */
 bool email_existe(Banco& banco, const std::string& email) {
     auto* clientes = banco.getClientes();
     bool existe = false;
@@ -562,11 +768,31 @@ bool email_existe(Banco& banco, const std::string& email) {
     });
     return existe;
 }
+/**
+ * @brief Valida si una hora, minuto y segundo son válidos
+ * @param hora Valor de hora (0-23)
+ * @param minuto Valor de minuto (0-59)
+ * @param segundo Valor de segundo (0-59)
+ * @return true si los valores son válidos, false en caso contrario
+ * @details Verifica que los valores estén en rangos válidos para tiempo:
+ *          hora entre 0-23, minuto y segundo entre 0-59.
+ */
 bool validar_hora_minuto_segundo(int hora, int minuto, int segundo) {
     return (hora >= 0 && hora <= 23) &&
            (minuto >= 0 && minuto <= 59) &&
            (segundo >= 0 && segundo <= 59);
 }
+/**
+ * @brief Valida un valor de búsqueda según el campo especificado
+ * @param campo Tipo de campo a validar (1=DNI, 2=Nombre, 3=Apellido, 4=Teléfono)
+ * @param valor String con el valor a validar
+ * @return true si el valor es válido para el campo, false en caso contrario
+ * @details Aplica validaciones específicas según el tipo de campo de búsqueda:
+ *          - Campo 1 (DNI): Valida cédula ecuatoriana
+ *          - Campo 2 (Nombre): Solo caracteres alfabéticos y espacios
+ *          - Campo 3 (Apellido): Solo caracteres alfabéticos y espacios
+ *          - Campo 4 (Teléfono): Valida formato de teléfono
+ */
 bool validar_valor_busqueda(int campo, const std::string& valor) {
     switch (campo) {
         case 1: // DNI

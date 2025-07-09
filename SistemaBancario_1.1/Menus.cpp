@@ -1,3 +1,12 @@
+/**
+ * @file Menus.cpp
+ * @brief Implementación de los menús y utilidades de interacción para el sistema bancario.
+ *
+ * Este archivo contiene las funciones de menú principal, menú de cliente, menú de administrador,
+ * operaciones de cuentas, depósitos, retiros, consultas, cifrado/descifrado, verificación de hash,
+ * manejo de la marquesina y utilidades de interfaz para la aplicación bancaria.
+ */
+
 #include "Menus.h"
 #include "Fecha.h"
 #include "Ahorro.h"
@@ -9,8 +18,7 @@
 #include "hash.h"
 #include "ArbolBinario.h"
 #include "Ubicacion.h"
-#include "QRCodeGenerator.h"
-#include "pdf_generator.h"
+#include "QR.h"
 #include <stdexcept>
 #include <conio.h>
 #include <random>
@@ -30,9 +38,12 @@
 
 using namespace std;
 
-// Variable global del sistema de geolocalización
+//// Variable global del sistema de geolocalización
 SimpleGeolocationSystem geoSystem;
 
+/**
+ * @brief Pausa la consola y espera que el usuario presione Enter para continuar.
+ */
 void pausar_consola()
 {
     cout << "Presione Enter para continuar...";
@@ -40,6 +51,10 @@ void pausar_consola()
     cin.get();
 }
 
+/**
+ * @brief Cambia la visibilidad del cursor en la consola de Windows.
+ * @param visible true para mostrar el cursor, false para ocultarlo.
+ */
 void visibilidad_cursor(bool visible)
 {
     HANDLE manejo_consola = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -49,6 +64,11 @@ void visibilidad_cursor(bool visible)
     SetConsoleCursorInfo(manejo_consola, &info);
 }
 
+/**
+ * @brief Mueve el cursor de la consola a la posición especificada.
+ * @param x Coordenada X (columna) donde posicionar el cursor.
+ * @param y Coordenada Y (fila) donde posicionar el cursor.
+ */
 void mover_cursor(int x, int y)
 {
     HANDLE manejo_consola = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -60,6 +80,14 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
 {
     system("chcp 65001 > nul");
     int opcionSeleccionada = 1;
+/**
+ * @brief Muestra un menú de opciones y permite la selección usando las teclas de dirección.
+ * @param titulo Título del menú a mostrar.
+ * @param opciones Array de cadenas con las opciones del menú.
+ * @param n Número de opciones en el array.
+ * @param fila_inicio Fila inicial donde comenzar a mostrar el menú.
+ * @return Índice de la opción seleccionada (base 0).
+ */
     int tecla;
 
     int fila_ajustada = std::max(fila_inicio, 3);
@@ -133,6 +161,11 @@ int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fi
 
 bool seleccionar_Si_No()
 {
+/**
+ * @brief Muestra un menú de confirmación Sí/No.
+ * @return true si el usuario selecciona "SÍ", false si selecciona "NO".
+ */
+
     const int NUM_OPCIONES = 2;
     const char *OPCIONES[NUM_OPCIONES] = {
         "SÍ",
@@ -145,7 +178,13 @@ bool seleccionar_Si_No()
     return opcion == 0; // Retorna true para "SÍ" (índice 0)
 }
 
-int desplegar_menu(const char **opciones, int nopciones)
+/**
+ * @brief Despliega un menú con botones estilizados y permite la navegación.
+ * @param opciones Array de cadenas con las opciones del menú.
+ * @param nopciones Número de opciones disponibles.
+ * @return Índice de la opción seleccionada (base 0).
+ */
+int desplegar_menu(const char** opciones, int nopciones)
 {
     const short int ANCHO_BOTON = 35;
     visibilidad_cursor(false);
@@ -222,14 +261,24 @@ int desplegar_menu(const char **opciones, int nopciones)
     return opcion - 1; // Ajuste para devolver índice 0-based
 }
 
-bool validar_credenciales_administrador(const string &usuario, const string &contrasenia)
-{
+
+/**
+ * @brief Valida las credenciales del administrador del sistema.
+ * @param usuario Nombre de usuario ingresado.
+ * @param contrasenia Contraseña ingresada.
+ * @return true si las credenciales son correctas, false en caso contrario.
+ */
+bool validar_credenciales_administrador(const string& usuario, const string& contrasenia) {
     const string USUARIO_ADMIN = "admin";
     const string CONTRASENIA_ADMIN = "1234567890";
     return usuario == USUARIO_ADMIN && contrasenia == CONTRASENIA_ADMIN;
 }
 
-void recuperar_backup_por_fecha(Banco &banco)
+/**
+ * @brief Recupera un backup de clientes basado en fecha y hora específicas.
+ * @param banco Referencia al objeto Banco donde cargar los datos recuperados.
+ */
+void recuperar_backup_por_fecha(Banco& banco)
 {
     int horas = 0, minutos = 0, segundos = 0;
     string fecha_hora;
@@ -291,7 +340,7 @@ void recuperar_backup_por_fecha(Banco &banco)
         }
         banco.setClientes(nuevos_clientes);
 
-        banco.guardar_datos_binario_sin_backup("datos.txt");
+        banco.guardar_datos_binario_sin_backup("datos.bin");
 
         cout << "\n=== BACKUP MÁS RECIENTE RECUPERADO EXITOSAMENTE ===" << endl;
         cout << "Datos cargados desde: " << nombre_archivo << endl;
@@ -308,8 +357,12 @@ void recuperar_backup_por_fecha(Banco &banco)
     }
 }
 
-void cargar_base_datos(Banco &banco)
-{
+
+/**
+ * @brief Carga y muestra la base de datos de clientes con opciones de ordenamiento y búsqueda.
+ * @param banco Referencia al objeto Banco con los datos de los clientes.
+ */
+void cargar_base_datos(Banco& banco) {
     system("cls");
     auto *clientes = banco.getClientes();
     if (!clientes || clientes->esta_vacia())
@@ -423,6 +476,7 @@ void cargar_base_datos(Banco &banco)
         return false;
     };
 
+    // Ordenar usando std::sort con comparador personalizado
     std::sort(vectorClientes.begin(), vectorClientes.end(), comparar);
 
     // Devolver los elementos ordenados a la lista
@@ -577,15 +631,23 @@ void cargar_base_datos(Banco &banco)
     inicializar_marquesina();
 }
 
-void descifrar_archivos_txt(Banco &banco)
-{
-    system("cls");
+
+/**
+ * @brief Descifra archivos de respaldo en formato TXT.
+ * @param banco Referencia al objeto Banco (parámetro requerido pero no utilizado).
+ */
+void descifrar_archivos_txt(Banco& banco) {
+    system("cls");    
     RespaldoDatos respaldo;
     respaldo.seleccionarYDescifrarTxt();
 }
 
-void cifrar_archivos_txt(Banco &banco)
-{
+
+/**
+ * @brief Cifra archivos de respaldo binarios a formato TXT con cifrado César.
+ * @param banco Referencia al objeto Banco (parámetro requerido pero no utilizado).
+ */
+void cifrar_archivos_txt(Banco& banco) {
     RespaldoDatos respaldo;
     system("cls");
     visibilidad_cursor(true);
@@ -657,10 +719,15 @@ void cifrar_archivos_txt(Banco &banco)
     pausar_consola();
 }
 
-void menu_administrador(Banco &banco)
+
+/**
+ * @brief Muestra el menú de administrador con todas las opciones disponibles.
+ * @param banco Referencia al objeto Banco para realizar operaciones administrativas.
+ */
+void menu_administrador(Banco& banco)
 {
-    const int NUM_OPCIONES = 11; // Incrementado a 11
-    const char *OPCIONES[NUM_OPCIONES] = {
+    const int NUM_OPCIONES = 10;
+    const char* OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
         "Base de datos",
@@ -672,6 +739,8 @@ void menu_administrador(Banco &banco)
         "Generar tabla Hash",
         "Generar PDF de clientes", // Nueva opción
         "Salir"};
+
+    };
 
     system("cls");
     ajustar_cursor_para_marquesina();
@@ -712,6 +781,7 @@ void menu_administrador(Banco &banco)
             opcion = seleccionar_opcion("===== MENÚ ADMINISTRADOR =====", OPCIONES, NUM_OPCIONES, 4);
             switch (opcion)
             {
+<<<<<<< HEAD
             case 0:
                 consultar_movimientos(banco);
                 break;
@@ -746,7 +816,7 @@ void menu_administrador(Banco &banco)
             case 10: // Nueva posición de "Salir"
                 return;
             }
-        } while (opcion != 10); // Cambiado a 10 para coincidir con "Salir"
+        } while (opcion != 8); // Cambiado a 8 para coincidir con "Salir" (índice 8)
     }
     catch (const std::exception &e)
     {
@@ -758,7 +828,12 @@ void menu_administrador(Banco &banco)
     }
 }
 
-void menu_cliente(Banco &banco)
+
+/**
+ * @brief Muestra el menú de cliente con opciones de depósito, retiro y generación de QR.
+ * @param banco Referencia al objeto Banco para realizar operaciones bancarias.
+ */
+void menu_cliente(Banco& banco)
 {
     const int NUM_OPCIONES = 4;
     const char *OPCIONES[NUM_OPCIONES] = {
@@ -832,6 +907,26 @@ void menu_cliente(Banco &banco)
                 qr.generateQRAndPDF();
                 cout << "PDF con QRs generado exitosamente para todas las cuentas." << endl;
                 pausar_consola();
+
+                case 1:
+                    realizar_retiro(banco, dni);
+                    break;
+                case 2:
+                    {
+                        string id_cuenta;
+                        do {
+                            limpiar_linea("➤ Ingrese el ID de la cuenta para generar QR: ");
+                            id_cuenta = ingresar_id("");
+                            if (id_cuenta == "__ESC__") break;
+                        } while (!validar_id_cuenta(cliente, id_cuenta));
+                        if (id_cuenta != "__ESC__") {
+                            QR qr(cliente->get_nombres() + " " + cliente->get_apellidos(), id_cuenta);
+                            qr.generateQRAndPDF();
+                        }
+                    }
+                    break;
+                case 3:
+                    return;
             }
             break;
             case 3:
@@ -849,17 +944,26 @@ void menu_cliente(Banco &banco)
     }
 }
 
-void menu_principal(Banco &banco)
+
+/**
+ * @brief Muestra el menú principal del sistema bancario.
+ * @param banco Referencia al objeto Banco principal del sistema.
+ */
+void menu_principal(Banco& banco)
 {
     inicializar_marquesina();
-
-    const int NUM_OPCIONES = 5;
-    const char *OPCIONES[NUM_OPCIONES] = {
+    
+    const int NUM_OPCIONES = 6;
+    const char* OPCIONES[NUM_OPCIONES] = {
         "Crear cuenta",
         "Iniciar sesión",
         "Administrador",
         "Ayuda Técnica",
+
         "Salir"};
+        "Documentación Técnica",
+        "Salir"
+    };
 
     int opcion;
     do
@@ -869,25 +973,31 @@ void menu_principal(Banco &banco)
         opcion = seleccionar_opcion("===== MENU PRINCIPAL =====", OPCIONES, NUM_OPCIONES, 4);
         switch (opcion)
         {
-        case 0:
-            menu_cuenta(banco);
-            break;
-        case 1:
-            menu_cliente(banco);
-            break;
-        case 2:
-            menu_administrador(banco);
-            break;
-        case 3:
-            mostrar_ayuda_tecnica();
-            break;
-        case 4:
-            detener_marquesina();
-            return;
+            case 0:
+                menu_cuenta(banco);
+                break;
+            case 1:
+                menu_cliente(banco);
+                break;
+            case 2:
+                menu_administrador(banco);
+                break;
+            case 3:
+                mostrar_ayuda_tecnica();
+                break;
+            case 4:
+                mostrar_documentacion_doxygen();
+                break;
+            case 5:
+                detener_marquesina();
+                return;
         }
-    } while (opcion != 4); // Cambiado a 4 para coincidir con "Salir" (índice 4)
+    } while (opcion != 5); // Cambiado a 5 para coincidir con "Salir" (índice 5)
 }
 
+/**
+ * @brief Muestra la ayuda técnica del sistema abriendo el manual CHM.
+ */
 void mostrar_ayuda_tecnica()
 {
     system("cls");
@@ -914,10 +1024,65 @@ void mostrar_ayuda_tecnica()
     pausar_consola();
 }
 
-// ... (mantén todas las funciones anteriores hasta menu_cuenta sin cambios)
 
-void abrir_cuenta_sin_sucursal(Banco &banco, int tipo_cuenta)
+/**
+ * @brief Muestra la documentación técnica del código (Doxygen).
+ */
+void mostrar_documentacion_doxygen()
 {
+    system("cls");
+    visibilidad_cursor(true);
+    try
+    {   
+        cout << endl;
+        cout << "Abriendo la Documentación Técnica del Código...\n";
+        this_thread::sleep_for(chrono::seconds(2));
+        
+        // Verificar si existe el archivo de documentación
+        if (std::filesystem::exists("SistemaBancario_Documentation.chm"))
+        {
+            HINSTANCE result = ShellExecute(NULL, "open", "SistemaBancario_Documentation.chm", NULL, NULL, SW_SHOWNORMAL);
+            if (result <= (HINSTANCE)32)
+            {
+                throw runtime_error("No se pudo abrir el archivo de documentación. Verifique que el archivo 'SistemaBancario_Documentation.chm' esté en el directorio del programa.");
+            }
+            cout << "Documentación técnica del código abierta exitosamente.\n";
+        }
+        else if (std::filesystem::exists("docs/html/index.html"))
+        {
+            // Si no existe el CHM, intentar abrir la versión HTML
+            HINSTANCE result = ShellExecute(NULL, "open", "docs/html/index.html", NULL, NULL, SW_SHOWNORMAL);
+            if (result <= (HINSTANCE)32)
+            {
+                throw runtime_error("No se pudo abrir la documentación HTML.");
+            }
+            cout << "Documentación técnica del código (HTML) abierta exitosamente.\n";
+        }
+        else
+        {
+            throw runtime_error("No se encontró la documentación técnica. Ejecute 'generar_docs.bat' para generar la documentación con Doxygen.");
+        }
+    }
+    catch (const std::exception& e)
+    {
+        cerr << "Error: " << e.what() << endl;
+        cout << "\n=== ERROR AL ABRIR DOCUMENTACIÓN TÉCNICA ===" << endl;
+        cout << "Error: " << e.what() << endl;
+        cout << "\nPara generar la documentación:" << endl;
+        cout << "1. Ejecute el archivo 'generar_docs.bat'" << endl;
+        cout << "2. Asegúrese de tener Doxygen instalado" << endl;
+        cout << "3. Vuelva a intentar abrir la documentación" << endl;
+        cout << "\nRegresando al menú principal...\n";
+    }
+    pausar_consola();
+}
+
+/**
+ * @brief Abre una cuenta bancaria sin asignación de sucursal (vía aplicación móvil).
+ * @param banco Referencia al objeto Banco donde agregar la cuenta.
+ * @param tipo_cuenta Tipo de cuenta a crear (1 = Ahorros, 2 = Corriente).
+ */
+void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
     string dni, nombre, apellido, direccion, telefono, email, depositar_inicial, saldo_inicial1, contrasenia;
     Fecha fecha_nacimiento;
     double saldo_inicial = 0;
@@ -1125,7 +1290,7 @@ void abrir_cuenta_sin_sucursal(Banco &banco, int tipo_cuenta)
         if (cliente_existe)
         {
             cliente_existe->agregar_cuenta(cuenta);
-            banco.guardar_datos_binario("datos.txt");
+            banco.guardar_datos_binario("datos.bin");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1140,7 +1305,7 @@ void abrir_cuenta_sin_sucursal(Banco &banco, int tipo_cuenta)
             Cliente *cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
             cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
-            banco.guardar_datos_binario("datos.txt");
+            banco.guardar_datos_binario("datos.bin");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1167,8 +1332,15 @@ void abrir_cuenta_sin_sucursal(Banco &banco, int tipo_cuenta)
     }
 }
 
-void abrir_cuenta(Banco &banco, int tipo_cuenta, int branchId, const string &sucursal)
-{
+
+/**
+ * @brief Abre una cuenta bancaria asignando una sucursal específica (cita presencial).
+ * @param banco Referencia al objeto Banco donde agregar la cuenta.
+ * @param tipo_cuenta Tipo de cuenta a crear (1 = Ahorros, 2 = Corriente).
+ * @param branchId ID de la sucursal donde se creará la cuenta.
+ * @param sucursal Nombre de la sucursal para mostrar en confirmación.
+ */
+void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& sucursal) {
     string dni, nombre, apellido, direccion, telefono, email, depositar_inicial, saldo_inicial1, contrasenia;
     Fecha fecha_nacimiento;
     double saldo_inicial = 0;
@@ -1381,7 +1553,7 @@ void abrir_cuenta(Banco &banco, int tipo_cuenta, int branchId, const string &suc
         if (cliente_existe)
         {
             cliente_existe->agregar_cuenta(cuenta);
-            banco.guardar_datos_binario("datos.txt");
+            banco.guardar_datos_binario("datos.bin");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1398,7 +1570,7 @@ void abrir_cuenta(Banco &banco, int tipo_cuenta, int branchId, const string &suc
             Cliente *cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
             cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
-            banco.guardar_datos_binario("datos.txt");
+            banco.guardar_datos_binario("datos.bin");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1425,7 +1597,13 @@ void abrir_cuenta(Banco &banco, int tipo_cuenta, int branchId, const string &suc
     }
 }
 
-void realizar_deposito(Banco &banco, const string &dni)
+
+/**
+ * @brief Realiza un depósito en una cuenta bancaria específica.
+ * @param banco Referencia al objeto Banco para buscar el cliente y la cuenta.
+ * @param dni DNI del cliente que realizará el depósito.
+ */
+void realizar_deposito(Banco& banco, const string& dni)
 {
     string salario, id_cuenta;
     double monto = 0;
@@ -1493,7 +1671,7 @@ void realizar_deposito(Banco &banco, const string &dni)
 
         Fecha fecha;
         cuenta->depositar(monto, fecha);
-        banco.guardar_datos_binario("datos.txt");
+        banco.guardar_datos_binario("datos.bin");
         RespaldoDatos::respaldoClientesBinario("respaldo_clientes.bin", *banco.getClientes());
 
         fila_actual += 4;
@@ -1508,7 +1686,7 @@ void realizar_deposito(Banco &banco, const string &dni)
         mover_cursor(1, fila_actual++);
         cout << "   Nuevo saldo: $" << cuenta->get_saldo() << endl;
         mover_cursor(1, fila_actual++);
-        cout << "   Datos guardados en datos.txt" << endl;
+        cout << "   Datos guardados en datos.bin" << endl;
         mover_cursor(1, fila_actual++);
         cout << "==============================================" << endl;
         mover_cursor(1, fila_actual++);
@@ -1530,7 +1708,12 @@ void realizar_deposito(Banco &banco, const string &dni)
     }
 }
 
-void realizar_retiro(Banco &banco, const string &dni)
+/**
+ * @brief Realiza un retiro de una cuenta bancaria específica.
+ * @param banco Referencia al objeto Banco para buscar el cliente y la cuenta.
+ * @param dni DNI del cliente que realizará el retiro.
+ */
+void realizar_retiro(Banco& banco, const string& dni)
 {
     system("cls");
     visibilidad_cursor(true);
@@ -1599,7 +1782,7 @@ void realizar_retiro(Banco &banco, const string &dni)
         Fecha fecha;
         if (cuenta->retirar(monto, fecha))
         {
-            banco.guardar_datos_binario("datos.txt");
+            banco.guardar_datos_binario("datos.bin");
             RespaldoDatos::respaldoClientesBinario("respaldo_clientes.bin", *banco.getClientes());
             fila_actual += 4;
             mover_cursor(1, fila_actual++);
@@ -1613,7 +1796,7 @@ void realizar_retiro(Banco &banco, const string &dni)
             mover_cursor(1, fila_actual++);
             cout << "     Nuevo saldo: $" << cuenta->get_saldo() << endl;
             mover_cursor(1, fila_actual++);
-            cout << "     Datos guardados en datos.txt" << endl;
+            cout << "     Datos guardados en datos.bin" << endl;
             mover_cursor(1, fila_actual++);
             cout << "==============================================" << endl;
             mover_cursor(1, fila_actual++);
@@ -1650,7 +1833,12 @@ void realizar_retiro(Banco &banco, const string &dni)
     }
 }
 
-void consultar_movimientos(Banco &banco)
+
+/**
+ * @brief Consulta los movimientos de un cliente en un rango de fechas específico.
+ * @param banco Referencia al objeto Banco para buscar el cliente y sus movimientos.
+ */
+void consultar_movimientos(Banco& banco)
 {
     system("cls");
     visibilidad_cursor(true);
@@ -1732,7 +1920,12 @@ void consultar_movimientos(Banco &banco)
     }
 }
 
-void consultar_cuentas(Banco &banco)
+
+/**
+ * @brief Consulta las cuentas de un cliente específico por DNI, nombre o apellido.
+ * @param banco Referencia al objeto Banco para buscar el cliente y sus cuentas.
+ */
+void consultar_cuentas(Banco& banco)
 {
     system("cls");
     visibilidad_cursor(true);
@@ -1809,21 +2002,20 @@ void consultar_cuentas(Banco &banco)
         cout << "\n=== ERROR AL CONSULTAR CUENTAS ===" << endl;
         mover_cursor(1, fila_error++);
         cout << "Error: " << e.what() << endl;
-        mover_cursor(1, fila_error++);
+               mover_cursor(1, fila_error++);
         cout << "\nRegresando al menú principal...\n";
         pausar_consola();
         inicializar_marquesina();
     }
 }
 
-void menu_cuenta(Banco &banco)
-{
-    const int NUM_SUCURSALES = 3;
-    const char *SUCURSALES[NUM_SUCURSALES] = {
-        "Sucursal Norte - Av. 10 de Agosto y Mariana de Jesús",
-        "Sucursal Centro - Av. 12 de Octubre y Veintimilla",
-        "Sucursal Sur - Av. Morán Valverde y Rumichaca"};
 
+/**
+ * @brief Muestra el menú de selección de métodos para la apertura de cuentas.
+ * @param banco Referencia al objeto Banco para las operaciones bancarias.
+ * @details Permite al usuario elegir entre crear una cuenta vía aplicación o agendar una cita presencial.
+ */
+void menu_cuenta(Banco& banco) {
     const int NUM_METODOS = 3;
     const char *METODOS[NUM_METODOS] = {
         "Crear cuenta vía aplicación",
@@ -1887,9 +2079,24 @@ void menu_cuenta(Banco &banco)
             return;
         }
     } while (opcion != 2); // Loop until "Menú Principal" is selected
+    switch (metodo) {
+        case 0: 
+            menu_cuenta_aplicacion(banco);
+            break;
+        case 1:
+            menu_cita_presencial(banco);
+            break;
+        case 2:
+            return;
+    }
 }
 
+/**
+ * @brief Variable global para la marquesina del sistema.
+ * @details Controla la marquesina que se muestra en la interfaz del usuario.
+ */
 Marquesina marquesina_global;
+
 
 void inicializar_marquesina()
 {
@@ -1908,6 +2115,37 @@ void ajustar_cursor_para_marquesina()
 
 string getCurrentTime()
 {
+
+/**
+ * @brief Inicializa la marquesina del sistema con un texto específico.
+ * @details Inicia la marquesina con el texto "SISTEMA BANCARIO" para ser mostrada en la interfaz.
+ */
+void inicializar_marquesina() {
+    marquesina_global.iniciar("SISTEMA BANCARIO");
+}
+
+/**
+ * @brief Detiene la marquesina del sistema.
+ * @details Pausa la animación de la marquesina para no interferir con otras operaciones.
+ */
+void detener_marquesina() {
+    marquesina_global.detener();
+}
+
+/**
+ * @brief Ajusta el cursor para dejar espacio a la marquesina.
+ * @details Mueve el cursor a la posición adecuada para que la marquesina no interfiera con el contenido.
+ */
+void ajustar_cursor_para_marquesina() {
+    mover_cursor(0, 2);
+}
+
+/**
+ * @brief Obtiene la hora actual del sistema en formato legible.
+ * @return String con la hora actual en formato "HH:MM AM/PM -05, MM/DD/YYYY".
+ * @details Utiliza chrono para obtener el tiempo del sistema y formatearlo apropiadamente.
+ */
+string getCurrentTime() {
     auto now = chrono::system_clock::now();
     auto time = chrono::system_clock::to_time_t(now);
     tm *localTime = localtime(&time);
@@ -1921,9 +2159,13 @@ string getCurrentTime()
     return oss.str(); // Return the formatted string
 }
 
-// Función para el menú de apertura vía aplicación (método tradicional)
-void menu_cuenta_aplicacion(Banco &banco)
-{
+
+/**
+ * @brief Muestra el menú de apertura de cuentas vía aplicación.
+ * @param banco Referencia al objeto Banco para las operaciones bancarias.
+ * @details Permite al usuario elegir entre crear una cuenta de ahorros o corriente usando la aplicación.
+ */
+void menu_cuenta_aplicacion(Banco& banco) {
     const int NUM_OPCIONES = 3;
     const char *OPCIONES[NUM_OPCIONES] = {
         "Cuenta de Ahorros",
@@ -1950,9 +2192,13 @@ void menu_cuenta_aplicacion(Banco &banco)
     } while (opcion != 2);
 }
 
-// Función para el menú de cita presencial con API real
-void menu_cita_presencial(Banco &banco)
-{
+
+/**
+ * @brief Muestra el menú de citas presenciales para apertura de cuentas.
+ * @param banco Referencia al objeto Banco para las operaciones bancarias.
+ * @details Permite al usuario agendar una cita presencial en una sucursal para la apertura de cuentas.
+ */
+void menu_cita_presencial(Banco& banco) {
     system("cls");
     ajustar_cursor_para_marquesina();
     visibilidad_cursor(true);
@@ -1962,10 +2208,7 @@ void menu_cita_presencial(Banco &banco)
     cout << "Servicio: Apertura de cuenta presencial\n"
          << endl;
 
-    // Usar el sistema de geolocalización real
-    mostrar_sucursales_cercanas();
-
-    // Preguntar si desea agendar cita
+    // Preguntar si desea agendar cita antes de hacer la selección completa
     string respuesta;
     do
     {
@@ -1997,18 +2240,40 @@ void mostrar_sucursales_cercanas()
 // Función para agendar la cita presencial usando selección manual
 void agendar_cita_presencial()
 {
+
+/**
+ * @brief Procesa el agendamiento de una cita presencial usando el sistema de geolocalización.
+ * @details Utiliza el sistema de geolocalización para encontrar la sucursal más cercana,
+ * muestra horarios disponibles y permite al usuario agendar una cita para apertura de cuenta.
+ */
+void agendar_cita_presencial() {
+>>>>>>> e3372234ea98f3d88bf3ddccb6ef310fa7ea5100
     string sucursal_num, horario_num;
 
     cout << "\n=== AGENDAR CITA PRESENCIAL ===" << endl;
+<<<<<<< HEAD
 
+=======
+    cout << "HORARIOS DE ATENCIÓN BANCARIA:" << endl;
+    cout << "• Lunes a Viernes: 9:00 AM - 3:30 PM" << endl;
+    cout << "• Sábados: 9:00 AM - 12:00 PM" << endl;
+    cout << "• Domingos: CERRADO" << endl;
+    cout << "=======================================" << endl;
+    
+>>>>>>> e3372234ea98f3d88bf3ddccb6ef310fa7ea5100
     // Usar el sistema completo de selección manual y mostrar sucursales
     auto result = geoSystem.runGeolocationSystem();
     Branch selected_branch = result.first;
     double distance = result.second;
 
     // Mostrar horarios disponibles para la sucursal más cercana
+<<<<<<< HEAD
     auto horarios = geoSystem.generateTimeSlots(selected_branch.queue_position);
 
+=======
+    auto horarios = geoSystem.generateValidBankingTimeSlots(selected_branch.queue_position);
+    
+>>>>>>> e3372234ea98f3d88bf3ddccb6ef310fa7ea5100
     cout << "\nSucursal más cercana: " << selected_branch.name << endl;
     cout << "Distancia: " << fixed << setprecision(2) << distance << " km" << endl;
 
@@ -2022,17 +2287,40 @@ void agendar_cita_presencial()
         cout << "Personas en cola: " << selected_branch.queue_position << endl;
         cout << "Tiempo de espera estimado: " << (selected_branch.queue_position * 40) << " minutos" << endl;
     }
+    
+    // Filtrar horarios disponibles (excluir "No disponible")
+    vector<string> horarios_validos;
+    for (const auto& horario : horarios) {
+        if (horario != "No disponible") {
+            horarios_validos.push_back(horario);
+        }
+    }
+    
+    if (horarios_validos.empty()) {
+        cout << "\n NO HAY HORARIOS DISPONIBLES" << endl;
+        cout << "Motivos posibles:" << endl;
+        cout << "• Es domingo (no hay atención)" << endl;
+        cout << "• Fuera del horario de atención" << endl;
+        cout << "• Demasiada demanda en los próximos días" << endl;
+        cout << "\nIntente nuevamente en otro momento." << endl;
+        pausar_consola();
+        return;
+    }
+    
     cout << "\nHorarios disponibles:" << endl;
     for (size_t i = 0; i < horarios.size(); i++)
     {
         cout << (i + 1) << ". " << horarios[i] << endl;
-    }
+    
 
     // Seleccionar horario
     int horario_elegido;
     do
     {
         limpiar_linea("Seleccione el horario (1-" + to_string(horarios.size()) + "): ");
+
+    do {
+        limpiar_linea("Seleccione el horario (1-" + to_string(horarios_validos.size()) + "): ");
         horario_num = ingresar_dni("");
         if (horario_num == "__ESC__")
             return;
@@ -2046,6 +2334,8 @@ void agendar_cita_presencial()
         }
     } while (horario_elegido < 1 || horario_elegido > static_cast<int>(horarios.size()));
 
+    } while (horario_elegido < 1 || horario_elegido > static_cast<int>(horarios_validos.size()));
+    
     // Obtener fecha actual
     string fecha_actual = geoSystem.getCurrentDate();
 
@@ -2053,11 +2343,17 @@ void agendar_cita_presencial()
     cout << "\n=== CONFIRMACIÓN DE CITA ===" << endl;
     cout << "Sucursal: " << selected_branch.name << endl;
     cout << "Dirección: " << selected_branch.address << endl;
-    cout << "Fecha: " << fecha_actual << endl;
-    cout << "Hora: " << horarios[horario_elegido - 1] << endl;
+    cout << "Fecha y Hora: " << horarios_validos[horario_elegido - 1] << endl;
     cout << "Servicio: Apertura de cuenta presencial" << endl;
     cout << "Distancia desde su ubicación: " << fixed << setprecision(2) << distance << " km" << endl;
 
+
+    cout << "\nIMPORTANTE: Respete los horarios de atención bancaria" << endl;
+    cout << "DOCUMENTOS REQUERIDOS:" << endl;
+    cout << "• Cédula de identidad original" << endl;
+    cout << "• Comprobante de ingresos" << endl;
+    cout << "• Depósito inicial mínimo: $25.00" << endl;
+    
     // Confirmar la cita
     bool confirmar = seleccionar_Si_No();
     if (confirmar)
@@ -2073,14 +2369,25 @@ void agendar_cita_presencial()
     }
     else
     {
+
+        cout << "Fecha y Hora: " << horarios_validos[horario_elegido - 1] << endl;
+        cout << "Recuerde llegar 10 minutos antes del horario agendado." << endl;
+        cout << "Número de confirmación: CB" << selected_branch.id << horario_elegido << time(nullptr) % 10000 << endl;
+    } else {
         cout << "\nCita cancelada." << endl;
     }
 
     pausar_consola();
 }
 
-void verificar_hash(Banco &banco)
-{
+
+/**
+ * @brief Verifica la integridad de los datos usando algoritmos de hash MD5.
+ * @param banco Referencia al objeto Banco para las operaciones bancarias.
+ * @details Calcula el hash MD5 del archivo de datos y lo compara con el hash almacenado
+ * para verificar si los datos han sido modificados. Actualiza el hash si es necesario.
+ */
+void verificar_hash(Banco& banco) {
     system("cls");
     visibilidad_cursor(true);
     try
@@ -2191,8 +2498,15 @@ void verificar_hash(Banco &banco)
     }
 }
 
-void buscar_con_tabla_hash(Banco &banco)
-{
+
+/**
+ * @brief Implementa un sistema de búsqueda usando tabla hash para localizar clientes.
+ * @param banco Referencia al objeto Banco para acceder a los datos de clientes.
+ * @details Construye una tabla hash basada en un campo seleccionado (DNI, nombre, apellido, etc.)
+ * y permite realizar búsquedas eficientes de clientes. Muestra el contenido de la tabla y
+ * los resultados de búsqueda junto con las cuentas asociadas.
+ */
+void buscar_con_tabla_hash(Banco& banco) {
     system("cls");
     visibilidad_cursor(true);
     try

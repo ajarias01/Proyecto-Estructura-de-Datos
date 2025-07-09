@@ -1,11 +1,30 @@
+/**
+ * @file Corriente.cpp
+ * @brief Implementación de la clase Corriente para cuentas corrientes bancarias.
+ *
+ * Este archivo contiene la implementación de la clase Corriente, que representa una cuenta corriente
+ * con límite de retiro diario, serialización y operaciones bancarias específicas.
+ */
+
 #include "Corriente.h"
 #include <stdexcept>
 
+/**
+ * @brief Constructor por defecto de Corriente.
+ * Inicializa el límite de retiro diario y el monto retirado en el día.
+ */
 Corriente::Corriente() : Cuenta() {
     limite_retiro_diario = 1000.0;
     monto_retirado_hoy = 0;
 }
 
+/**
+ * @brief Constructor parametrizado de Corriente.
+ * @param id ID de la cuenta
+ * @param saldo_inicial Saldo inicial de la cuenta
+ * @param fecha Fecha de apertura
+ * @param _limite_retiro_diario Límite de retiro diario
+ */
 Corriente::Corriente(std::string id, double saldo_inicial, Fecha fecha, double _limite_retiro_diario) : Cuenta(id, saldo_inicial, fecha) {
     try {
         if (_limite_retiro_diario <= 0) throw std::invalid_argument("Límite de retiro diario inválido");
@@ -18,23 +37,43 @@ Corriente::Corriente(std::string id, double saldo_inicial, Fecha fecha, double _
     }
 }
 
+/**
+ * @brief Obtiene el tipo de cuenta.
+ * @return String "Corriente"
+ */
 std::string Corriente::get_tipo() {
     return "Corriente";
 }
 
+/**
+ * @brief Obtiene el límite de retiro diario.
+ * @return Límite de retiro diario
+ */
 double Corriente::get_limite_retiro_diario() {
     return limite_retiro_diario;
 }
 
+/**
+ * @brief Establece el límite de retiro diario.
+ * @param _limite Nuevo límite de retiro diario
+ */
 void Corriente::set_limite_retiro_diario(double _limite) {
     limite_retiro_diario = _limite;
 }
 
+/**
+ * @brief Devuelve una representación en string de la cuenta corriente.
+ * @return String con los datos principales de la cuenta
+ */
 std::string Corriente::to_string() {
     return "Cuenta Corriente: ID=" + id_cuenta + ", Saldo=" + std::to_string(saldo) +
            ", Fecha Apertura=" + fecha_apertura.to_string() + ", Límite Retiro Diario=" + std::to_string(limite_retiro_diario);
 }
 
+/**
+ * @brief Guarda los datos de la cuenta corriente en un archivo binario.
+ * @param archivo Puntero al archivo binario abierto para escritura
+ */
 void Corriente::guardar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para escritura");
@@ -58,6 +97,10 @@ void Corriente::guardar_binario(FILE* archivo) {
     }
 }
 
+/**
+ * @brief Carga los datos de la cuenta corriente desde un archivo binario.
+ * @param archivo Puntero al archivo binario abierto para lectura
+ */
 void Corriente::cargar_binario(FILE* archivo) {
     try {
         if (!archivo) throw std::runtime_error("Archivo no válido para lectura");
@@ -96,6 +139,12 @@ void Corriente::cargar_binario(FILE* archivo) {
     }
 }
 
+/**
+ * @brief Realiza un retiro de la cuenta corriente, validando límites y días hábiles.
+ * @param monto Monto a retirar
+ * @param fecha Fecha del retiro
+ * @return true si el retiro fue exitoso, false en caso contrario
+ */
 bool Corriente::retirar(double monto, Fecha fecha) {
     try {
         if (monto <= 0) throw std::invalid_argument("Monto de retiro debe ser mayor a 0");
