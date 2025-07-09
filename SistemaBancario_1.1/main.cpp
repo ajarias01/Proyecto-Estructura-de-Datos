@@ -13,8 +13,8 @@
  * @brief Función principal del sistema bancario.
  *
  * - Cambia la codificación de la consola a UTF-8.
- * - Instancia el objeto Banco y carga los datos desde archivo.
- * - Maneja excepciones de carga de datos.
+ * - Instancia el objeto Banco y verifica/recupera los datos desde archivo.
+ * - Si datos.txt no existe, permite seleccionar un backup para recuperar.
  * - Llama al menú principal para interacción con el usuario.
  *
  * @return int Código de retorno del programa (0 si finaliza correctamente).
@@ -23,11 +23,9 @@ int main() {
     system("chcp 65001 > nul");
     
     Banco banco;
-    try {
-        banco.cargar_datos_binario("datos.txt");
-    } catch (const std::exception& e) {
-        std::cerr << "Error al cargar datos: " << e.what() << std::endl;
-    } 
+    
+    // Verificar y recuperar datos usando la nueva función
+    verificar_y_recuperar_datos(banco);
     
     getch();
     menu_principal(banco);

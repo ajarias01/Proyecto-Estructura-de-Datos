@@ -10,11 +10,13 @@ SolidCompression=yes
 [Files]
 Source: "main.exe"; DestDir: "{app}"; DestName: "SistemaBancario.exe"; Flags: ignoreversion
 Source: "datos.txt"; DestDir: "{app}"; Flags: ignoreversion
-Source: "backup_clientes_20250601_135712.bak"; DestDir: "{app}"; Flags: ignoreversion
-Source: "backup_clientes_20250601_135712_cifrado.txt"; DestDir: "{app}"; Flags: ignoreversion
-Source: "backup_clientes_20250601_135712_descifrado.txt"; DestDir: "{app}"; Flags: ignoreversion
-Source: "respaldo_clientes.bin"; DestDir: "{app}"; Flags: ignoreversion
+Source: "backup_clientes_20250709_183846.bin"; DestDir: "{app}"; Flags: ignoreversion
+Source: "cifrado_20250708_205659.txt"; DestDir: "{app}"; Flags: ignoreversion
+Source: "decifrado_20250613_121652.bin"; DestDir: "{app}"; Flags: ignoreversion
 Source: "AyudaTecnicaBanco.chm"; DestDir: "{app}"; Flags: ignoreversion
+Source: "SistemaBancario_Documentation.chm"; DestDir: "{app}"; Flags: ignoreversion
+Source: "hash_stored.txt"; DestDir: "{app}"; Flags: ignoreversion
+
 [Icons]
 Name: "{group}\SistemaBancario"; Filename: "{app}\SistemaBancario.exe"
 
@@ -36,9 +38,9 @@ procedure InitializeWizard;
 begin
   SerialPage := CreateInputQueryPage(wpWelcome,
     'Validaci�n de Serial',
-    'Por favor, ingresa la clave de instalaci�n para continuar.',
+    'Por favor, ingresa la clave de instalacion para continuar.',
     'Ingresa una de las claves proporcionadas por el desarrollador para instalar el software.');
-  SerialPage.Add('Clave de instalaci�n:', False);
+  SerialPage.Add('Clave de instalacion:', False);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;

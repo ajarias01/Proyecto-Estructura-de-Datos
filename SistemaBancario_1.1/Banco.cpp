@@ -53,7 +53,30 @@ void Banco::agregar_cliente(Cliente* cliente) {
  * @param nuevos_clientes Puntero a la nueva lista de clientes
  */
 void Banco::setClientes(ListaDoble<Cliente*>* nuevos_clientes) {
+    if (!nuevos_clientes) {
+        throw std::invalid_argument("La lista de nuevos clientes no puede ser nula");
+    }
+    
+    // Guardar referencia a la lista anterior
+    ListaDoble<Cliente*>* lista_anterior = clientes;
+    
+    // Asignar la nueva lista primero
     clientes = nuevos_clientes;
+    
+    // Liberar solo la estructura de la lista anterior, NO los clientes
+    // Los clientes ahora pertenecen a la nueva lista o son nuevos objetos
+    if (lista_anterior) {
+        try {
+            // Solo liberar la lista, no los clientes dentro de ella
+            // Los clientes serán manejados por la nueva lista
+            lista_anterior->limpiar_sin_eliminar(); // Método que solo limpia la estructura
+            delete lista_anterior;
+        } catch (const std::exception& e) {
+            std::cerr << "Error al liberar lista anterior: " << e.what() << std::endl;
+            // En caso de error, solo eliminar la lista sin tocar los clientes
+            delete lista_anterior;
+        }
+    }
 }
 
 /**

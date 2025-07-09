@@ -276,86 +276,314 @@ bool validar_credenciales_administrador(const string& usuario, const string& con
 }
 
 /**
- * @brief Recupera un backup de clientes basado en fecha y hora específicas.
+ * @brief Recupera un backup de clientes seleccionado de una lista de backups disponibles.
  * @param banco Referencia al objeto Banco donde cargar los datos recuperados.
  */
 void recuperar_backup_por_fecha(Banco& banco)
 {
-    int horas = 0, minutos = 0, segundos = 0;
-    string fecha_hora;
     system("cls");
+    ajustar_cursor_para_marquesina();
+    detener_marquesina(); // Detener la marquesina para evitar interferencias
     visibilidad_cursor(true);
+    
     try
     {
-        Fecha fecha;
-        do
+        std::vector<std::string> archivos_backup;
+        std::vector<std::time_t> fechas_backup;
+        
+        cout << "\n===========================================" << endl;
+        cout << "===   RECUPERAR BACKUP DE CLIENTES   ===" << endl;
+        cout << "===========================================" << endl;
+        
+        // Buscar archivos de backup
+        for (const auto &entry : std::filesystem::directory_iterator("."))
+        {
+            string nombre = entry.path().filename().string();
+            if (nombre.find("backup_clientes_") == 0 && nombre.substr(nombre.size() - 4) == ".bin")
+            {
+                archivos_backup.push_back(nombre);
+                
+                // Extraer timestamp del nombre del archivo
+                size_t pos1 = nombre.find("backup_clientes_");
+                size_t pos2 = nombre.find(".bin");
+                if (pos1 != string::npos && pos2 != string::npos)
+                {
+                    string timestamp = nombre.substr(16, pos2 - 16);
+                    if (timestamp.length() == 15) // YYYYMMDD_HHMMSS
+                    {
+                        struct tm tm = {};
+                        tm.tm_year = stoi(timestamp.substr(0, 4)) - 1900;
+                        tm.tm_mon = stoi(timestamp.substr(4, 2)) - 1;
+                        tm.tm_mday = stoi(timestamp.substr(6, 2));
+                        tm.tm_hour = stoi(timestamp.substr(9, 2));
+                        tm.tm_min = stoi(timestamp.substr(11, 2));
+                        tm.tm_sec = stoi(timestamp.substr(13, 2));
+                        fechas_backup.push_back(mktime(&tm));
+                    }
+                }
+            }
+        }
+        
+        if (archivos_backup.empty())
+        {
+            cout << "\n=== NO HAY BACKUPS DISPONIBLES ===" << endl;
+            cout << "No se encontraron archivos de backup en el directorio." << endl;
+            cout << "Asegúrese de que existan archivos con formato:" << endl;
+            cout << "backup_clientes_YYYYMMDD_HHMMSS.bin" << endl;
+            pausar_consola();
+            inicializar_marquesina();
+            return;
+        }
+        
+        // Ordenar por fecha (más reciente primero)
+        vector<pair<string, time_t>> pares;
+        for (size_t i = 0; i < archivos_backup.size(); ++i)
+        {
+            pares.emplace_back(archivos_backup[i], fechas_backup[i]);
+        }
+        sort(pares.begin(), pares.end(), [](const auto& a, const auto& b) {
+            return a.second > b.second; // Más reciente primero
+        });
+        
+        // Actualizar vectores ordenados
+        archivos_backup.clear();
+        fechas_backup.clear();
+        for (const auto& par : pares)
+        {
+            archivos_backup.push_back(par.first);
+            fechas_backup.push_back(par.second);
+        }
+        
+        cout << "\n=== BACKUPS DISPONIBLES ===" << endl;
+        cout << "Total de backups encontrados: " << archivos_backup.size() << endl;
+        cout << "Seleccione el backup que desea restaurar:" << endl;
+        cout << "============================================" << endl;
+        
+        // Mostrar tabla con flechitas
+        cout << std::left << std::setw(5) << "№"
+             << std::setw(25) << "Archivo"
+             << std::setw(12) << "Fecha"
+             << std::setw(10) << "Hora"
+             << std::setw(10) << "Tamaño" << endl;
+        cout << "------------------------------------------------------------" << endl;
+        
+        for (size_t i = 0; i < archivos_backup.size(); ++i)
+        {
+            char fecha_str[20], hora_str[10];
+            struct tm* tm_info = localtime(&fechas_backup[i]);
+            strftime(fecha_str, sizeof(fecha_str), "%d/%m/%Y", tm_info);
+            strftime(hora_str, sizeof(hora_str), "%H:%M:%S", tm_info);
+            
+            // Obtener tamaño del archivo
+            std::ifstream file(archivos_backup[i], std::ios::binary | std::ios::ate);
+            std::streamsize size = file.tellg();
+            file.close();
+            
+            string tamaño_str;
+            if (size >= 1024 * 1024) {
+                tamaño_str = std::to_string(size / (1024 * 1024)) + " MB";
+            } else if (size >= 1024) {
+                tamaño_str = std::to_string(size / 1024) + " KB";
+            } else {
+                tamaño_str = std::to_string(size) + " B";
+            }
+            
+            cout << std::left << std::setw(5) << (i + 1)
+                 << std::setw(25) << archivos_backup[i].substr(0, 24)
+                 << std::setw(12) << fecha_str
+                 << std::setw(10) << hora_str
+                 << std::setw(10) << tamaño_str << endl;
+        }
+        cout << "------------------------------------------------------------" << endl;
+        
+        // Crear array de opciones para selección con flechitas
+        vector<const char*> opciones_backup;
+        vector<string> opciones_str;
+        for (size_t i = 0; i < archivos_backup.size(); ++i)
+        {
+            char fecha_str[20], hora_str[10];
+            struct tm* tm_info = localtime(&fechas_backup[i]);
+            strftime(fecha_str, sizeof(fecha_str), "%d/%m/%Y", tm_info);
+            strftime(hora_str, sizeof(hora_str), "%H:%M:%S", tm_info);
+            
+            string opcion = string(fecha_str) + " " + string(hora_str);
+            opciones_str.push_back(opcion);
+            opciones_backup.push_back(opciones_str.back().c_str());
+        }
+        
+        // Agregar opción de cancelar
+        opciones_str.push_back("Cancelar operación");
+        opciones_backup.push_back(opciones_str.back().c_str());
+        
+        system("cls");
+        ajustar_cursor_para_marquesina();
+        int seleccion = seleccionar_opcion("===== SELECCIONAR BACKUP =====", 
+                                         opciones_backup.data(), 
+                                         opciones_backup.size(), 4);
+        
+        // Si selecciona cancelar
+        if (seleccion == static_cast<int>(archivos_backup.size()))
         {
             cout << endl;
-            limpiar_linea("➤ Ingrese la fecha del backup (DD/MM/YYYY): ");
-            fecha = validarFecha("");
-            if (fecha.get_dia() == -1)
-                return;
-        } while (!fecha.validar());
-        cout << endl;
-
-        do
-        {
-            limpiar_linea("➤ Ingrese la hora del backup (HH:MM:SS): ");
-            fecha_hora = validarHora("");
-            if (fecha_hora == "__ESC__")
-                return;
-            horas = stoi(fecha_hora.substr(0, 2));
-            minutos = stoi(fecha_hora.substr(2, 2));
-            segundos = stoi(fecha_hora.substr(4, 2));
-        } while (!validar_hora_minuto_segundo(horas, minutos, segundos));
-        cout << endl;
-
-        char buffer[100];
-        snprintf(buffer, sizeof(buffer), "backup_clientes_%04d%02d%02d_%02d%02d%02d.bin",
-                 fecha.get_anuario(), fecha.get_mes(), fecha.get_dia(),
-                 horas, minutos, segundos);
-        string nombre_archivo = buffer;
-
-        ifstream test_file(nombre_archivo, ios::binary);
-        if (!test_file.good())
-        {
-            cout << "\n=== ERROR: El backup no existe para esa fecha y hora ===" << endl;
+            cout << "Operación cancelada por el usuario." << endl;
             pausar_consola();
+            inicializar_marquesina();
+            return;
+        }
+        
+        string nombre_archivo = archivos_backup[seleccion];
+        
+        // Validar si el archivo todavía existe
+        std::ifstream test_file(nombre_archivo, std::ios::binary);
+        if (!test_file.good()) {
+            cout << "\n=== ERROR: El backup seleccionado ya no existe ===" << endl;
+            cout << "Archivo: " << nombre_archivo << endl;
+            pausar_consola();
+            inicializar_marquesina();
             return;
         }
         test_file.close();
-
-        cout << "\nIntentando recuperar backup: " << nombre_archivo << endl;
-        this_thread::sleep_for(chrono::seconds(3));
-        ListaDoble<Cliente *> *nuevos_clientes = RespaldoDatos::restaurarClientesBinario(nombre_archivo);
-        if (!nuevos_clientes || nuevos_clientes->esta_vacia())
-        {
+        
+        cout << "\n===========================================" << endl;
+        cout << "===      INICIANDO RESTAURACION       ===" << endl;
+        cout << "===========================================" << endl;
+        cout << "Archivo seleccionado: " << nombre_archivo << endl;
+        cout << "Cargando datos del backup..." << endl;
+        
+        ListaDoble<Cliente*>* nuevos_clientes = RespaldoDatos::restaurarClientesBinario(nombre_archivo);
+        
+        if (!nuevos_clientes || nuevos_clientes->esta_vacia()) {
             cout << "\n=== ERROR: No se pudieron cargar datos del backup ===" << endl;
+            cout << "El archivo puede estar corrupto o vacio." << endl;
             pausar_consola();
+            inicializar_marquesina();
             return;
         }
-
-        if (banco.getClientes())
-        {
-            delete banco.getClientes();
+        
+        // Validar la integridad de los datos cargados
+        int clientes_cargados = 0;
+        try {
+            clientes_cargados = nuevos_clientes->getTam();
+        } catch (const std::exception& e) {
+            cout << "Error al obtener el tamaño de la lista: " << e.what() << endl;
+            delete nuevos_clientes;
+            pausar_consola();
+            inicializar_marquesina();
+            return;
         }
-        banco.setClientes(nuevos_clientes);
-
+        
+        // Validar que los nuevos datos sean válidos antes de proceder
+        if (clientes_cargados == 0) {
+            cout << "\n=== ADVERTENCIA: El backup contiene 0 clientes ===" << endl;
+            cout << "¿Desea continuar con la restauracion? (esto eliminara todos los datos actuales)" << endl;
+            bool confirmar = seleccionar_Si_No();
+            if (!confirmar) {
+                cout << "Restauracion cancelada por el usuario." << endl;
+                delete nuevos_clientes;
+                pausar_consola();
+                inicializar_marquesina();
+                return;
+            }
+        }
+        
+        // Actualizar el banco con los nuevos clientes
+        try {
+            banco.setClientes(nuevos_clientes);
+        } catch (const std::exception& e) {
+            cout << "\n=== ERROR al actualizar datos del banco ===" << endl;
+            cout << "Error: " << e.what() << endl;
+            
+            if (nuevos_clientes) {
+                delete nuevos_clientes;
+            }
+            
+            pausar_consola();
+            inicializar_marquesina();
+            return;
+        }
+        
         banco.guardar_datos_binario_sin_backup("datos.txt");
-
-        cout << "\n=== BACKUP MÁS RECIENTE RECUPERADO EXITOSAMENTE ===" << endl;
-        cout << "Datos cargados desde: " << nombre_archivo << endl;
-        cout << "\nRegresando al menú principal...\n";
+        
+        // Mostrar estadísticas del backup restaurado
+        int totalClientes = clientes_cargados;
+        int totalCuentas = 0;
+        try {
+            auto clientesActuales = banco.getClientes();
+            if (clientesActuales) {
+                clientesActuales->recorrer([&totalCuentas](Cliente* cliente) {
+                    if (cliente && cliente->get_cuentas()) {
+                        totalCuentas += cliente->get_cuentas()->getTam();
+                    }
+                });
+            }
+        } catch (const std::exception& e) {
+            totalCuentas = 0;
+        }
+        
+        cout << "\n=== BACKUP RESTAURADO EXITOSAMENTE ===" << endl;
+        cout << "=======================================" << endl;
+        cout << "Archivo restaurado: " << nombre_archivo << endl;
+        cout << "Clientes restaurados: " << totalClientes << endl;
+        cout << "Cuentas restauradas: " << totalCuentas << endl;
+        cout << "Fecha del backup: ";
+        
+        if (seleccion < fechas_backup.size()) {
+            struct tm* tm_info = localtime(&fechas_backup[seleccion]);
+            char fecha_completa[50];
+            strftime(fecha_completa, sizeof(fecha_completa), "%d/%m/%Y a las %H:%M:%S", tm_info);
+            cout << fecha_completa << endl;
+        } else {
+            cout << "Fecha no disponible" << endl;
+        }
+        
+        cout << "=======================================" << endl;
+        cout << "El sistema ha sido restaurado al estado del backup." << endl;
+        cout << "Todos los datos actuales han sido reemplazados." << endl;
         pausar_consola();
     }
-    catch (const std::exception &e)
+    catch (const std::filesystem::filesystem_error& e)
     {
-        cerr << "Error al recuperar backup: " << e.what() << endl;
+        system("cls");
+        ajustar_cursor_para_marquesina();
+        cout << "\n=== ERROR DE SISTEMA DE ARCHIVOS ===" << endl;
+        cout << "Error: " << e.what() << endl;
+        cout << "Codigo de error: " << e.code() << endl;
+        cout << "\nPosibles causas:" << endl;
+        cout << "- Permisos insuficientes para acceder al directorio" << endl;
+        cout << "- Disco lleno o problemas de hardware" << endl;
+        cout << "- Archivo en uso por otro proceso" << endl;
+        cout << "\nRegresando al menu principal...\n";
+        pausar_consola();
+    }
+    catch (const std::exception& e)
+    {
+        system("cls");
+        ajustar_cursor_para_marquesina();
         cout << "\n=== ERROR AL RECUPERAR BACKUP ===" << endl;
         cout << "Error: " << e.what() << endl;
-        cout << "\nRegresando al menú principal...\n";
+        cout << "\nDetalles tecnicos:" << endl;
+        cout << "- Verifique que el archivo de backup no este corrupto" << endl;
+        cout << "- Asegurese de tener permisos de lectura" << endl;
+        cout << "- Verifique el espacio disponible en disco" << endl;
+        cout << "\nRegresando al menu principal...\n";
         pausar_consola();
     }
+    catch (...)
+    {
+        system("cls");
+        ajustar_cursor_para_marquesina();
+        cout << "\n=== ERROR DESCONOCIDO ===" << endl;
+        cout << "Ha ocurrido un error inesperado durante la restauracion." << endl;
+        cout << "El sistema puede estar en un estado inconsistente." << endl;
+        cout << "\nRecomendaciones:" << endl;
+        cout << "- Reinicie la aplicacion" << endl;
+        cout << "- Verifique la integridad de los archivos" << endl;
+        cout << "- Contacte al administrador del sistema" << endl;
+        cout << "\nRegresando al menu principal...\n";
+        pausar_consola();
+    }
+    
+    inicializar_marquesina(); // Reiniciar la marquesina antes de salir
 }
 
 
@@ -665,8 +893,7 @@ void cifrar_archivos_txt(Banco& banco) {
     cout << "Iniciando proceso de cifrado..." << endl;
     int numCesar = 3;
     respaldo.cifrarArchivoABaseTxt(nombre_archivo, numCesar);
-    cout << "-------------------------------------------" << endl;
-    cout << "=== ¡CIFRADO COMPLETADO CON ÉXITO! ===" << endl;
+    cout << "-------------------------------------------" << endl;        cout << "=== CIFRADO COMPLETADO CON EXITO ===" << endl;
     size_t pos1 = nombre_archivo.find("backup_clientes_");
     size_t pos2 = nombre_archivo.find(".bin");
     string timestamp = (pos1 != string::npos && pos2 != string::npos)
@@ -685,18 +912,19 @@ void cifrar_archivos_txt(Banco& banco) {
  */
 void menu_administrador(Banco &banco)
 {
-    const int NUM_OPCIONES = 11; // Incrementado a 11
+    const int NUM_OPCIONES = 12; // Incrementado a 12
     const char *OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
         "Base de datos",
         "Árbol binario",
         "Recuperar backup por fecha y hora",
+        "Crear backup manual",
         "Cifrar archivos",
         "Descifrar archivos",
         "Verificar integridad de datos (Hash)",
         "Generar tabla Hash",
-        "Generar PDF de clientes", // Nueva opción
+        "Generar PDF de clientes",
         "Salir"};
 
     system("cls");
@@ -754,25 +982,28 @@ void menu_administrador(Banco &banco)
                 recuperar_backup_por_fecha(banco);
                 break;
             case 5:
-                cifrar_archivos_txt(banco);
+                crear_backup_manual(banco);
                 break;
             case 6:
-                descifrar_archivos_txt(banco);
+                cifrar_archivos_txt(banco);
                 break;
             case 7:
-                verificar_hash(banco);
+                descifrar_archivos_txt(banco);
                 break;
             case 8:
+                verificar_hash(banco);
+                break;
+            case 9:
                 buscar_con_tabla_hash(banco);
                 break;
-            case 9: // Nueva opción para generar PDF
+            case 10: // Opción para generar PDF
                 generateClientDataPDF(banco.getClientes());
                 pausar_consola(); // Pausa para que el usuario vea el resultado
                 break;
-            case 10: // Nueva posición de "Salir"
+            case 11: // Nueva posición de "Salir"
                 return;
             }
-        } while (opcion != 10); // Cambiado a 10 para coincidir con "Salir"
+        } while (opcion != 11); // Cambiado a 11 para coincidir con "Salir"
     }
     catch (const std::exception &e)
     {
@@ -2385,7 +2616,7 @@ void buscar_con_tabla_hash(Banco& banco) {
                 cout << "Teléfono: " << cliente->get_telefono() << "\n";
                 mover_cursor(1, fila_actual++);
                 cout << "Email: " << cliente->get_email() << "\n";
-                auto* cuentas = cliente->get_cuentas();
+                auto *cuentas = cliente->get_cuentas();
                 if (cuentas && !cuentas->esta_vacia()) {
                     mover_cursor(1, fila_actual++);
                     cout << "\n=== CUENTAS DEL CLIENTE ===\n";
@@ -2429,5 +2660,223 @@ void buscar_con_tabla_hash(Banco& banco) {
         mover_cursor(1, fila_error++);
         cout << "\nRegresando al menú principal...\n";
         pausar_consola();
+    }
+}
+
+/**
+ * @brief Crea un backup manual de los datos del sistema.
+ * @param banco Referencia al objeto Banco para crear el backup.
+ * @details Permite al administrador crear un backup manual de todos
+ * los datos del sistema con marca de tiempo.
+ */
+void crear_backup_manual(Banco& banco) {
+    system("cls");
+    visibilidad_cursor(true);
+    try {
+        int fila_actual = 2;
+        
+        mover_cursor(1, fila_actual);
+        cout << "==============================================" << endl;
+        mover_cursor(1, ++fila_actual);
+        cout << "         CREAR BACKUP MANUAL                 " << endl;
+        mover_cursor(1, ++fila_actual);
+        cout << "==============================================" << endl;
+        fila_actual += 2;
+
+        mover_cursor(1, fila_actual++);
+        cout << "Creando backup manual de los datos del sistema..." << endl;
+        fila_actual++;
+
+        // Crear el backup usando RespaldoDatos
+        RespaldoDatos::guardarRespaldoClientesConFecha(*banco.getClientes());
+        
+        mover_cursor(1, fila_actual++);
+        cout << "==============================================" << endl;
+        mover_cursor(1, fila_actual++);
+        cout << "     BACKUP CREADO EXITOSAMENTE" << endl;
+        mover_cursor(1, fila_actual++);
+        cout << "Archivo: Backup con marca de tiempo creado" << endl;
+        mover_cursor(1, fila_actual++);
+        cout << "Ubicación: Directorio actual del proyecto" << endl;
+        mover_cursor(1, fila_actual++);
+        cout << "==============================================" << endl;
+        fila_actual++;
+        
+        mover_cursor(1, fila_actual++);
+        cout << "Presione Enter para regresar al menú de administrador...";
+        pausar_consola();
+    }
+    catch (const std::exception& e) {
+        int fila_error = 20;
+        mover_cursor(1, fila_error++);
+        cerr << "Error al crear backup manual: " << e.what() << endl;
+        mover_cursor(1, fila_error++);
+        cout << "\n=== ERROR AL CREAR BACKUP MANUAL ===" << endl;
+        mover_cursor(1, fila_error++);
+        cout << "Error: " << e.what() << endl;
+        mover_cursor(1, fila_error++);
+        cout << "\nRegresando al menú de administrador...\n";
+        pausar_consola();
+    }
+}
+
+/**
+ * @brief Verifica si existe el archivo datos.txt y maneja su recuperación.
+ * @param banco Referencia al objeto Banco para cargar los datos.
+ * @return true si los datos fueron cargados exitosamente, false en caso contrario.
+ * @details Verifica la existencia de datos.txt y si no existe, presenta
+ * un menú para seleccionar un backup para recuperar.
+ */
+bool verificar_y_recuperar_datos(Banco& banco) {
+    ifstream archivo("datos.txt");
+    
+    // Si el archivo existe, intentar cargarlo
+    if (archivo.good()) {
+        archivo.close();
+        try {
+            banco.cargar_datos_binario("datos.txt");
+            return true;
+        }
+        catch (const std::exception& e) {
+            cout << "Error al cargar datos.txt: " << e.what() << endl;
+            // Si hay error al cargar, continúa con la selección de backup
+        }
+    }
+    
+    // Si el archivo no existe o hubo error al cargarlo
+    archivo.close();
+    system("cls");
+    visibilidad_cursor(true);
+    
+    cout << "==============================================" << endl;
+    cout << "   ARCHIVO DATOS.TXT NO ENCONTRADO O DAÑADO  " << endl;
+    cout << "==============================================" << endl;
+    cout << endl;
+    cout << "El archivo principal de datos no está disponible." << endl;
+    cout << "Es necesario recuperar desde un backup existente." << endl;
+    cout << endl;
+    
+    // Buscar archivos de backup disponibles
+    vector<string> backups;
+    for (const auto& entry : filesystem::directory_iterator(".")) {
+        if (entry.is_regular_file()) {
+            string filename = entry.path().filename().string();
+            if (filename.find("backup_clientes_") == 0 && filename.find(".bin") != string::npos) {
+                backups.push_back(filename);
+            }
+        }
+    }
+    
+    if (backups.empty()) {
+        cout << "=== NO HAY BACKUPS DISPONIBLES ===" << endl;
+        cout << "No se encontraron archivos de backup para recuperar." << endl;
+        cout << "El sistema se iniciará sin datos." << endl;
+        cout << endl;
+        cout << "Presione Enter para continuar...";
+        pausar_consola();
+        return false;
+    }
+    
+    // Ordenar backups por fecha (más reciente primero)
+    sort(backups.begin(), backups.end(), [](const string& a, const string& b) {
+        return a > b; // Orden descendente (más reciente primero)
+    });
+    
+    // Crear opciones para el menú de selección con flechitas
+    vector<string> opciones_str;
+    vector<const char*> opciones_backup;
+    
+    for (size_t i = 0; i < backups.size(); ++i) {
+        string opcion_texto = backups[i];
+        
+        // Extraer y mostrar fecha/hora del nombre del archivo
+        size_t pos1 = backups[i].find("backup_clientes_");
+        size_t pos2 = backups[i].find(".bin");
+        if (pos1 != string::npos && pos2 != string::npos) {
+            string timestamp = backups[i].substr(16, pos2 - 16);
+            if (timestamp.length() >= 15) {
+                string fecha = timestamp.substr(0, 8);
+                string hora = timestamp.substr(9, 6);
+                
+                // Formatear fecha DD/MM/YYYY
+                string fecha_formateada = fecha.substr(6, 2) + "/" + 
+                                        fecha.substr(4, 2) + "/" + 
+                                        fecha.substr(0, 4);
+                
+                // Formatear hora HH:MM:SS
+                string hora_formateada = hora.substr(0, 2) + ":" + 
+                                       hora.substr(2, 2) + ":" + 
+                                       hora.substr(4, 2);
+                
+                opcion_texto += " [" + fecha_formateada + " " + hora_formateada + "]";
+            }
+        }
+        
+        opciones_str.push_back(opcion_texto);
+        opciones_backup.push_back(opciones_str.back().c_str());
+    }
+    
+    // Agregar opción de cancelar
+    opciones_str.push_back("Cancelar y salir del programa");
+    opciones_backup.push_back(opciones_str.back().c_str());
+    
+    // Usar el sistema de selección con flechitas
+    system("cls");
+    int seleccion = seleccionar_opcion("===== SELECCIONAR BACKUP PARA RECUPERAR =====", 
+                                     opciones_backup.data(), 
+                                     opciones_backup.size(), 4);
+    
+    // Si selecciona cancelar
+    if (seleccion == static_cast<int>(backups.size())) {
+        return false;
+    }
+    
+    string archivo_seleccionado = backups[seleccion];
+    cout << endl;
+    cout << "Archivo seleccionado: " << archivo_seleccionado << endl;
+    cout << "ADVERTENCIA: Esto sobrescribirá el archivo datos.txt actual." << endl;
+    cout << "¿Está seguro de que desea recuperar este backup?" << endl;
+    
+    bool confirmar = seleccionar_Si_No();
+    if (!confirmar) {
+        cout << "Operación cancelada." << endl;
+        pausar_consola();
+        return false;
+    }
+    
+    try {
+        cout << "Recuperando backup..." << endl;
+        
+        // Cargar el backup seleccionado usando el método correcto
+        ListaDoble<Cliente*>* clientes_recuperados = RespaldoDatos::restaurarClientesBinario(archivo_seleccionado);
+        
+        if (!clientes_recuperados) {
+            throw runtime_error("Error al cargar el backup seleccionado");
+        }
+        
+        // Asignar los clientes recuperados al banco
+        banco.setClientes(clientes_recuperados);
+        
+        // Guardar como datos.txt
+        banco.guardar_datos_binario("datos.txt");
+        
+        cout << "==============================================" << endl;
+        cout << "     BACKUP RECUPERADO EXITOSAMENTE" << endl;
+        cout << "==============================================" << endl;
+        cout << "Los datos han sido restaurados desde: " << archivo_seleccionado << endl;
+        cout << "El archivo datos.txt ha sido recreado." << endl;
+        cout << "El sistema está listo para usar." << endl;
+        cout << "==============================================" << endl;
+        cout << endl;
+        cout << "Presione Enter para continuar...";
+        pausar_consola();
+        
+        return true;
+    }
+    catch (const std::exception& e) {
+        cout << "Error al recuperar backup: " << e.what() << endl;
+        cout << "Presione Enter para continuar...";
+        pausar_consola();
+        return false;
     }
 }

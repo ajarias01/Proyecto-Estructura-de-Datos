@@ -338,4 +338,23 @@ void consultar_movimientos(Banco& banco);
  */
 void consultar_cuentas(Banco& banco);
 
+// ========== FUNCIONES DE BACKUP MANUAL ==========
+
+/**
+ * @brief Crea un backup manual de los datos del sistema.
+ * @param banco Referencia al objeto Banco para crear el backup.
+ * @details Permite al administrador crear un backup manual de todos
+ * los datos del sistema con marca de tiempo.
+ */
+void crear_backup_manual(Banco& banco);
+
+/**
+ * @brief Verifica si existe el archivo datos.txt y maneja su recuperación.
+ * @param banco Referencia al objeto Banco para cargar los datos.
+ * @return true si los datos fueron cargados exitosamente, false en caso contrario.
+ * @details Verifica la existencia de datos.txt y si no existe, presenta
+ * un menú para seleccionar un backup para recuperar.
+ */
+bool verificar_y_recuperar_datos(Banco& banco);
+
 #endif

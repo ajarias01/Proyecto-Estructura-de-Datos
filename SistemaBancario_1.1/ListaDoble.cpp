@@ -291,6 +291,27 @@ int ListaDoble<T>::getTam() const {
     } while (aux != cabeza);
     return count;
 }
+
+/**
+ * @brief Limpia la estructura de la lista sin eliminar los elementos almacenados.
+ * Solo libera los nodos pero no los datos que contienen.
+ */
+template <typename T>
+void ListaDoble<T>::limpiar_sin_eliminar() {
+    if (!esta_vacia()) {
+        Nodo<T>* actual = cabeza;
+        Nodo<T>* siguiente;
+        do {
+            siguiente = actual->get_siguiente();
+            // Solo eliminar el nodo, NO el contenido
+            delete actual;
+            actual = siguiente;
+        } while (actual != cabeza);
+        cabeza = nullptr;
+        cola = nullptr;
+    }
+}
+
 // Instanciaciones explícitas
 template class ListaDoble<int>;
 template class ListaDoble<double>;

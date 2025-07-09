@@ -113,6 +113,11 @@ public:
      * @param valor Nuevo valor a asignar.
      */
     void set_contador(int index, T valor);
+    /**
+     * @brief Limpia la estructura de la lista sin eliminar los elementos almacenados.
+     * Útil cuando los elementos son manejados externamente.
+     */
+    void limpiar_sin_eliminar();
 private:
     /**
      * @brief Puntero al nodo cabeza de la lista.
