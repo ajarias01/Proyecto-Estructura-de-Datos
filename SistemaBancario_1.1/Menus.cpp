@@ -373,64 +373,22 @@ void cargar_base_datos(Banco& banco) {
         return;
     }
 
-    const char *campos[] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
-    int campo = seleccionar_opcion("Ordenar/buscar por:", campos, 5, 2);
-
-    const char *ordenes[] = {"Ascendente", "Descendente"};
-    int orden = seleccionar_opcion("Orden:", ordenes, 2, 10);
-
-    GestorClientes gestor;
-    auto &lista = *clientes; // Initial declaration
-    int n = lista.getTam();
-
-    switch (campo)
-    {
-    case 0: // DNI
-        gestor.radixSortCampoNumerico(lista, n, [](Cliente *c)
-                                      { return std::stoi(c->get_dni()); });
-        break;
-    case 1: // Nombre
-        gestor.radixSortStringCampo(lista, n, [](Cliente *c)
-                                    { return c->get_nombres(); });
-        break;
-    case 2: // Apellido
-        gestor.radixSortStringCampo(lista, n, [](Cliente *c)
-                                    { return c->get_apellidos(); });
-        break;
-    case 3: // Teléfono
-        gestor.radixSortCampoNumerico(lista, n, [](Cliente *c)
-                                      { return std::stoi(c->get_telefono()); });
-        break;
-    case 4: // Email
-        gestor.radixSortStringCampo(lista, n, [](Cliente *c)
-                                    { return c->get_email(); });
-        break;
-    }
-    if (orden == 1)
-    {
-        std::vector<Cliente *> temp;
-        for (int i = 0; i < n; ++i)
-            temp.push_back(lista.get_contador(i));
-        std::reverse(temp.begin(), temp.end());
-        for (int i = 0; i < n; ++i)
-            lista.set_contador(i, temp[i]);
-    }
-
     // Menú de selección de campo
     ajustar_cursor_para_marquesina();
     const int NUM_CAMPOS = 5;
     const char *CAMPOS[NUM_CAMPOS] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
-    campo = seleccionar_opcion("===== SELECCIONAR CAMPO =====", CAMPOS, NUM_CAMPOS, 4);
+    int campo = seleccionar_opcion("===== SELECCIONAR CAMPO =====", CAMPOS, NUM_CAMPOS, 4);
 
     // Menú de selección de orden
     system("cls");
     ajustar_cursor_para_marquesina();
     const int NUM_ORDENES = 2;
     const char *ORDENES[NUM_ORDENES] = {"Ascendente", "Descendente"};
-    orden = seleccionar_opcion("===== SELECCIONAR ORDEN =====", ORDENES, NUM_ORDENES, 4);
+    int orden = seleccionar_opcion("===== SELECCIONAR ORDEN =====", ORDENES, NUM_ORDENES, 4);
 
     // Convertir lista a vector para ordenamiento más eficiente
-    n = lista.getTam(); // Update n with the current size
+    auto &lista = *clientes;
+    int n = lista.getTam();
     std::vector<Cliente *> vectorClientes;
     for (int i = 0; i < n; ++i)
     {
