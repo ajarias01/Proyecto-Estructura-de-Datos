@@ -9,7 +9,7 @@ SolidCompression=yes
 
 [Files]
 Source: "main.exe"; DestDir: "{app}"; DestName: "SistemaBancario.exe"; Flags: ignoreversion
-Source: "datos.bin"; DestDir: "{app}"; Flags: ignoreversion
+Source: "datos.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "backup_clientes_20250601_135712.bak"; DestDir: "{app}"; Flags: ignoreversion
 Source: "backup_clientes_20250601_135712_cifrado.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "backup_clientes_20250601_135712_descifrado.txt"; DestDir: "{app}"; Flags: ignoreversion
@@ -35,10 +35,10 @@ end;
 procedure InitializeWizard;
 begin
   SerialPage := CreateInputQueryPage(wpWelcome,
-    'Validación de Serial',
-    'Por favor, ingresa la clave de instalación para continuar.',
+    'Validaciï¿½n de Serial',
+    'Por favor, ingresa la clave de instalaciï¿½n para continuar.',
     'Ingresa una de las claves proporcionadas por el desarrollador para instalar el software.');
-  SerialPage.Add('Clave de instalación:', False);
+  SerialPage.Add('Clave de instalaciï¿½n:', False);
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;

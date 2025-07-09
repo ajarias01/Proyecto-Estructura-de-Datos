@@ -341,7 +341,7 @@ void recuperar_backup_por_fecha(Banco& banco)
         }
         banco.setClientes(nuevos_clientes);
 
-        banco.guardar_datos_binario_sin_backup("datos.bin");
+        banco.guardar_datos_binario_sin_backup("datos.txt");
 
         cout << "\n=== BACKUP MÁS RECIENTE RECUPERADO EXITOSAMENTE ===" << endl;
         cout << "Datos cargados desde: " << nombre_archivo << endl;
@@ -859,9 +859,22 @@ void menu_cliente(Banco &banco)
 
                 // Generar QRs para todas las cuentas en un solo PDF
                 string fullName = cliente->get_nombres() + " " + cliente->get_apellidos();
+                string fileName = fullName;
+                // Reemplazar espacios con guiones bajos para el nombre del archivo
+                replace(fileName.begin(), fileName.end(), ' ', '_');
+                
                 QRCodeGenerator qr(fullName, cuentas);
                 qr.generateQRAndPDF();
-                cout << "PDF con QRs generado exitosamente para todas las cuentas." << endl;
+                
+                system("cls");
+                cout << "\n==============================================" << endl;
+                cout << "          GENERACIÓN DE CÓDIGOS QR           " << endl;
+                cout << "==============================================" << endl;
+                cout << "PDF con códigos QR generado exitosamente" << endl;
+                cout << "Cliente: " << fullName << endl;
+                cout << "Número de cuentas procesadas: " << cuentas->getTam() << endl;
+                cout << "Archivo generado: qr_cliente_" << fileName << ".pdf" << endl;
+                cout << "==============================================" << endl;
                 pausar_consola();
             }
             break;
@@ -1222,7 +1235,7 @@ void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
         if (cliente_existe)
         {
             cliente_existe->agregar_cuenta(cuenta);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1237,7 +1250,7 @@ void abrir_cuenta_sin_sucursal(Banco& banco, int tipo_cuenta) {
             Cliente *cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
             cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1485,7 +1498,7 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
         if (cliente_existe)
         {
             cliente_existe->agregar_cuenta(cuenta);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1502,7 +1515,7 @@ void abrir_cuenta(Banco& banco, int tipo_cuenta, int branchId, const string& suc
             Cliente *cliente = new Cliente(dni, nombre, apellido, direccion, telefono, email, fecha_nacimiento, contrasenia);
             cliente->agregar_cuenta(cuenta);
             banco.agregar_cliente(cliente);
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             mover_cursor(1, fila_actual);
             cout << "=== CUENTA CREADA EXITOSAMENTE ===" << endl;
             mover_cursor(1, fila_actual + 1);
@@ -1603,7 +1616,7 @@ void realizar_deposito(Banco& banco, const string& dni)
 
         Fecha fecha;
         cuenta->depositar(monto, fecha);
-        banco.guardar_datos_binario("datos.bin");
+        banco.guardar_datos_binario("datos.txt");
         RespaldoDatos::respaldoClientesBinario("respaldo_clientes.bin", *banco.getClientes());
 
         fila_actual += 4;
@@ -1618,7 +1631,7 @@ void realizar_deposito(Banco& banco, const string& dni)
         mover_cursor(1, fila_actual++);
         cout << "   Nuevo saldo: $" << cuenta->get_saldo() << endl;
         mover_cursor(1, fila_actual++);
-        cout << "   Datos guardados en datos.bin" << endl;
+        cout << "   Datos guardados en datos.txt" << endl;
         mover_cursor(1, fila_actual++);
         cout << "==============================================" << endl;
         mover_cursor(1, fila_actual++);
@@ -1714,7 +1727,7 @@ void realizar_retiro(Banco& banco, const string& dni)
         Fecha fecha;
         if (cuenta->retirar(monto, fecha))
         {
-            banco.guardar_datos_binario("datos.bin");
+            banco.guardar_datos_binario("datos.txt");
             RespaldoDatos::respaldoClientesBinario("respaldo_clientes.bin", *banco.getClientes());
             fila_actual += 4;
             mover_cursor(1, fila_actual++);
@@ -1728,7 +1741,7 @@ void realizar_retiro(Banco& banco, const string& dni)
             mover_cursor(1, fila_actual++);
             cout << "     Nuevo saldo: $" << cuenta->get_saldo() << endl;
             mover_cursor(1, fila_actual++);
-            cout << "     Datos guardados en datos.bin" << endl;
+            cout << "     Datos guardados en datos.txt" << endl;
             mover_cursor(1, fila_actual++);
             cout << "==============================================" << endl;
             mover_cursor(1, fila_actual++);

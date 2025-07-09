@@ -83,20 +83,20 @@ public:
 /**
  * @brief Obtiene el valor de un campo específico de un cliente.
  * @param cliente Puntero al cliente
- * @param campo Índice del campo (1: DNI, 2: Nombre, 3: Apellido, 4: Teléfono, 5: Email)
+ * @param campo Índice del campo (0: DNI, 1: Nombre, 2: Apellido, 3: Teléfono, 4: Email)
  * @return Valor del campo como string
  */
 string obtener_valor_campo(Cliente* cliente, int campo) {
     switch(campo) {
-        case 1: // DNI completo
+        case 0: // DNI completo
             return cliente->get_dni();
-        case 2: // Nombre completo
+        case 1: // Nombre completo
             return cliente->get_nombres();
-        case 3: // Apellido completo
+        case 2: // Apellido completo
             return cliente->get_apellidos();
-        case 4: // Teléfono completo
+        case 3: // Teléfono completo
             return cliente->get_telefono();
-        case 5: // Email (hasta @)
+        case 4: // Email (hasta @)
         {
             string email = cliente->get_email();
             size_t pos = email.find('@');
@@ -124,7 +124,7 @@ Tree* insertar_bst(Tree* nodo, string valor, Cliente* cliente, int campo) {
     
     // Comparación para diferentes tipos de datos
     bool menor = false;
-    if (campo == 1 || campo == 4) { // DNI o Teléfono (numérico)
+    if (campo == 0 || campo == 3) { // DNI o Teléfono (numérico)
         menor = stoi(valor) < stoi(valor_nodo);
     } else { // Texto (nombres, apellidos, email)
         string val_lower = valor, nodo_lower = valor_nodo;
@@ -247,7 +247,7 @@ Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
     
     // Comparación para diferentes tipos de datos
     bool menor = false;
-    if (campo == 1 || campo == 4) { // DNI o Teléfono (numérico)
+    if (campo == 0 || campo == 3) { // DNI o Teléfono (numérico)
         menor = stoi(valor) < stoi(valor_nodo);
     } else { // Texto (nombres, apellidos, email)
         string val_lower = valor, nodo_lower = valor_nodo;
@@ -277,7 +277,7 @@ Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
     if (balance > 1) {
         string valor_izq = obtener_valor_campo(nodo->left->cliente, campo);
         bool menor_izq = false;
-        if (campo == 1 || campo == 4) {
+        if (campo == 0 || campo == 3) {
             menor_izq = stoi(valor) < stoi(valor_izq);
         } else {
             string val_lower = valor, izq_lower = valor_izq;
@@ -295,7 +295,7 @@ Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
     if (balance < -1) {
         string valor_der = obtener_valor_campo(nodo->right->cliente, campo);
         bool mayor_der = false;
-        if (campo == 1 || campo == 4) {
+        if (campo == 0 || campo == 3) {
             mayor_der = stoi(valor) >= stoi(valor_der);
         } else {
             string val_lower = valor, der_lower = valor_der;
@@ -313,7 +313,7 @@ Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
     if (balance > 1) {
         string valor_izq = obtener_valor_campo(nodo->left->cliente, campo);
         bool mayor_izq = false;
-        if (campo == 1 || campo == 4) {
+        if (campo == 0 || campo == 3) {
             mayor_izq = stoi(valor) >= stoi(valor_izq);
         } else {
             string val_lower = valor, izq_lower = valor_izq;
@@ -332,7 +332,7 @@ Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
     if (balance < -1) {
         string valor_der = obtener_valor_campo(nodo->right->cliente, campo);
         bool menor_der = false;
-        if (campo == 1 || campo == 4) {
+        if (campo == 0 || campo == 3) {
             menor_der = stoi(valor) < stoi(valor_der);
         } else {
             string val_lower = valor, der_lower = valor_der;
@@ -606,7 +606,7 @@ void mostrar_arbol_binario(Banco& banco) {
     cout << "\n===========================================" << endl;
     cout << "===      ÁRBOL AVL DE CLIENTES       ===" << endl;
     
-    const char* campos[] = {"", "DNI", "Nombre", "Apellido", "Teléfono", "Email"};
+    const char* campos[] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
     cout << "===    ORDENADO POR: " << campos[campo] << "    ===" << endl;
     cout << "===========================================" << endl;
 
