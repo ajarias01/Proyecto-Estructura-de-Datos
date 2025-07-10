@@ -8,6 +8,7 @@
 #include <iostream>
 #include <conio.h>
 #include "Menus.h"
+#include "Ubicacion.h"
 
 /**
  * @brief Función principal del sistema bancario.
@@ -26,6 +27,10 @@ int main() {
     
     // Verificar y recuperar datos usando la nueva función
     verificar_y_recuperar_datos(banco);
+    
+    // Cargar citas agendadas al sistema de geolocalización
+    extern SimpleGeolocationSystem geoSystem;
+    geoSystem.cargarCitas();
     
     getch();
     menu_principal(banco);

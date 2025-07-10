@@ -7,6 +7,8 @@
  */
 
 #include "GestorClientes.h"
+#include <algorithm>
+#include <cctype>
 using namespace std;
 
 /**
@@ -184,4 +186,62 @@ int GestorClientes::upperBound(const std::vector<Movimiento>& arr, int target) {
         else hi = mid;
     }
     return lo;
+}
+
+/**
+ * @brief Búsqueda binaria para encontrar un cliente por campo numérico.
+ * @param lista Lista de clientes ordenada por el campo numérico
+ * @param n Número de clientes
+ * @param valor Valor a buscar
+ * @param getter Función para obtener el campo numérico del cliente
+ * @param ascendente true si la lista está ordenada ascendente, false para descendente
+ * @return Índice del cliente encontrado, -1 si no se encuentra
+ */
+int GestorClientes::busquedaBinariaNumerica(ListaDoble<Cliente*>& lista, int n, int valor, std::function<int(Cliente*)> getter, bool ascendente) {
+    int izq = 0, der = n - 1;
+    while (izq <= der) {
+        int medio = izq + (der - izq) / 2;
+        int valorMedio = getter(lista.get_contador(medio));
+        
+        if (valorMedio == valor) {
+            return medio;
+        } else if (ascendente ? (valorMedio < valor) : (valorMedio > valor)) {
+            izq = medio + 1;
+        } else {
+            der = medio - 1;
+        }
+    }
+    return -1;
+}
+
+/**
+ * @brief Búsqueda binaria para encontrar un cliente por campo string.
+ * @param lista Lista de clientes ordenada por el campo string
+ * @param n Número de clientes
+ * @param valor Valor a buscar
+ * @param getter Función para obtener el campo string del cliente
+ * @param ascendente true si la lista está ordenada ascendente, false para descendente
+ * @return Índice del cliente encontrado, -1 si no se encuentra
+ */
+int GestorClientes::busquedaBinariaString(ListaDoble<Cliente*>& lista, int n, const std::string& valor, std::function<std::string(Cliente*)> getter, bool ascendente) {
+    int izq = 0, der = n - 1;
+    while (izq <= der) {
+        int medio = izq + (der - izq) / 2;
+        std::string valorMedio = getter(lista.get_contador(medio));
+        
+        // Convertir a minúsculas para comparación insensible a mayúsculas
+        std::string valorMedioLower = valorMedio;
+        std::string valorBusquedaLower = valor;
+        std::transform(valorMedioLower.begin(), valorMedioLower.end(), valorMedioLower.begin(), ::tolower);
+        std::transform(valorBusquedaLower.begin(), valorBusquedaLower.end(), valorBusquedaLower.begin(), ::tolower);
+        
+        if (valorMedioLower == valorBusquedaLower) {
+            return medio;
+        } else if (ascendente ? (valorMedioLower < valorBusquedaLower) : (valorMedioLower > valorBusquedaLower)) {
+            izq = medio + 1;
+        } else {
+            der = medio - 1;
+        }
+    }
+    return -1;
 }

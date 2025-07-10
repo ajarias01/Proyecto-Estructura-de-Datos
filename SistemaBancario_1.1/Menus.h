@@ -300,6 +300,20 @@ void mostrar_sucursales_cercanas();
  */
 void agendar_cita_presencial();
 
+/**
+ * @brief Consulta y muestra las citas agendadas por sector.
+ * @details Permite ver todas las citas agendadas, filtradas por sector
+ * o mostrar todas las citas del sistema para administradores.
+ */
+void consultar_citas_por_sector();
+
+/**
+ * @brief Cancela una cita previamente agendada.
+ * @details Permite a un cliente cancelar su cita ingresando DNI
+ * y número de confirmación de la cita.
+ */
+void cancelar_cita_agendada();
+
 // ========== FUNCIONES DE TRANSACCIONES BANCARIAS ==========
 
 /**

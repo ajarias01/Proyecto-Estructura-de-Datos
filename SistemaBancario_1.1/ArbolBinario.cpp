@@ -22,6 +22,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <climits>
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
+#include <cmath>
 
 using namespace std;
 
@@ -56,27 +60,31 @@ public:
 
 typedef class asciinode_struct asciinode;
 
+// Enum para los colores del árbol Rojo-Negro
+enum Color { RED, BLACK };
+
 /**
  * @class Tree
- * @brief Nodo de un árbol AVL de clientes.
+ * @brief Nodo de un árbol Rojo-Negro de clientes.
  *
- * Esta clase representa un nodo de un árbol AVL, utilizado para almacenar y organizar
+ * Esta clase representa un nodo de un árbol Rojo-Negro, utilizado para almacenar y organizar
  * clientes según diferentes campos (DNI, nombre, apellido, teléfono o email).
  * Cada nodo contiene un puntero al cliente, el valor del campo por el que se ordena,
- * y punteros a los hijos izquierdo y derecho, así como la altura para el balanceo AVL.
+ * punteros a los hijos izquierdo y derecho, y el color para el balanceo Rojo-Negro.
  */
 class Tree {
 public:
     Tree* left, *right; ///< Punteros a los hijos izquierdo y derecho
+    Tree* parent;       ///< Puntero al nodo padre
     string element;     ///< Valor del campo por el que se ordena
     Cliente* cliente;   ///< Puntero al cliente asociado
-    int height;         ///< Altura del nodo para balanceo AVL
+    Color color;        ///< Color del nodo (RED o BLACK)
     /**
      * @brief Constructor de Tree
      * @param elem Valor del campo por el que se ordena
      * @param cli Puntero al cliente asociado
      */
-    Tree(string elem, Cliente* cli) : element(elem), cliente(cli), left(nullptr), right(nullptr), height(1) {}
+    Tree(string elem, Cliente* cli) : element(elem), cliente(cli), left(nullptr), right(nullptr), parent(nullptr), color(RED) {}
 };
 
 // Función para obtener el valor a mostrar según el campo
@@ -155,231 +163,284 @@ string crear_etiqueta(string valor) {
     }
 }
 
-// FUNCIONES PARA ÁRBOL AVL
+// FUNCIONES PARA ÁRBOL ROJO-NEGRO
+
+// Nodo NIL para el árbol Rojo-Negro
+Tree* NIL = nullptr;
 
 /**
- * @brief Obtiene la altura de un nodo AVL.
- * @param nodo Nodo a consultar
- * @return Altura del nodo
+ * @brief Inicializa el nodo NIL para el árbol Rojo-Negro.
  */
-int obtener_altura(Tree* nodo) {
-    if (nodo == nullptr) return 0;
-    return nodo->height;
-}
-
-/**
- * @brief Calcula el factor de balanceo de un nodo AVL.
- * @param nodo Nodo a consultar
- * @return Factor de balanceo (altura izquierda - altura derecha)
- */
-int factor_balanceo(Tree* nodo) {
-    if (nodo == nullptr) return 0;
-    return obtener_altura(nodo->left) - obtener_altura(nodo->right);
-}
-
-/**
- * @brief Actualiza la altura de un nodo AVL.
- * @param nodo Nodo a actualizar
- */
-void actualizar_altura(Tree* nodo) {
-    if (nodo != nullptr) {
-        nodo->height = 1 + MAX(obtener_altura(nodo->left), obtener_altura(nodo->right));
+void inicializar_nil() {
+    if (NIL == nullptr) {
+        NIL = new Tree("", nullptr);
+        NIL->color = BLACK;
+        NIL->left = NIL->right = NIL->parent = nullptr;
     }
 }
 
 /**
- * @brief Realiza una rotación simple a la derecha (LL) en un subárbol AVL.
- * @param y Raíz del subárbol
- * @return Nueva raíz tras la rotación
+ * @brief Obtiene el color de un nodo.
+ * @param nodo Nodo a consultar
+ * @return Color del nodo (BLACK si es nulo)
  */
-Tree* rotacion_derecha(Tree* y) {
-    Tree* x = y->left;
-    Tree* T2 = x->right;
-
-    // Realizar rotación
-    x->right = y;
-    y->left = T2;
-
-    // Actualizar alturas
-    actualizar_altura(y);
-    actualizar_altura(x);
-
-    // Retornar nueva raíz
-    return x;
+Color obtener_color(Tree* nodo) {
+    if (nodo == nullptr || nodo == NIL) return BLACK;
+    return nodo->color;
 }
 
 /**
- * @brief Realiza una rotación simple a la izquierda (RR) en un subárbol AVL.
- * @param x Raíz del subárbol
- * @return Nueva raíz tras la rotación
+ * @brief Establece el color de un nodo.
+ * @param nodo Nodo a modificar
+ * @param color Color a establecer
  */
-Tree* rotacion_izquierda(Tree* x) {
+void establecer_color(Tree* nodo, Color color) {
+    if (nodo != nullptr && nodo != NIL) {
+        nodo->color = color;
+    }
+}
+
+/**
+ * @brief Realiza una rotación a la izquierda en un subárbol Rojo-Negro.
+ * @param raiz Referencia a la raíz del árbol
+ * @param x Nodo sobre el que realizar la rotación
+ */
+void rotacion_izquierda_rb(Tree*& raiz, Tree* x) {
     Tree* y = x->right;
-    Tree* T2 = y->left;
-
-    // Realizar rotación
+    x->right = y->left;
+    
+    if (y->left != NIL && y->left != nullptr) {
+        y->left->parent = x;
+    }
+    
+    y->parent = x->parent;
+    
+    if (x->parent == nullptr) {
+        raiz = y;
+    } else if (x == x->parent->left) {
+        x->parent->left = y;
+    } else {
+        x->parent->right = y;
+    }
+    
     y->left = x;
-    x->right = T2;
-
-    // Actualizar alturas
-    actualizar_altura(x);
-    actualizar_altura(y);
-
-    // Retornar nueva raíz
-    return y;
+    x->parent = y;
 }
 
 /**
- * @brief Inserta un nodo en un árbol AVL, manteniendo el balanceo.
- * @param nodo Nodo raíz actual
+ * @brief Realiza una rotación a la derecha en un subárbol Rojo-Negro.
+ * @param raiz Referencia a la raíz del árbol
+ * @param y Nodo sobre el que realizar la rotación
+ */
+void rotacion_derecha_rb(Tree*& raiz, Tree* y) {
+    Tree* x = y->left;
+    y->left = x->right;
+    
+    if (x->right != NIL && x->right != nullptr) {
+        x->right->parent = y;
+    }
+    
+    x->parent = y->parent;
+    
+    if (y->parent == nullptr) {
+        raiz = x;
+    } else if (y == y->parent->left) {
+        y->parent->left = x;
+    } else {
+        y->parent->right = x;
+    }
+    
+    x->right = y;
+    y->parent = x;
+}
+
+/**
+ * @brief Corrige las violaciones de las propiedades Rojo-Negro después de la inserción.
+ * @param raiz Referencia a la raíz del árbol
+ * @param z Nodo recién insertado
+ */
+void arreglar_insercion_rb(Tree*& raiz, Tree* z) {
+    while (z != raiz && obtener_color(z->parent) == RED) {
+        if (z->parent == z->parent->parent->left) {
+            Tree* y = z->parent->parent->right; // Tío
+            
+            if (obtener_color(y) == RED) {
+                // Caso 1: El tío es rojo
+                establecer_color(z->parent, BLACK);
+                establecer_color(y, BLACK);
+                establecer_color(z->parent->parent, RED);
+                z = z->parent->parent;
+            } else {
+                if (z == z->parent->right) {
+                    // Caso 2: El tío es negro y z es hijo derecho
+                    z = z->parent;
+                    rotacion_izquierda_rb(raiz, z);
+                }
+                // Caso 3: El tío es negro y z es hijo izquierdo
+                establecer_color(z->parent, BLACK);
+                establecer_color(z->parent->parent, RED);
+                rotacion_derecha_rb(raiz, z->parent->parent);
+            }
+        } else {
+            Tree* y = z->parent->parent->left; // Tío
+            
+            if (obtener_color(y) == RED) {
+                // Caso 1: El tío es rojo
+                establecer_color(z->parent, BLACK);
+                establecer_color(y, BLACK);
+                establecer_color(z->parent->parent, RED);
+                z = z->parent->parent;
+            } else {
+                if (z == z->parent->left) {
+                    // Caso 2: El tío es negro y z es hijo izquierdo
+                    z = z->parent;
+                    rotacion_derecha_rb(raiz, z);
+                }
+                // Caso 3: El tío es negro y z es hijo derecho
+                establecer_color(z->parent, BLACK);
+                establecer_color(z->parent->parent, RED);
+                rotacion_izquierda_rb(raiz, z->parent->parent);
+            }
+        }
+    }
+    establecer_color(raiz, BLACK);
+}
+
+/**
+ * @brief Inserta un nodo en un árbol Rojo-Negro, manteniendo las propiedades.
+ * @param raiz Referencia a la raíz del árbol
  * @param valor Valor a insertar
  * @param cliente Puntero al cliente
  * @param campo Campo por el que se ordena
- * @return Nueva raíz del subárbol
  */
-Tree* insertar_avl(Tree* nodo, string valor, Cliente* cliente, int campo) {
-    // 1. Inserción BST normal
-    if (nodo == nullptr) {
-        return new Tree(valor, cliente);
-    }
-
-    string valor_nodo = obtener_valor_campo(nodo->cliente, campo);
+void insertar_rb(Tree*& raiz, string valor, Cliente* cliente, int campo) {
+    inicializar_nil();
     
-    // Comparación para diferentes tipos de datos
-    bool menor = false;
-    if (campo == 0 || campo == 3) { // DNI o Teléfono (numérico)
-        menor = stoi(valor) < stoi(valor_nodo);
-    } else { // Texto (nombres, apellidos, email)
-        string val_lower = valor, nodo_lower = valor_nodo;
-        transform(val_lower.begin(), val_lower.end(), val_lower.begin(), ::tolower);
-        transform(nodo_lower.begin(), nodo_lower.end(), nodo_lower.begin(), ::tolower);
-        menor = val_lower < nodo_lower;
+    Tree* z = new Tree(valor, cliente);
+    z->left = z->right = NIL;
+    
+    Tree* y = nullptr;
+    Tree* x = raiz;
+    
+    // Búsqueda del lugar de inserción
+    while (x != nullptr && x != NIL) {
+        y = x;
+        
+        string valor_x = obtener_valor_campo(x->cliente, campo);
+        bool menor = false;
+        
+        if (campo == 0 || campo == 3) { // DNI o Teléfono (numérico)
+            menor = stoi(valor) < stoi(valor_x);
+        } else { // Texto (nombres, apellidos, email)
+            string val_lower = valor, x_lower = valor_x;
+            transform(val_lower.begin(), val_lower.end(), val_lower.begin(), ::tolower);
+            transform(x_lower.begin(), x_lower.end(), x_lower.begin(), ::tolower);
+            menor = val_lower < x_lower;
+        }
+        
+        if (menor) {
+            x = x->left;
+        } else {
+            x = x->right;
+        }
     }
-
-    if (menor) {
-        nodo->left = insertar_avl(nodo->left, valor, cliente, campo);
-    } else if (!menor) { // Mayor o igual
-        nodo->right = insertar_avl(nodo->right, valor, cliente, campo);
+    
+    z->parent = y;
+    
+    if (y == nullptr) {
+        raiz = z;
     } else {
-        // Valores iguales no se insertan en AVL
-        return nodo;
-    }
-
-    // 2. Actualizar altura del nodo actual
-    actualizar_altura(nodo);
-
-    // 3. Obtener factor de balanceo
-    int balance = factor_balanceo(nodo);
-
-    // 4. Si el nodo está desbalanceado, hay 4 casos:
-
-    // Caso Izquierda-Izquierda (LL)
-    if (balance > 1) {
-        string valor_izq = obtener_valor_campo(nodo->left->cliente, campo);
-        bool menor_izq = false;
+        string valor_y = obtener_valor_campo(y->cliente, campo);
+        bool menor = false;
+        
         if (campo == 0 || campo == 3) {
-            menor_izq = stoi(valor) < stoi(valor_izq);
+            menor = stoi(valor) < stoi(valor_y);
         } else {
-            string val_lower = valor, izq_lower = valor_izq;
+            string val_lower = valor, y_lower = valor_y;
             transform(val_lower.begin(), val_lower.end(), val_lower.begin(), ::tolower);
-            transform(izq_lower.begin(), izq_lower.end(), izq_lower.begin(), ::tolower);
-            menor_izq = val_lower < izq_lower;
+            transform(y_lower.begin(), y_lower.end(), y_lower.begin(), ::tolower);
+            menor = val_lower < y_lower;
         }
         
-        if (menor_izq) {
-            return rotacion_derecha(nodo);
-        }
-    }
-
-    // Caso Derecha-Derecha (RR)
-    if (balance < -1) {
-        string valor_der = obtener_valor_campo(nodo->right->cliente, campo);
-        bool mayor_der = false;
-        if (campo == 0 || campo == 3) {
-            mayor_der = stoi(valor) >= stoi(valor_der);
+        if (menor) {
+            y->left = z;
         } else {
-            string val_lower = valor, der_lower = valor_der;
-            transform(val_lower.begin(), val_lower.end(), val_lower.begin(), ::tolower);
-            transform(der_lower.begin(), der_lower.end(), der_lower.begin(), ::tolower);
-            mayor_der = val_lower >= der_lower;
-        }
-        
-        if (mayor_der) {
-            return rotacion_izquierda(nodo);
+            y->right = z;
         }
     }
-
-    // Caso Izquierda-Derecha (LR)
-    if (balance > 1) {
-        string valor_izq = obtener_valor_campo(nodo->left->cliente, campo);
-        bool mayor_izq = false;
-        if (campo == 0 || campo == 3) {
-            mayor_izq = stoi(valor) >= stoi(valor_izq);
-        } else {
-            string val_lower = valor, izq_lower = valor_izq;
-            transform(val_lower.begin(), val_lower.end(), val_lower.begin(), ::tolower);
-            transform(izq_lower.begin(), izq_lower.end(), izq_lower.begin(), ::tolower);
-            mayor_izq = val_lower >= izq_lower;
-        }
-        
-        if (mayor_izq) {
-            nodo->left = rotacion_izquierda(nodo->left);
-            return rotacion_derecha(nodo);
-        }
-    }
-
-    // Caso Derecha-Izquierda (RL)
-    if (balance < -1) {
-        string valor_der = obtener_valor_campo(nodo->right->cliente, campo);
-        bool menor_der = false;
-        if (campo == 0 || campo == 3) {
-            menor_der = stoi(valor) < stoi(valor_der);
-        } else {
-            string val_lower = valor, der_lower = valor_der;
-            transform(val_lower.begin(), val_lower.end(), val_lower.begin(), ::tolower);
-            transform(der_lower.begin(), der_lower.end(), der_lower.begin(), ::tolower);
-            menor_der = val_lower < der_lower;
-        }
-        
-        if (menor_der) {
-            nodo->right = rotacion_derecha(nodo->right);
-            return rotacion_izquierda(nodo);
-        }
-    }
-
-    // Retornar el nodo sin cambios
-    return nodo;
+    
+    z->color = RED;
+    arreglar_insercion_rb(raiz, z);
 }
 
 /**
- * @brief Verifica si un árbol es AVL (balanceado).
+ * @brief Calcula la altura de un árbol Rojo-Negro.
  * @param nodo Nodo raíz
- * @return true si está balanceado, false en caso contrario
+ * @return Altura del árbol
  */
-bool verificar_avl(Tree* nodo) {
+int calcular_altura_rb(Tree* nodo) {
+    if (nodo == nullptr || nodo == NIL) return 0;
+    return 1 + MAX(calcular_altura_rb(nodo->left), calcular_altura_rb(nodo->right));
+}
+
+/**
+ * @brief Cuenta los nodos negros en un camino desde la raíz hasta una hoja.
+ * @param nodo Nodo actual
+ * @return Número de nodos negros
+ */
+int contar_nodos_negros(Tree* nodo) {
+    if (nodo == nullptr || nodo == NIL) return 1;
+    
+    int left_count = contar_nodos_negros(nodo->left);
+    if (left_count == -1) return -1;
+    
+    int right_count = contar_nodos_negros(nodo->right);
+    if (right_count == -1) return -1;
+    
+    if (left_count != right_count) return -1;
+    
+    return left_count + (nodo->color == BLACK ? 1 : 0);
+}
+
+/**
+ * @brief Verifica si un árbol cumple las propiedades Rojo-Negro.
+ * @param nodo Nodo raíz
+ * @return true si es válido, false en caso contrario
+ */
+bool verificar_rb(Tree* nodo) {
     if (nodo == nullptr) return true;
     
-    int balance = factor_balanceo(nodo);
-    if (abs(balance) > 1) return false;
+    // Propiedad 1: La raíz debe ser negra
+    if (nodo->color != BLACK) return false;
     
-    return verificar_avl(nodo->left) && verificar_avl(nodo->right);
+    // Propiedad 2: No puede haber dos nodos rojos consecutivos
+    if (nodo->color == RED) {
+        if ((nodo->left != NIL && nodo->left != nullptr && nodo->left->color == RED) ||
+            (nodo->right != NIL && nodo->right != nullptr && nodo->right->color == RED)) {
+            return false;
+        }
+    }
+    
+    // Verificar recursivamente
+    return verificar_rb(nodo->left) && verificar_rb(nodo->right) && (contar_nodos_negros(nodo) != -1);
 }
 
 /**
- * @brief Muestra estadísticas del árbol AVL (altura, balanceo, etc).
+ * @brief Muestra estadísticas del árbol Rojo-Negro.
  * @param raiz Nodo raíz del árbol
  */
-void mostrar_estadisticas_arbol(Tree* raiz) {
+void mostrar_estadisticas_arbol_rb(Tree* raiz) {
     if (raiz == nullptr) {
         cout << "Árbol vacío" << endl;
         return;
     }
     
-    cout << "=== ESTADÍSTICAS DEL ÁRBOL AVL ===" << endl;
-    cout << "Altura total: " << obtener_altura(raiz) << endl;
-    cout << "Factor de balanceo de la raíz: " << factor_balanceo(raiz) << endl;
-    cout << "¿Está balanceado?: " << (verificar_avl(raiz) ? "SÍ" : "NO") << endl;
-    cout << "===================================" << endl;
+    cout << "=== ESTADÍSTICAS DEL ÁRBOL ROJO-NEGRO ===" << endl;
+    cout << "Altura total: " << calcular_altura_rb(raiz) << endl;
+    cout << "Color de la raíz: " << (raiz->color == BLACK ? "NEGRO" : "ROJO") << endl;
+    cout << "Altura negra: " << contar_nodos_negros(raiz) << endl;
+    cout << "¿Cumple propiedades RB?: " << (verificar_rb(raiz) ? "SÍ" : "NO") << endl;
+    cout << "=========================================" << endl;
 }
 
 // Implementación del algoritmo ASCII tree
@@ -502,7 +563,7 @@ void compute_edge_lengths(asciinode *node) {
 asciinode* build_ascii_tree_recursive(Tree* t) {
     asciinode* node;
 
-    if (t == NULL) return NULL;
+    if (t == NULL || t == NIL) return NULL;
 
     node = (asciinode*)malloc(sizeof(asciinode));
     node->left = build_ascii_tree_recursive(t->left);
@@ -516,7 +577,14 @@ asciinode* build_ascii_tree_recursive(Tree* t) {
         node->right->parent_dir = 1;
     }
 
+    // Crear etiqueta con color para Rojo-Negro
     string etiqueta = crear_etiqueta(t->element);
+    if (t->color == RED) {
+        etiqueta = "R:" + etiqueta; // Prefijo R para rojo
+    } else {
+        etiqueta = "B:" + etiqueta; // Prefijo B para negro
+    }
+    
     strcpy(node->label, etiqueta.c_str());
     node->lablen = etiqueta.length();
 
@@ -539,13 +607,13 @@ void free_ascii_tree(asciinode* node) {
 }
 
 /**
- * @brief Imprime el árbol AVL en formato ASCII por consola.
+ * @brief Imprime el árbol Rojo-Negro en formato ASCII por consola.
  * @param t Nodo raíz del árbol
  */
 void imprimir_arbol_ascii(Tree* t) {
     asciinode* proot;
     int xmin, i;
-    if (t == NULL) return;
+    if (t == NULL || t == NIL) return;
     proot = build_ascii_tree(t);
     compute_edge_lengths(proot);
     for (i = 0; i < proot->height && i < MAX_HEIGHT; i++) {
@@ -568,11 +636,11 @@ void imprimir_arbol_ascii(Tree* t) {
 }
 
 /**
- * @brief Libera la memoria de un árbol AVL.
+ * @brief Libera la memoria de un árbol Rojo-Negro.
  * @param nodo Nodo raíz a liberar
  */
 void liberar_arbol(Tree* nodo) {
-    if (nodo) {
+    if (nodo && nodo != NIL) {
         liberar_arbol(nodo->left);
         liberar_arbol(nodo->right);
         delete nodo;
@@ -580,7 +648,7 @@ void liberar_arbol(Tree* nodo) {
 }
 
 /**
- * @brief Muestra el menú y visualiza el árbol AVL de clientes según el campo seleccionado.
+ * @brief Muestra el menú y visualiza el árbol Rojo-Negro de clientes según el campo seleccionado.
  * @param banco Referencia al objeto Banco
  */
 void mostrar_arbol_binario(Banco& banco) {
@@ -604,30 +672,35 @@ void mostrar_arbol_binario(Banco& banco) {
     
     system("cls");
     cout << "\n===========================================" << endl;
-    cout << "===      ÁRBOL AVL DE CLIENTES       ===" << endl;
+    cout << "===    ÁRBOL ROJO-NEGRO DE CLIENTES  ===" << endl;
     
     const char* campos[] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
     cout << "===    ORDENADO POR: " << campos[campo] << "    ===" << endl;
     cout << "===========================================" << endl;
 
-    // Crear árbol AVL
+    // Inicializar NIL para el árbol Rojo-Negro
+    inicializar_nil();
+    
+    // Crear árbol Rojo-Negro
     Tree* raiz = nullptr;
     auto& lista = *clientes;
     int n = lista.getTam();
     
-    cout << "\nCreando árbol AVL autobalanceado..." << endl;
+    cout << "\nCreando árbol Rojo-Negro autobalanceado..." << endl;
     
     for (int i = 0; i < n; ++i) {
         Cliente* cliente = lista.get_contador(i);
         string valor = obtener_valor_campo(cliente, campo);
-        raiz = insertar_avl(raiz, valor, cliente, campo);
+        insertar_rb(raiz, valor, cliente, campo);
     }
 
     // Mostrar estadísticas del árbol
-    mostrar_estadisticas_arbol(raiz);
+    mostrar_estadisticas_arbol_rb(raiz);
 
-    cout << "\nVisualizacion del Arbol AVL (Auto-Balanceado):\n";
-    cout << "============================================\n\n";
+    cout << "\nVisualizacion del Arbol Rojo-Negro (Auto-Balanceado):\n";
+    cout << "===================================================\n";
+    cout << "Leyenda: R: = Nodo Rojo, B: = Nodo Negro\n";
+    cout << "===================================================\n\n";
     
     if (raiz) {
         imprimir_arbol_ascii(raiz);
@@ -635,12 +708,12 @@ void mostrar_arbol_binario(Banco& banco) {
         cout << "Arbol vacio\n";
     }
     
-    cout << "\n============================================\n";
+    cout << "\n===================================================\n";
     cout << "Total de clientes en el arbol: " << n << endl;
-    cout << "Arbol AVL: Todas las operaciones en O(log n)" << endl;
-    cout << "Factores de balanceo: siempre entre -1, 0, 1" << endl;
+    cout << "Arbol Rojo-Negro: Todas las operaciones en O(log n)" << endl;
+    cout << "Propiedades: Altura balanceada, sin nodos rojos consecutivos" << endl;
     cout << "Nota: Si los nombres son muy largos, se muestran truncados" << endl;
-    cout << "============================================\n";
+    cout << "===================================================\n";
 
     // Limpiar memoria
     liberar_arbol(raiz);
@@ -651,3 +724,370 @@ void mostrar_arbol_binario(Banco& banco) {
     // REINICIAR LA MARQUESINA DESPUÉS DE MOSTRAR EL ÁRBOL
     inicializar_marquesina();
 }
+
+// =================== IMPLEMENTACIÓN SFML ===================
+
+/**
+ * @brief Estructura para manejar la posición y datos de un nodo en la visualización SFML.
+ */
+struct NodoSFML {
+    float x, y;           // Posición en pantalla
+    Tree* nodo;           // Puntero al nodo del árbol
+    string etiqueta;      // Texto a mostrar
+    bool es_rojo;         // Color del nodo
+    
+    NodoSFML(float _x, float _y, Tree* _nodo, const string& _etiqueta, bool _es_rojo) 
+        : x(_x), y(_y), nodo(_nodo), etiqueta(_etiqueta), es_rojo(_es_rojo) {}
+};
+
+/**
+ * @brief Calcula las posiciones de los nodos para la visualización SFML.
+ * @param nodo Nodo actual del árbol
+ * @param x Posición X actual
+ * @param y Posición Y actual
+ * @param espaciado Espaciado horizontal entre nodos
+ * @param nivel_altura Altura entre niveles
+ * @param nodos_sfml Vector para almacenar los nodos con sus posiciones
+ * @param campo Campo por el que está ordenado el árbol
+ */
+void calcular_posiciones_sfml(Tree* nodo, float x, float y, float espaciado, float nivel_altura, 
+                             vector<NodoSFML>& nodos_sfml, int campo) {
+    if (!nodo || nodo == NIL) return;
+    
+    // Crear etiqueta del nodo
+    string etiqueta = crear_etiqueta(obtener_valor_campo(nodo->cliente, campo));
+    bool es_rojo = (nodo->color == RED);
+    
+    // Agregar nodo actual
+    nodos_sfml.push_back(NodoSFML(x, y, nodo, etiqueta, es_rojo));
+    
+    // Calcular posiciones de los hijos con mejor espaciado
+    float nuevo_espaciado = espaciado * 0.5f; // Reducir más el espaciado para acomodar mejor
+    
+    if (nodo->left && nodo->left != NIL) {
+        calcular_posiciones_sfml(nodo->left, x - espaciado, y + nivel_altura, 
+                                nuevo_espaciado, nivel_altura, nodos_sfml, campo);
+    }
+    
+    if (nodo->right && nodo->right != NIL) {
+        calcular_posiciones_sfml(nodo->right, x + espaciado, y + nivel_altura, 
+                                nuevo_espaciado, nivel_altura, nodos_sfml, campo);
+    }
+}
+
+/**
+ * @brief Dibuja las conexiones entre nodos padre e hijo.
+ * @param window Ventana de SFML
+ * @param nodos_sfml Vector de nodos con posiciones
+ */
+void dibujar_conexiones_sfml(sf::RenderWindow& window, const vector<NodoSFML>& nodos_sfml) {
+    for (const auto& nodo_sfml : nodos_sfml) {
+        if (!nodo_sfml.nodo || nodo_sfml.nodo == NIL) continue;
+        
+        // Buscar hijos y dibujar líneas
+        for (const auto& hijo_sfml : nodos_sfml) {
+            if (!hijo_sfml.nodo || hijo_sfml.nodo == NIL) continue;
+            
+            // Verificar si es hijo izquierdo o derecho
+            if (nodo_sfml.nodo->left == hijo_sfml.nodo || nodo_sfml.nodo->right == hijo_sfml.nodo) {
+                sf::Vertex linea[2];
+                linea[0].position = sf::Vector2f(nodo_sfml.x, nodo_sfml.y);
+                linea[0].color = sf::Color::White;
+                linea[1].position = sf::Vector2f(hijo_sfml.x, hijo_sfml.y);
+                linea[1].color = sf::Color::White;
+                window.draw(linea, 2, sf::PrimitiveType::Lines);
+            }
+        }
+    }
+}
+
+/**
+ * @brief Dibuja los nodos del árbol con círculos coloreados y texto.
+ * @param window Ventana de SFML
+ * @param nodos_sfml Vector de nodos con posiciones
+ * @param font Fuente para el texto
+ */
+void dibujar_nodos_sfml(sf::RenderWindow& window, const vector<NodoSFML>& nodos_sfml, sf::Font& font) {
+    const float radio_nodo = 25.0f;
+    
+    for (const auto& nodo_sfml : nodos_sfml) {
+        // Crear círculo para el nodo
+        sf::CircleShape circulo(radio_nodo);
+        circulo.setPosition(sf::Vector2f(nodo_sfml.x - radio_nodo, nodo_sfml.y - radio_nodo));
+        
+        // Color según el tipo de nodo (Rojo-Negro)
+        if (nodo_sfml.es_rojo) {
+            circulo.setFillColor(sf::Color::Red);
+            circulo.setOutlineColor(sf::Color::White);
+        } else {
+            circulo.setFillColor(sf::Color::Black);
+            circulo.setOutlineColor(sf::Color::White);
+        }
+        circulo.setOutlineThickness(2.0f);
+        
+        window.draw(circulo);
+        
+        // Crear texto para el nodo
+        sf::Text texto(font, nodo_sfml.etiqueta, 12);
+        texto.setFillColor(nodo_sfml.es_rojo ? sf::Color::White : sf::Color::White);
+        
+        // Centrar texto en el círculo
+        sf::FloatRect bounds = texto.getLocalBounds();
+        texto.setPosition(sf::Vector2f(nodo_sfml.x - bounds.size.x / 2, nodo_sfml.y - bounds.size.y / 2));
+        
+        window.draw(texto);
+    }
+}
+
+/**
+ * @brief Muestra información adicional del árbol en la ventana SFML.
+ * @param window Ventana de SFML
+ * @param font Fuente para el texto
+ * @param raiz Raíz del árbol
+ * @param campo Campo por el que está ordenado
+ * @param total_nodos Total de nodos en el árbol
+ */
+void dibujar_informacion_arbol_sfml(sf::RenderWindow& window, sf::Font& font, Tree* raiz, int campo, int total_nodos) {
+    const char* campos[] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
+    
+    // Título principal
+    sf::Text titulo(font, "ARBOL ROJO-NEGRO DE CLIENTES", 24);
+    titulo.setFillColor(sf::Color::Yellow);
+    titulo.setPosition(sf::Vector2f(10, 10));
+    window.draw(titulo);
+    
+    // Campo de ordenamiento
+    sf::Text campo_texto(font, "Ordenado por: " + string(campos[campo]), 16);
+    campo_texto.setFillColor(sf::Color::Cyan);
+    campo_texto.setPosition(sf::Vector2f(10, 40));
+    window.draw(campo_texto);
+    
+    // Estadísticas
+    string stats = "Total de nodos: " + to_string(total_nodos) + 
+                  "\nAltura: " + to_string(calcular_altura_rb(raiz)) +
+                  "\nAltura negra: " + to_string(contar_nodos_negros(raiz)) +
+                  "\nPropiedades RB: " + (verificar_rb(raiz) ? "VALIDAS" : "INVALIDAS");
+    sf::Text estadisticas(font, stats, 14);
+    estadisticas.setFillColor(sf::Color::White);
+    estadisticas.setPosition(sf::Vector2f(10, 70));
+    window.draw(estadisticas);
+    
+    // Leyenda
+    sf::Text leyenda(font, "LEYENDA:\nCirculos Rojos = Nodos Rojos\nCirculos Negros = Nodos Negros\n\nControles:\nESC - Salir\nSPACE - Ver en consola\nR - Regenerar\nFlechas - Mover vista\nRueda - Zoom", 12);
+    leyenda.setFillColor(sf::Color::Green);
+    leyenda.setPosition(sf::Vector2f(10, static_cast<float>(window.getSize().y) - 140));
+    window.draw(leyenda);
+}
+
+/**
+ * @brief Muestra el árbol Rojo-Negro de clientes con visualización SFML gráfica.
+ * @param banco Referencia al objeto Banco
+ */
+void mostrar_arbol_binario_sfml(Banco& banco) {
+    system("cls");
+    auto* clientes = banco.getClientes();
+    if (!clientes || clientes->esta_vacia()) {
+        cout << "No hay clientes registrados en la base de datos.\n";
+        cout << "Presione Enter para continuar...";
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cin.get();
+        return;
+    }
+
+    // Selección del campo
+    ajustar_cursor_para_marquesina();
+    const int NUM_CAMPOS = 5;
+    const char* CAMPOS[NUM_CAMPOS] = {"DNI", "Nombre", "Apellido", "Teléfono", "Email"};
+    int campo = seleccionar_opcion("===== SELECCIONAR CAMPO PARA ÁRBOL BINARIO GRÁFICO =====", CAMPOS, NUM_CAMPOS, 4);
+
+    // Detener marquesina
+    detener_marquesina();
+    
+    // Inicializar NIL y crear árbol
+    inicializar_nil();
+    Tree* raiz = nullptr;
+    auto& lista = *clientes;
+    int n = lista.getTam();
+    
+    cout << "\nCreando árbol Rojo-Negro para visualización gráfica..." << endl;
+    
+    for (int i = 0; i < n; ++i) {
+        Cliente* cliente = lista.get_contador(i);
+        string valor = obtener_valor_campo(cliente, campo);
+        insertar_rb(raiz, valor, cliente, campo);
+    }
+
+    // Configurar ventana SFML con mayor tamaño
+    sf::RenderWindow window(sf::VideoMode(sf::Vector2u(1400, 900)), "Arbol Rojo-Negro - Sistema Bancario");
+    window.setFramerateLimit(60);
+    
+    // Cargar fuente (usar fuente del sistema)
+    sf::Font font;
+    if (!font.openFromFile("C:/Windows/Fonts/arial.ttf")) {
+        // Si no se puede cargar arial, intentar con otra fuente del sistema
+        if (!font.openFromFile("C:/Windows/Fonts/calibri.ttf")) {
+            cout << "Error: No se pudo cargar la fuente. Usando fuente por defecto." << endl;
+            // Continuar sin fuente personalizada
+        }
+    }
+    
+    // Calcular posiciones de los nodos con mejor distribución
+    vector<NodoSFML> nodos_sfml;
+    if (raiz) {
+        float centro_x = window.getSize().x / 2.0f;
+        float inicio_y = 200.0f; // Más espacio para la información superior
+        float espaciado_inicial = min(400.0f, (window.getSize().x - 100.0f) / 4.0f); // Ajustar según ventana
+        float altura_nivel = 70.0f; // Reducir altura entre niveles
+        
+        calcular_posiciones_sfml(raiz, centro_x, inicio_y, espaciado_inicial, altura_nivel, nodos_sfml, campo);
+    }
+    
+    cout << "Ventana gráfica abierta. Controles disponibles:" << endl;
+    cout << "- ESC: Cerrar ventana" << endl;
+    cout << "- SPACE: Mostrar versión ASCII en consola" << endl;
+    cout << "- R: Regenerar árbol" << endl;
+    cout << "- Clic derecho: Información del nodo" << endl;
+    cout << "- Rueda del ratón: Zoom in/out" << endl;
+    cout << "- Flechas: Mover vista" << endl;
+    
+    // Variables para zoom y desplazamiento
+    sf::View vista = window.getDefaultView();
+    float zoom_factor = 1.0f;
+    sf::Vector2f offset(0, 0);
+    
+    // Loop principal de SFML
+    while (window.isOpen()) {
+        std::optional<sf::Event> eventOpt;
+        while ((eventOpt = window.pollEvent()).has_value()) {
+            const sf::Event& event = eventOpt.value();
+            
+            if (event.is<sf::Event::Closed>()) {
+                window.close();
+            }
+            
+            if (const auto* keyPressed = event.getIf<sf::Event::KeyPressed>()) {
+                switch (keyPressed->code) {
+                    case sf::Keyboard::Key::Escape:
+                        window.close();
+                        break;
+                        
+                    case sf::Keyboard::Key::Space:
+                        // Mostrar versión ASCII en consola
+                        system("cls");
+                        cout << "\n=== VERSIÓN ASCII DEL MISMO ÁRBOL ===" << endl;
+                        mostrar_estadisticas_arbol_rb(raiz);
+                        if (raiz) {
+                            imprimir_arbol_ascii(raiz);
+                        }
+                        cout << "\nPresione cualquier tecla para volver a la ventana gráfica...";
+                        getch();
+                        break;
+                        
+                    case sf::Keyboard::Key::R:
+                        // Regenerar árbol (útil para debugging)
+                        cout << "Regenerando árbol..." << endl;
+                        liberar_arbol(raiz);
+                        raiz = nullptr;
+                        nodos_sfml.clear();
+                        
+                        // Recrear árbol
+                        for (int i = 0; i < n; ++i) {
+                            Cliente* cliente = lista.get_contador(i);
+                            string valor = obtener_valor_campo(cliente, campo);
+                            insertar_rb(raiz, valor, cliente, campo);
+                        }
+                        
+                        // Recalcular posiciones
+                        if (raiz) {
+                            float centro_x = window.getSize().x / 2.0f;
+                            float inicio_y = 200.0f;
+                            float espaciado_inicial = min(400.0f, (window.getSize().x - 100.0f) / 4.0f);
+                            float altura_nivel = 70.0f;
+                            calcular_posiciones_sfml(raiz, centro_x, inicio_y, espaciado_inicial, altura_nivel, nodos_sfml, campo);
+                        }
+                        break;
+                        
+                    case sf::Keyboard::Key::Up:
+                        offset.y -= 20;
+                        break;
+                    case sf::Keyboard::Key::Down:
+                        offset.y += 20;
+                        break;
+                    case sf::Keyboard::Key::Left:
+                        offset.x -= 20;
+                        break;
+                    case sf::Keyboard::Key::Right:
+                        offset.x += 20;
+                        break;
+                }
+            }
+            
+            if (const auto* wheelScrolled = event.getIf<sf::Event::MouseWheelScrolled>()) {
+                if (wheelScrolled->delta > 0) {
+                    zoom_factor *= 0.9f; // Zoom in
+                } else {
+                    zoom_factor *= 1.1f; // Zoom out
+                }
+                zoom_factor = max(0.3f, min(zoom_factor, 3.0f)); // Limitar zoom
+            }
+            
+            if (const auto* mousePressed = event.getIf<sf::Event::MouseButtonPressed>()) {
+                if (mousePressed->button == sf::Mouse::Button::Right) {
+                    // Detectar clic en nodo para mostrar información
+                    float mouse_x = static_cast<float>(mousePressed->position.x);
+                    float mouse_y = static_cast<float>(mousePressed->position.y);
+                    
+                    for (const auto& nodo_sfml : nodos_sfml) {
+                        float dist = sqrt(pow(mouse_x - nodo_sfml.x, 2) + pow(mouse_y - nodo_sfml.y, 2));
+                        if (dist <= 25.0f) { // Radio del nodo
+                            // Mostrar información del cliente en consola
+                            cout << "\n=== INFORMACIÓN DEL NODO ===" << endl;
+                            cout << "Valor: " << nodo_sfml.etiqueta << endl;
+                            cout << "Color: " << (nodo_sfml.es_rojo ? "ROJO" : "NEGRO") << endl;
+                            if (nodo_sfml.nodo && nodo_sfml.nodo->cliente) {
+                                Cliente* cliente = nodo_sfml.nodo->cliente;
+                                cout << "Cliente: " << cliente->get_nombres() << " " << cliente->get_apellidos() << endl;
+                                cout << "DNI: " << cliente->get_dni() << endl;
+                                cout << "Email: " << cliente->get_email() << endl;
+                            }
+                            cout << "===========================" << endl;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Actualizar vista con zoom y desplazamiento
+        vista.setSize(window.getDefaultView().getSize() * zoom_factor);
+        vista.setCenter(window.getDefaultView().getCenter() + offset);
+        window.setView(vista);
+        
+        // Limpiar ventana
+        window.clear(sf::Color(30, 30, 30)); // Fondo gris oscuro
+        
+        // Dibujar conexiones primero (para que queden detrás de los nodos)
+        dibujar_conexiones_sfml(window, nodos_sfml);
+        
+        // Dibujar nodos
+        dibujar_nodos_sfml(window, nodos_sfml, font);
+        
+        // Restaurar vista para información de interfaz
+        window.setView(window.getDefaultView());
+        
+        // Dibujar información del árbol (siempre visible)
+        dibujar_informacion_arbol_sfml(window, font, raiz, campo, n);
+        
+        // Mostrar todo en pantalla
+        window.display();
+    }
+    
+    // Limpiar memoria
+    liberar_arbol(raiz);
+    
+    cout << "\nVentana gráfica cerrada. Regresando al menú..." << endl;
+    
+    // Reiniciar marquesina
+    inicializar_marquesina();
+}
+

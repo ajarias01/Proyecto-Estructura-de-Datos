@@ -1,13 +1,22 @@
 [Setup]
 AppName=SistemaBancario
 AppVersion=1.0
-DefaultDirName={pf}\SistemaBancario
+; Usar Documents del usuario para evitar problemas de permisos
+DefaultDirName={userdocs}\SistemaBancario
 DefaultGroupName=SistemaBancario
 OutputBaseFilename=Instalador_SistemaBancario
 Compression=lzma
 SolidCompression=yes
+; Solicitar permisos de administrador si es necesario
+PrivilegesRequired=lowest
+; Permitir al usuario cambiar el directorio de instalación
+DisableDirPage=no
 
 [Files]
+Source: "SFML-3.0.0\bin\sfml-graphics-3.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "SFML-3.0.0\bin\sfml-window-3.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "SFML-3.0.0\bin\sfml-system-3.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "citas_agendadas.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "main.exe"; DestDir: "{app}"; DestName: "SistemaBancario.exe"; Flags: ignoreversion
 Source: "datos.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "backup_clientes_20250709_183846.bin"; DestDir: "{app}"; Flags: ignoreversion
@@ -16,7 +25,6 @@ Source: "decifrado_20250613_121652.bin"; DestDir: "{app}"; Flags: ignoreversion
 Source: "AyudaTecnicaBanco.chm"; DestDir: "{app}"; Flags: ignoreversion
 Source: "SistemaBancario_Documentation.chm"; DestDir: "{app}"; Flags: ignoreversion
 Source: "hash_stored.txt"; DestDir: "{app}"; Flags: ignoreversion
-
 [Icons]
 Name: "{group}\SistemaBancario"; Filename: "{app}\SistemaBancario.exe"
 
@@ -37,7 +45,7 @@ end;
 procedure InitializeWizard;
 begin
   SerialPage := CreateInputQueryPage(wpWelcome,
-    'Validaci�n de Serial',
+    'Validacion de Serial',
     'Por favor, ingresa la clave de instalacion para continuar.',
     'Ingresa una de las claves proporcionadas por el desarrollador para instalar el software.');
   SerialPage.Add('Clave de instalacion:', False);

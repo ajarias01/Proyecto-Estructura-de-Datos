@@ -20,11 +20,16 @@
 #include <string>
 #include <ctime>
 #include <cstring>
+#include <fstream>
 
 // Declaración forward de la función que necesitamos sin incluir todo Menus.h
 extern int seleccionar_opcion(const char *titulo, const char *opciones[], int n, int fila_inicio);
 
 using namespace std;
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 /**
  * @brief Constructor de la clase Location que inicializa las coordenadas geográficas
@@ -597,4 +602,199 @@ void SimpleGeolocationSystem::updateBranchQueue(int branchId, int newQueuePositi
             break;
         }
     }
+}
+
+/**
+ * @brief Constructor de la estructura CitaAgendada
+ * @param dni DNI del cliente
+ * @param nombre Nombre completo del cliente
+ * @param tel Teléfono del cliente
+ * @param suc_id ID de la sucursal
+ * @param suc_nombre Nombre de la sucursal
+ * @param sec Sector de la sucursal
+ * @param fecha_h Fecha y hora de la cita
+ * @param num_conf Número de confirmación
+ * @param fecha_ag Fecha de agendamiento
+ * @param act Estado activo de la cita
+ */
+CitaAgendada::CitaAgendada(const string& dni, const string& nombre, const string& tel,
+                           int suc_id, const string& suc_nombre, const string& sec,
+                           const string& fecha_h, const string& num_conf,
+                           const string& fecha_ag, bool act)
+    : dni(dni), nombre_completo(nombre), telefono(tel), sucursal_id(suc_id),
+      sucursal_nombre(suc_nombre), sector(sec), fecha_hora(fecha_h),
+      numero_confirmacion(num_conf), fecha_agendamiento(fecha_ag), activa(act) {}
+
+/**
+ * @brief Verifica si un cliente ya tiene una cita agendada activa
+ * @param dni DNI del cliente a verificar
+ * @return true si ya tiene una cita activa, false en caso contrario
+ */
+bool SimpleGeolocationSystem::clienteTieneCitaActiva(const string& dni) {
+    for (const auto& cita : citas_agendadas) {
+        if (cita.dni == dni && cita.activa) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Agrega una nueva cita al sistema
+ * @param cita Objeto CitaAgendada con la información de la cita
+ * @return true si se agregó exitosamente, false en caso contrario
+ */
+bool SimpleGeolocationSystem::agregarCita(const CitaAgendada& cita) {
+    try {
+        citas_agendadas.push_back(cita);
+        guardarCitas(); // Guardar automáticamente
+        return true;
+    } catch (const std::exception& e) {
+        return false;
+    }
+}
+
+/**
+ * @brief Cancela una cita existente
+ * @param dni DNI del cliente
+ * @param numero_confirmacion Número de confirmación de la cita
+ * @return true si se canceló exitosamente, false si no se encontró
+ */
+bool SimpleGeolocationSystem::cancelarCita(const string& dni, const string& numero_confirmacion) {
+    for (auto& cita : citas_agendadas) {
+        string numero_cita_upper = cita.numero_confirmacion;
+        transform(numero_cita_upper.begin(), numero_cita_upper.end(), numero_cita_upper.begin(), ::toupper);
+        string numero_input_upper = numero_confirmacion;
+        transform(numero_input_upper.begin(), numero_input_upper.end(), numero_input_upper.begin(), ::toupper);
+        
+        if (cita.dni == dni && numero_cita_upper == numero_input_upper && cita.activa) {
+            cita.activa = false;
+            guardarCitas(); // Guardar cambios
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief Obtiene todas las citas agendadas por sector
+ * @param sector Sector específico a consultar (vacío para ver todos)
+ * @return Vector con las citas del sector especificado
+ */
+vector<CitaAgendada> SimpleGeolocationSystem::obtenerCitasPorSector(const string& sector) {
+    vector<CitaAgendada> citas_filtradas;
+    
+    for (const auto& cita : citas_agendadas) {
+        if (cita.activa && (sector.empty() || cita.sector == sector)) {
+            citas_filtradas.push_back(cita);
+        }
+    }
+    
+    return citas_filtradas;
+}
+
+/**
+ * @brief Guarda las citas en un archivo para persistencia
+ * @param archivo Nombre del archivo donde guardar
+ * @return true si se guardó exitosamente, false en caso contrario
+ */
+bool SimpleGeolocationSystem::guardarCitas(const string& archivo) {
+    try {
+        ofstream file(archivo);
+        if (!file.is_open()) {
+            return false;
+        }
+        
+        for (const auto& cita : citas_agendadas) {
+            file << cita.dni << "|"
+                 << cita.nombre_completo << "|"
+                 << cita.telefono << "|"
+                 << cita.sucursal_id << "|"
+                 << cita.sucursal_nombre << "|"
+                 << cita.sector << "|"
+                 << cita.fecha_hora << "|"
+                 << cita.numero_confirmacion << "|"
+                 << cita.fecha_agendamiento << "|"
+                 << (cita.activa ? "1" : "0") << endl;
+        }
+        
+        file.close();
+        return true;
+    } catch (const std::exception& e) {
+        return false;
+    }
+}
+
+/**
+ * @brief Carga las citas desde un archivo
+ * @param archivo Nombre del archivo desde donde cargar
+ * @return true si se cargó exitosamente, false en caso contrario
+ */
+bool SimpleGeolocationSystem::cargarCitas(const string& archivo) {
+    try {
+        ifstream file(archivo);
+        if (!file.is_open()) {
+            return false; // Archivo no existe, es normal al inicio
+        }
+        
+        citas_agendadas.clear();
+        string line;
+        
+        while (getline(file, line)) {
+            if (line.empty()) continue;
+            
+            vector<string> campos;
+            string campo = "";
+            
+            for (char c : line) {
+                if (c == '|') {
+                    campos.push_back(campo);
+                    campo = "";
+                } else {
+                    campo += c;
+                }
+            }
+            campos.push_back(campo); // Último campo
+            
+            if (campos.size() == 10) {
+                CitaAgendada cita(
+                    campos[0], campos[1], campos[2],
+                    stoi(campos[3]), campos[4], campos[5],
+                    campos[6], campos[7], campos[8],
+                    campos[9] == "1"
+                );
+                citas_agendadas.push_back(cita);
+            }
+        }
+        
+        file.close();
+        return true;
+    } catch (const std::exception& e) {
+        return false;
+    }
+}
+
+/**
+ * @brief Obtiene el sector de una sucursal por su ID
+ * @param sucursal_id ID de la sucursal
+ * @return String con el nombre del sector
+ */
+string SimpleGeolocationSystem::obtenerSectorPorSucursal(int sucursal_id) {
+    for (const auto& branch : branches) {
+        if (branch.id == sucursal_id) {
+            // Determinar sector basado en el nombre de la sucursal
+            string nombre = branch.name;
+            if (nombre.find("Centro") != string::npos) {
+                return "Centro Histórico";
+            } else if (nombre.find("Norte") != string::npos) {
+                return "Norte de Quito";
+            } else if (nombre.find("Sur") != string::npos) {
+                return "Sur de Quito";
+            } else if (nombre.find("Valle") != string::npos || nombre.find("Cumbayá") != string::npos || 
+                       nombre.find("Tumbaco") != string::npos || nombre.find("Sangolquí") != string::npos) {
+                return "Valles de Quito";
+            }
+        }
+    }
+    return "Sector Desconocido";
 }

@@ -36,6 +36,7 @@
 #include <thread>
 #include <openssl/md5.h>
 #include <ctime>
+#include <map>
 
 using namespace std;
 
@@ -614,62 +615,35 @@ void cargar_base_datos(Banco& banco) {
     const char *ORDENES[NUM_ORDENES] = {"Ascendente", "Descendente"};
     int orden = seleccionar_opcion("===== SELECCIONAR ORDEN =====", ORDENES, NUM_ORDENES, 4);
 
-    // Convertir lista a vector para ordenamiento más eficiente
+    // Convertir lista a vector para ordenamiento más eficiente  
     auto &lista = *clientes;
     int n = lista.getTam();
-    std::vector<Cliente *> vectorClientes;
-    for (int i = 0; i < n; ++i)
-    {
-        vectorClientes.push_back(lista.get_contador(i));
+
+    // Usar GestorClientes para ordenamiento con Radix Sort
+    GestorClientes gestor;
+    
+    if (campo == 0) { // DNI
+        gestor.radixSortCampoNumerico(lista, n, [](Cliente* c) { return std::stoi(c->get_dni()); });
+    } else if (campo == 3) { // Teléfono  
+        gestor.radixSortCampoNumerico(lista, n, [](Cliente* c) { return std::stoi(c->get_telefono()); });
+    } else if (campo == 1) { // Nombre
+        gestor.radixSortStringCampo(lista, n, [](Cliente* c) { return c->get_nombres(); });
+    } else if (campo == 2) { // Apellido
+        gestor.radixSortStringCampo(lista, n, [](Cliente* c) { return c->get_apellidos(); });
+    } else if (campo == 4) { // Email
+        gestor.radixSortStringCampo(lista, n, [](Cliente* c) { return c->get_email(); });
     }
 
-    // Función de comparación personalizada según el campo seleccionado
-    auto comparar = [campo, orden](Cliente *a, Cliente *b) -> bool
-    {
-        if (campo == 0)
-        { // DNI
-            return orden == 0 ? std::stoi(a->get_dni()) < std::stoi(b->get_dni())
-                              : std::stoi(a->get_dni()) > std::stoi(b->get_dni());
+    // Si el orden es descendente, invertir la lista
+    if (orden == 1) {
+        std::vector<Cliente*> vectorClientes;
+        for (int i = 0; i < n; ++i) {
+            vectorClientes.push_back(lista.get_contador(i));
         }
-        else if (campo == 1)
-        { // Nombre
-            string nombre_a = a->get_nombres();
-            string nombre_b = b->get_nombres();
-            transform(nombre_a.begin(), nombre_a.end(), nombre_a.begin(), ::tolower);
-            transform(nombre_b.begin(), nombre_b.end(), nombre_b.begin(), ::tolower);
-            return orden == 0 ? nombre_a < nombre_b : nombre_a > nombre_b;
+        std::reverse(vectorClientes.begin(), vectorClientes.end());
+        for (int i = 0; i < n; ++i) {
+            lista.set_contador(i, vectorClientes[i]);
         }
-        else if (campo == 2)
-        { // Apellido
-            string apellido_a = a->get_apellidos();
-            string apellido_b = b->get_apellidos();
-            transform(apellido_a.begin(), apellido_a.end(), apellido_a.begin(), ::tolower);
-            transform(apellido_b.begin(), apellido_b.end(), apellido_b.begin(), ::tolower);
-            return orden == 0 ? apellido_a < apellido_b : apellido_a > apellido_b;
-        }
-        else if (campo == 3)
-        { // Teléfono
-            return orden == 0 ? std::stoi(a->get_telefono()) < std::stoi(b->get_telefono())
-                              : std::stoi(a->get_telefono()) > std::stoi(b->get_telefono());
-        }
-        else if (campo == 4)
-        { // Email
-            string email_a = a->get_email();
-            string email_b = b->get_email();
-            transform(email_a.begin(), email_a.end(), email_a.begin(), ::tolower);
-            transform(email_b.begin(), email_b.end(), email_b.begin(), ::tolower);
-            return orden == 0 ? email_a < email_b : email_a > email_b;
-        }
-        return false;
-    };
-
-    // Ordenar usando std::sort con comparador personalizado
-    std::sort(vectorClientes.begin(), vectorClientes.end(), comparar);
-
-    // Devolver los elementos ordenados a la lista
-    for (int i = 0; i < n; ++i)
-    {
-        lista.set_contador(i, vectorClientes[i]);
     }
 
     // Detener la marquesina antes de mostrar la tabla
@@ -712,8 +686,10 @@ void cargar_base_datos(Banco& banco) {
     {
         limpiar_linea("➤ ¿Desea buscar un cliente específico? (S/N): ");
         respuesta = ingresar_alfabetico("");
-        if (respuesta == "__ESC__")
+        if (respuesta == "__ESC__") {
+            inicializar_marquesina();
             return;
+        }
         transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
     } while (respuesta != "S" && respuesta != "N");
     cout << endl;
@@ -726,85 +702,106 @@ void cargar_base_datos(Banco& banco) {
             {
                 valor_buscar = ingresar_dni("");
             }
+            else if (campo == 4)
+            {
+                valor_buscar = ingresar_email("");
+            }
             else
             {
                 valor_buscar = ingresar_alfabetico("");
             }
-            if (valor_buscar == "__ESC__")
+            if (valor_buscar == "__ESC__") {
+                inicializar_marquesina();
                 return;
+            }
         } while (!validar_valor_busqueda(campo, valor_buscar));
 
-        int pos = -1;
-        if (campo == 0 || campo == 3)
-        {
-            int valor = std::stoi(valor_buscar);
-            int left = 0, right = n - 1;
-            while (left <= right)
-            {
-                int mid = left + (right - left) / 2;
-                int cmp = (campo == 0) ? std::stoi(lista.get_contador(mid)->get_dni())
-                                       : std::stoi(lista.get_contador(mid)->get_telefono());
-                if (cmp == valor)
-                {
-                    pos = mid;
-                    break;
-                }
-                if (cmp < valor)
-                    left = mid + 1;
-                else
-                    right = mid - 1;
+        // Buscar todas las coincidencias
+        bool ascendente = (orden == 0);
+        std::vector<int> coincidencias;
+        
+        // Buscar todas las ocurrencias del valor
+        for (int i = 0; i < n; i++) {
+            bool encontrado = false;
+            
+            if (campo == 0) { // DNI
+                int dni_cliente = std::stoi(lista.get_contador(i)->get_dni());
+                int dni_buscar = std::stoi(valor_buscar);
+                encontrado = (dni_cliente == dni_buscar);
+            } else if (campo == 3) { // Teléfono
+                int tel_cliente = std::stoi(lista.get_contador(i)->get_telefono());
+                int tel_buscar = std::stoi(valor_buscar);
+                encontrado = (tel_cliente == tel_buscar);
+            } else if (campo == 1) { // Nombre
+                std::string nombre_cliente = lista.get_contador(i)->get_nombres();
+                std::transform(nombre_cliente.begin(), nombre_cliente.end(), nombre_cliente.begin(), ::tolower);
+                std::string nombre_buscar = valor_buscar;
+                std::transform(nombre_buscar.begin(), nombre_buscar.end(), nombre_buscar.begin(), ::tolower);
+                encontrado = (nombre_cliente == nombre_buscar);
+            } else if (campo == 2) { // Apellido
+                std::string apellido_cliente = lista.get_contador(i)->get_apellidos();
+                std::transform(apellido_cliente.begin(), apellido_cliente.end(), apellido_cliente.begin(), ::tolower);
+                std::string apellido_buscar = valor_buscar;
+                std::transform(apellido_buscar.begin(), apellido_buscar.end(), apellido_buscar.begin(), ::tolower);
+                encontrado = (apellido_cliente == apellido_buscar);
+            } else if (campo == 4) { // Email
+                std::string email_cliente = lista.get_contador(i)->get_email();
+                std::transform(email_cliente.begin(), email_cliente.end(), email_cliente.begin(), ::tolower);
+                std::string email_buscar = valor_buscar;
+                std::transform(email_buscar.begin(), email_buscar.end(), email_buscar.begin(), ::tolower);
+                encontrado = (email_cliente == email_buscar);
             }
-        }
-        else
-        {
-            int left = 0, right = n - 1;
-            while (left <= right)
-            {
-                int mid = left + (right - left) / 2;
-                string cmp = (campo == 1)   ? lista.get_contador(mid)->get_nombres()
-                             : (campo == 2) ? lista.get_contador(mid)->get_apellidos()
-                                            : lista.get_contador(mid)->get_email();
-                int res = cmp.compare(valor_buscar);
-                if (res == 0)
-                {
-                    pos = mid;
-                    break;
-                }
-                if (res < 0)
-                    left = mid + 1;
-                else
-                    right = mid - 1;
+            
+            if (encontrado) {
+                coincidencias.push_back(i);
             }
         }
 
-        if (pos != -1)
+        if (!coincidencias.empty())
         {
-            Cliente *cliente = lista.get_contador(pos);
-            cout << "\n=== CLIENTE ENCONTRADO ===\n";
-            cout << "DNI: " << cliente->get_dni() << "\n";
-            cout << "Nombre: " << cliente->get_nombres() << "\n";
-            cout << "Apellido: " << cliente->get_apellidos() << "\n";
-            cout << "Teléfono: " << cliente->get_telefono() << "\n";
-            cout << "Email: " << cliente->get_email() << "\n";
-            auto *cuentas = cliente->get_cuentas();
-            if (cuentas && !cuentas->esta_vacia())
-            {
-                cout << "\n=== CUENTAS DEL CLIENTE ===\n";
-                cout << std::left << std::setw(15) << "ID Cuenta"
-                     << std::setw(12) << "Tipo"
-                     << std::setw(15) << "Saldo"
-                     << std::setw(20) << "Fecha Apertura" << std::endl;
-                cout << "--------------------------------------------------------------\n";
-                cuentas->recorrer([](Cuenta *cuenta)
-                                  { cout << std::left << std::setw(15) << cuenta->get_id_cuenta()
-                                         << std::setw(12) << cuenta->get_tipo()
-                                         << std::setw(15) << ("$" + std::to_string(cuenta->get_saldo()))
-                                         << std::setw(20) << cuenta->get_fecha_apertura().to_string() << std::endl; });
-                cout << "--------------------------------------------------------------\n";
+            if (coincidencias.size() == 1) {
+                cout << "\n=== CLIENTE ENCONTRADO ===\n";
+            } else {
+                cout << "\n=== " << coincidencias.size() << " CLIENTES ENCONTRADOS ===\n";
             }
-            else
-            {
-                cout << "\nEste cliente no tiene cuentas registradas.\n";
+            
+            for (size_t idx = 0; idx < coincidencias.size(); idx++) {
+                Cliente *cliente = lista.get_contador(coincidencias[idx]);
+                
+                if (coincidencias.size() > 1) {
+                    cout << "\n--- CLIENTE " << (idx + 1) << " ---\n";
+                }
+                
+                cout << "DNI: " << cliente->get_dni() << "\n";
+                cout << "Nombre: " << cliente->get_nombres() << "\n";
+                cout << "Apellido: " << cliente->get_apellidos() << "\n";
+                cout << "Teléfono: " << cliente->get_telefono() << "\n";
+                cout << "Email: " << cliente->get_email() << "\n";
+                
+                auto *cuentas = cliente->get_cuentas();
+                if (cuentas && !cuentas->esta_vacia())
+                {
+                    cout << "\n=== CUENTAS DEL CLIENTE ===\n";
+                    cout << std::left << std::setw(15) << "ID Cuenta"
+                         << std::setw(12) << "Tipo"
+                         << std::setw(15) << "Saldo"
+                         << std::setw(20) << "Fecha Apertura" << std::endl;
+                    cout << "--------------------------------------------------------------\n";
+                    cuentas->recorrer([](Cuenta *cuenta)
+                                      { cout << std::left << std::setw(15) << cuenta->get_id_cuenta()
+                                             << std::setw(12) << cuenta->get_tipo()
+                                             << std::setw(15) << ("$" + std::to_string(cuenta->get_saldo()))
+                                             << std::setw(20) << cuenta->get_fecha_apertura().to_string() << std::endl; });
+                    cout << "--------------------------------------------------------------\n";
+                }
+                else
+                {
+                    cout << "\nEste cliente no tiene cuentas registradas.\n";
+                }
+                
+                if (idx < coincidencias.size() - 1) {
+                    cout << "\n" << std::string(70, '=') << "\n";
+                }
             }
         }
         else
@@ -912,12 +909,13 @@ void cifrar_archivos_txt(Banco& banco) {
  */
 void menu_administrador(Banco &banco)
 {
-    const int NUM_OPCIONES = 12; // Incrementado a 12
+    const int NUM_OPCIONES = 14; // Incrementado a 14
     const char *OPCIONES[NUM_OPCIONES] = {
         "Consultar movimientos por fecha",
         "Consultar cuentas por DNI/nombre",
         "Base de datos",
-        "Árbol binario",
+        "Árbol binario (ASCII)",
+        "Árbol binario (Gráfico SFML)",
         "Recuperar backup por fecha y hora",
         "Crear backup manual",
         "Cifrar archivos",
@@ -925,6 +923,7 @@ void menu_administrador(Banco &banco)
         "Verificar integridad de datos (Hash)",
         "Generar tabla Hash",
         "Generar PDF de clientes",
+        "Consultar citas agendadas",
         "Salir"};
 
     system("cls");
@@ -979,31 +978,37 @@ void menu_administrador(Banco &banco)
                 mostrar_arbol_binario(banco);
                 break;
             case 4:
-                recuperar_backup_por_fecha(banco);
+                mostrar_arbol_binario_sfml(banco);
                 break;
             case 5:
-                crear_backup_manual(banco);
+                recuperar_backup_por_fecha(banco);
                 break;
             case 6:
-                cifrar_archivos_txt(banco);
+                crear_backup_manual(banco);
                 break;
             case 7:
-                descifrar_archivos_txt(banco);
+                cifrar_archivos_txt(banco);
                 break;
             case 8:
-                verificar_hash(banco);
+                descifrar_archivos_txt(banco);
                 break;
             case 9:
+                verificar_hash(banco);
+                break;
+            case 10:
                 buscar_con_tabla_hash(banco);
                 break;
-            case 10: // Opción para generar PDF
+            case 11: // Opción para generar PDF
                 generateClientDataPDF(banco.getClientes());
                 pausar_consola(); // Pausa para que el usuario vea el resultado
                 break;
-            case 11: // Nueva posición de "Salir"
+            case 12: // Consultar citas agendadas
+                consultar_citas_por_sector();
+                break;
+            case 13: // Nueva posición de "Salir"
                 return;
             }
-        } while (opcion != 11); // Cambiado a 11 para coincidir con "Salir"
+        } while (opcion != 13); // Cambiado a 13 para coincidir con "Salir"
     }
     catch (const std::exception &e)
     {
@@ -2297,40 +2302,53 @@ void menu_cuenta_aplicacion(Banco& banco) {
 /**
  * @brief Muestra el menú de citas presenciales para apertura de cuentas.
  * @param banco Referencia al objeto Banco para las operaciones bancarias.
- * @details Permite al usuario agendar una cita presencial en una sucursal para la apertura de cuentas.
+ * @details Permite al usuario agendar una cita presencial en una sucursal para la apertura de cuentas,
+ * consultar citas por sector o cancelar citas existentes.
  */
 void menu_cita_presencial(Banco& banco) {
-    system("cls");
-    ajustar_cursor_para_marquesina();
-    visibilidad_cursor(true);
+    const int NUM_OPCIONES = 3;
+    const char* OPCIONES[NUM_OPCIONES] = {
+        "Agendar nueva cita",
+        "Cancelar cita existente",
+        "Regresar al menú anterior"
+    };
 
-    cout << "\n=== SISTEMA DE CITAS PRESENCIALES ===" << endl;
-    cout << "Bienvenido al sistema de agendamiento de citas" << endl;
-    cout << "Servicio: Apertura de cuenta presencial\n" << endl;
-
-    // Preguntar si desea agendar cita antes de hacer la selección completa
-    string respuesta;
+    int opcion;
     do {
-        limpiar_linea("¿Desea agendar una cita presencial? (S/N): ");
-        respuesta = ingresar_alfabetico("");
-        if (respuesta == "_ESC_") return;
-        transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
-    } while (respuesta != "S" && respuesta != "N");
+        system("cls");
+        ajustar_cursor_para_marquesina();
+        visibilidad_cursor(true);
 
-    if (respuesta == "S") {
-        agendar_cita_presencial();
-    } else {
-        cout << "\nGracias por usar nuestro servicio." << endl;
-        pausar_consola();
-    }
+        cout << "\n=== SISTEMA DE CITAS PRESENCIALES ===" << endl;
+        cout << "=== Apertura de cuenta presencial ===" << endl;
+        cout << "======================================\n" << endl;
+
+        opcion = seleccionar_opcion("===== GESTIÓN DE CITAS =====", OPCIONES, NUM_OPCIONES, 8);
+        
+        switch (opcion) {
+            case 0:
+                agendar_cita_presencial();
+                break;
+            case 1:
+                cancelar_cita_agendada();
+                break;
+            case 2:
+                return;
+        }
+    } while (opcion != 2);
 }
 
 /**
  * @brief Procesa el agendamiento de una cita presencial usando el sistema de geolocalización.
  * @details Utiliza el sistema de geolocalización para encontrar la sucursal más cercana,
  * muestra horarios disponibles y permite al usuario agendar una cita para apertura de cuenta.
+ * Incluye control de citas duplicadas para evitar que un cliente agende múltiples citas.
  */
 void agendar_cita_presencial() {
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    visibilidad_cursor(true);
+    
     string sucursal_num, horario_num;
     
     cout << "\n=== AGENDAR CITA PRESENCIAL ===" << endl;
@@ -2338,7 +2356,82 @@ void agendar_cita_presencial() {
     cout << "• Lunes a Viernes: 9:00 AM - 3:30 PM" << endl;
     cout << "• Sábados: 9:00 AM - 12:00 PM" << endl;
     cout << "• Domingos: CERRADO" << endl;
-    cout << "=======================================" << endl;
+    cout << "=======================================\n" << endl;
+    
+    // Cargar citas existentes
+    geoSystem.cargarCitas();
+    
+    // Solicitar datos del cliente para verificar duplicados
+    string dni, nombre, apellido, telefono;
+    
+    do {
+        limpiar_linea("➤ Ingrese su DNI: ");
+        dni = ingresar_dni("");
+        if (dni == "__ESC__") return;
+    } while (!validarCedulaEcuatoriana(dni));
+    
+    // Verificar si ya tiene una cita activa
+    if (geoSystem.clienteTieneCitaActiva(dni)) {
+        cout << "\n=== CITA DUPLICADA DETECTADA ===" << endl;
+        cout << "ERROR: Usted ya tiene una cita presencial agendada." << endl;
+        cout << "No es posible agendar múltiples citas simultáneamente." << endl;
+        cout << "\nSi desea cambiar su cita, primero debe cancelar la existente." << endl;
+        cout << "¿Desea ver sus citas agendadas? (S/N): ";
+        
+        string respuesta;
+        do {
+            respuesta = ingresar_alfabetico("");
+            if (respuesta == "__ESC__") return;
+            transform(respuesta.begin(), respuesta.end(), respuesta.begin(), ::toupper);
+        } while (respuesta != "S" && respuesta != "N");
+        
+        if (respuesta == "S") {
+            // Mostrar las citas del cliente
+            auto todas_las_citas = geoSystem.obtenerCitasPorSector();
+            bool encontrado = false;
+            
+            cout << "\n=== SUS CITAS AGENDADAS ===" << endl;
+            for (const auto& cita : todas_las_citas) {
+                if (cita.dni == dni) {
+                    cout << "Sucursal: " << cita.sucursal_nombre << endl;
+                    cout << "Sector: " << cita.sector << endl;
+                    cout << "Fecha y Hora: " << cita.fecha_hora << endl;
+                    cout << "Número de Confirmación: " << cita.numero_confirmacion << endl;
+                    cout << "Fecha de Agendamiento: " << cita.fecha_agendamiento << endl;
+                    encontrado = true;
+                    cout << "-----------------------------------" << endl;
+                }
+            }
+            
+            if (!encontrado) {
+                cout << "No se encontraron citas para este DNI." << endl;
+            }
+        }
+        
+        pausar_consola();
+        return;
+    }
+    
+    // Continuar con el proceso normal si no tiene citas duplicadas
+    do {
+        limpiar_linea("➤ Ingrese su nombre: ");
+        nombre = ingresar_alfabetico("");
+        if (nombre == "__ESC__") return;
+    } while (nombre.empty() || nombre.length() < 2);
+    
+    do {
+        limpiar_linea("➤ Ingrese su apellido: ");
+        apellido = ingresar_alfabetico("");
+        if (apellido == "__ESC__") return;
+    } while (apellido.empty() || apellido.length() < 2);
+    
+    do {
+        limpiar_linea("➤ Ingrese su teléfono: ");
+        telefono = ingresar_dni("");
+        if (telefono == "__ESC__") return;
+    } while (!validar_telefono(telefono));
+    
+    cout << endl;
     
     // Usar el sistema completo de selección manual y mostrar sucursales
     auto result = geoSystem.runGeolocationSystem();
@@ -2388,7 +2481,7 @@ void agendar_cita_presencial() {
     do {
         limpiar_linea("Seleccione el horario (1-" + to_string(horarios_validos.size()) + "): ");
         horario_num = ingresar_dni("");
-        if (horario_num == "_ESC_") return;
+        if (horario_num == "__ESC__") return;
         try {
             horario_elegido = stoi(horario_num);
         } catch (...) {
@@ -2401,6 +2494,9 @@ void agendar_cita_presencial() {
     
     // Confirmación final
     cout << "\n=== CONFIRMACIÓN DE CITA ===" << endl;
+    cout << "Cliente: " << nombre << " " << apellido << endl;
+    cout << "DNI: " << dni << endl;
+    cout << "Teléfono: " << telefono << endl;
     cout << "Sucursal: " << selected_branch.name << endl;
     cout << "Dirección: " << selected_branch.address << endl;
     cout << "Fecha y Hora: " << horarios_validos[horario_elegido - 1] << endl;
@@ -2415,14 +2511,38 @@ void agendar_cita_presencial() {
     // Confirmar la cita
     bool confirmar = seleccionar_Si_No();
     if (confirmar) {
-        // Actualizar la cola de la sucursal (simular que se agendó una cita)
-        geoSystem.updateBranchQueue(selected_branch.id, selected_branch.queue_position + 1);
+        // Generar número de confirmación único
+        string numero_confirmacion = "CB" + to_string(selected_branch.id) + 
+                                   to_string(horario_elegido) + 
+                                   to_string(time(nullptr) % 10000);
         
-        cout << "\n=== CITA CONFIRMADA ===" << endl;
-        cout << "¡Su cita ha sido agendada exitosamente!" << endl;
-        cout << "Fecha y Hora: " << horarios_validos[horario_elegido - 1] << endl;
-        cout << "Recuerde llegar 10 minutos antes del horario agendado." << endl;
-        cout << "Número de confirmación: CB" << selected_branch.id << horario_elegido << time(nullptr) % 10000 << endl;
+        // Crear objeto cita
+        string nombre_completo = nombre + " " + apellido;
+        string sector = geoSystem.obtenerSectorPorSucursal(selected_branch.id);
+        
+        CitaAgendada nueva_cita(dni, nombre_completo, telefono,
+                               selected_branch.id, selected_branch.name, sector,
+                               horarios_validos[horario_elegido - 1], numero_confirmacion,
+                               fecha_actual, true);
+        
+        // Agregar cita al sistema
+        if (geoSystem.agregarCita(nueva_cita)) {
+            // Actualizar la cola de la sucursal (simular que se agendó una cita)
+            geoSystem.updateBranchQueue(selected_branch.id, selected_branch.queue_position + 1);
+            
+            cout << "\n=== CITA CONFIRMADA ===" << endl;
+            cout << "¡Su cita ha sido agendada exitosamente!" << endl;
+            cout << "Fecha y Hora: " << horarios_validos[horario_elegido - 1] << endl;
+            cout << "Número de confirmación: " << numero_confirmacion << endl;
+            cout << "Sector: " << sector << endl;
+            cout << "\nRecuerde llegar 10 minutos antes del horario agendado." << endl;
+            cout << "\nNOTA IMPORTANTE:" << endl;
+            cout << "• No podrá agendar otra cita hasta completar o cancelar esta." << endl;
+            cout << "• Guarde su número de confirmación para futuras consultas." << endl;
+        } else {
+            cout << "\n=== ERROR ===" << endl;
+            cout << "No se pudo registrar la cita. Intente nuevamente." << endl;
+        }
     } else {
         cout << "\nCita cancelada." << endl;
     }
@@ -2879,4 +2999,238 @@ bool verificar_y_recuperar_datos(Banco& banco) {
         pausar_consola();
         return false;
     }
+}
+
+/**
+ * @brief Consulta y muestra las citas agendadas por sector.
+ * @details Permite ver todas las citas agendadas, filtradas por sector
+ * o mostrar todas las citas del sistema para administradores.
+ */
+void consultar_citas_por_sector() {
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    visibilidad_cursor(true);
+    
+    cout << "\n=== CONSULTAR CITAS POR SECTOR ===" << endl;
+    cout << "=======================================\n" << endl;
+    
+    // Cargar citas existentes
+    geoSystem.cargarCitas();
+    
+    // Menú de opciones de consulta
+    const int NUM_SECTORES = 5;
+    const char* SECTORES[NUM_SECTORES] = {
+        "Centro Histórico",
+        "Norte de Quito", 
+        "Sur de Quito",
+        "Valles de Quito",
+        "Todas las citas"
+    };
+    
+    int sector_elegido = seleccionar_opcion("===== SELECCIONAR SECTOR =====", SECTORES, NUM_SECTORES, 8);
+    
+    string sector_filtro = "";
+    if (sector_elegido < 4) {
+        sector_filtro = SECTORES[sector_elegido];
+    }
+    
+    auto citas = geoSystem.obtenerCitasPorSector(sector_filtro);
+    
+    system("cls");
+    cout << "\n===========================================" << endl;
+    if (sector_filtro.empty()) {
+        cout << "===    TODAS LAS CITAS AGENDADAS      ===" << endl;
+    } else {
+        cout << "===  CITAS DEL SECTOR: " << sector_filtro << "  ===" << endl;
+    }
+    cout << "===========================================" << endl;
+    
+    if (citas.empty()) {
+        cout << "\nNo hay citas agendadas";
+        if (!sector_filtro.empty()) {
+            cout << " en el sector " << sector_filtro;
+        }
+        cout << "." << endl;
+        cout << "\nPosibles razones:" << endl;
+        cout << "• No se han agendado citas aún" << endl;
+        cout << "• Todas las citas han sido canceladas" << endl;
+        cout << "• El sector seleccionado no tiene actividad" << endl;
+    } else {
+        cout << "\nTotal de citas activas: " << citas.size() << endl;
+        cout << "===========================================" << endl;
+        
+        // Agrupar por sector si se muestran todas
+        if (sector_filtro.empty()) {
+            map<string, vector<CitaAgendada>> citas_por_sector;
+            for (const auto& cita : citas) {
+                citas_por_sector[cita.sector].push_back(cita);
+            }
+            
+            for (const auto& par : citas_por_sector) {
+                cout << "\n--- SECTOR: " << par.first << " (" << par.second.size() << " citas) ---" << endl;
+                for (size_t i = 0; i < par.second.size(); i++) {
+                    const auto& cita = par.second[i];
+                    cout << "\n" << (i + 1) << ". " << cita.nombre_completo << endl;
+                    cout << "   DNI: " << cita.dni << endl;
+                    cout << "   Teléfono: " << cita.telefono << endl;
+                    cout << "   Sucursal: " << cita.sucursal_nombre << endl;
+                    cout << "   Fecha/Hora: " << cita.fecha_hora << endl;
+                    cout << "   Confirmación: " << cita.numero_confirmacion << endl;
+                    cout << "   Agendado: " << cita.fecha_agendamiento << endl;
+                }
+            }
+        } else {
+            // Mostrar citas del sector específico
+            for (size_t i = 0; i < citas.size(); i++) {
+                const auto& cita = citas[i];
+                cout << "\n" << (i + 1) << ". " << cita.nombre_completo << endl;
+                cout << "   DNI: " << cita.dni << endl;
+                cout << "   Teléfono: " << cita.telefono << endl;
+                cout << "   Sucursal: " << cita.sucursal_nombre << endl;
+                cout << "   Fecha/Hora: " << cita.fecha_hora << endl;
+                cout << "   Confirmación: " << cita.numero_confirmacion << endl;
+                cout << "   Agendado: " << cita.fecha_agendamiento << endl;
+                cout << "   ----------------------" << endl;
+            }
+        }
+        
+        cout << "\n===========================================" << endl;
+        cout << "Estadísticas:" << endl;
+        
+        // Estadísticas por sucursal
+        map<string, int> por_sucursal;
+        for (const auto& cita : citas) {
+            por_sucursal[cita.sucursal_nombre]++;
+        }
+        
+        cout << "\nCitas por sucursal:" << endl;
+        for (const auto& par : por_sucursal) {
+            cout << "• " << par.first << ": " << par.second << " citas" << endl;
+        }
+    }
+    
+    cout << "\nPresione cualquier tecla para continuar...";
+    getch();
+}
+
+/**
+ * @brief Cancela una cita previamente agendada.
+ * @details Permite a un cliente cancelar su cita ingresando DNI
+ * y número de confirmación de la cita.
+ */
+void cancelar_cita_agendada() {
+    system("cls");
+    ajustar_cursor_para_marquesina();
+    visibilidad_cursor(true);
+    
+    cout << "\n=== CANCELAR CITA AGENDADA ===" << endl;
+    cout << "Para cancelar su cita necesitará:" << endl;
+    cout << "• Su número de DNI" << endl;
+    cout << "• Número de confirmación de la cita" << endl;
+    cout << "=====================================\n" << endl;
+    
+    // Cargar citas existentes
+    geoSystem.cargarCitas();
+    
+    string dni, numero_confirmacion;
+    
+    do {
+        limpiar_linea("➤ Ingrese su DNI: ");
+        dni = ingresar_dni("");
+        if (dni == "__ESC__") return;
+    } while (!validarCedulaEcuatoriana(dni));
+    
+    // Verificar si el cliente tiene citas activas
+    if (!geoSystem.clienteTieneCitaActiva(dni)) {
+        cout << "\n=== NO SE ENCONTRARON CITAS ===" << endl;
+        cout << "No tiene citas activas registradas con este DNI." << endl;
+        cout << "\nPosibles razones:" << endl;
+        cout << "• No ha agendado ninguna cita" << endl;
+        cout << "• La cita ya fue cancelada anteriormente" << endl;
+        cout << "• DNI incorrecto" << endl;
+        pausar_consola();
+        return;
+    }
+    
+    // Mostrar las citas del cliente
+    auto todas_las_citas = geoSystem.obtenerCitasPorSector();
+    vector<CitaAgendada> citas_cliente;
+    
+    for (const auto& cita : todas_las_citas) {
+        if (cita.dni == dni && cita.activa) {
+            citas_cliente.push_back(cita);
+        }
+    }
+    
+    cout << "\n=== SUS CITAS ACTIVAS ===" << endl;
+    for (size_t i = 0; i < citas_cliente.size(); i++) {
+        const auto& cita = citas_cliente[i];
+        cout << "\nCita " << (i + 1) << ":" << endl;
+        cout << "Sucursal: " << cita.sucursal_nombre << endl;
+        cout << "Sector: " << cita.sector << endl;
+        cout << "Fecha y Hora: " << cita.fecha_hora << endl;
+        cout << "Número de Confirmación: " << cita.numero_confirmacion << endl;
+        cout << "Fecha de Agendamiento: " << cita.fecha_agendamiento << endl;
+        cout << "-----------------------------------" << endl;
+    }
+    
+    do {
+        limpiar_linea("➤ Ingrese el número de confirmación de la cita a cancelar: ");
+        numero_confirmacion = ingresar_id("");
+        if (numero_confirmacion == "__ESC__") return;
+        // Convertir a mayúsculas para comparación uniforme
+        transform(numero_confirmacion.begin(), numero_confirmacion.end(), numero_confirmacion.begin(), ::toupper);
+    } while (numero_confirmacion.empty());
+    
+    // Validar que el número de confirmación corresponda al cliente
+    bool cita_valida = false;
+    for (const auto& cita : citas_cliente) {
+        string numero_cita_upper = cita.numero_confirmacion;
+        transform(numero_cita_upper.begin(), numero_cita_upper.end(), numero_cita_upper.begin(), ::toupper);
+        if (numero_cita_upper == numero_confirmacion) {
+            cita_valida = true;
+            break;
+        }
+    }
+    
+    if (!cita_valida) {
+        cout << "\n=== ERROR ===" << endl;
+        cout << "El número de confirmación no corresponde a ninguna" << endl;
+        cout << "de sus citas activas. Verifique el número e intente nuevamente." << endl;
+        pausar_consola();
+        return;
+    }
+    
+    // Mostrar detalles de la cita a cancelar
+    for (const auto& cita : citas_cliente) {
+        string numero_cita_upper = cita.numero_confirmacion;
+        transform(numero_cita_upper.begin(), numero_cita_upper.end(), numero_cita_upper.begin(), ::toupper);
+        if (numero_cita_upper == numero_confirmacion) {
+            cout << "\n=== CONFIRMAR CANCELACIÓN ===" << endl;
+            cout << "Cita a cancelar:" << endl;
+            cout << "Cliente: " << cita.nombre_completo << endl;
+            cout << "Sucursal: " << cita.sucursal_nombre << endl;
+            cout << "Fecha y Hora: " << cita.fecha_hora << endl;
+            cout << "Confirmación: " << cita.numero_confirmacion << endl;
+            cout << "\n¿Está seguro que desea cancelar esta cita?" << endl;
+            break;
+        }
+    }
+    
+    bool confirmar = seleccionar_Si_No();
+    if (confirmar) {
+        if (geoSystem.cancelarCita(dni, numero_confirmacion)) {
+            cout << "\n=== CITA CANCELADA ===" << endl;
+            cout << "Su cita ha sido cancelada exitosamente." << endl;
+            cout << "Número de confirmación: " << numero_confirmacion << endl;
+            cout << "\nAhora puede agendar una nueva cita si lo desea." << endl;
+        } else {
+            cout << "\n=== ERROR ===" << endl;
+            cout << "No se pudo cancelar la cita. Intente nuevamente." << endl;
+        }
+    } else {
+        cout << "\nCancelación abortada. Su cita permanece activa." << endl;
+    }
+    
+    pausar_consola();
 }

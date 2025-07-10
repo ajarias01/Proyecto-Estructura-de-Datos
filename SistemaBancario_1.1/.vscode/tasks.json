@@ -2,16 +2,20 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "type": "cppbuild",
-            "label": "Build Proyecto",
+            "type": "shell",
+            "label": "Build con SFML",
             "command": "g++",
             "args": [
                 "-fdiagnostics-color=always",
                 "-g",
-                "*.cpp",                // Compila todos los archivos .cpp
+                "*.cpp",
                 "-o",
-                "${workspaceFolder}/main.exe",
-                "-I", "${workspaceFolder}" // Incluye archivos de cabecera
+                "main.exe",
+                "-I", "${workspaceFolder}/SFML-3.0.0/include",
+                "-L", "${workspaceFolder}/SFML-3.0.0/lib",
+                "-lsfml-graphics",
+                "-lsfml-window",
+                "-lsfml-system"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

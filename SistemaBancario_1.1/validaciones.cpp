@@ -784,25 +784,28 @@ bool validar_hora_minuto_segundo(int hora, int minuto, int segundo) {
 }
 /**
  * @brief Valida un valor de búsqueda según el campo especificado
- * @param campo Tipo de campo a validar (1=DNI, 2=Nombre, 3=Apellido, 4=Teléfono)
+ * @param campo Tipo de campo a validar (0=DNI, 1=Nombre, 2=Apellido, 3=Teléfono, 4=Email)
  * @param valor String con el valor a validar
  * @return true si el valor es válido para el campo, false en caso contrario
  * @details Aplica validaciones específicas según el tipo de campo de búsqueda:
- *          - Campo 1 (DNI): Valida cédula ecuatoriana
- *          - Campo 2 (Nombre): Solo caracteres alfabéticos y espacios
- *          - Campo 3 (Apellido): Solo caracteres alfabéticos y espacios
- *          - Campo 4 (Teléfono): Valida formato de teléfono
+ *          - Campo 0 (DNI): Valida cédula ecuatoriana
+ *          - Campo 1 (Nombre): Solo caracteres alfabéticos y espacios
+ *          - Campo 2 (Apellido): Solo caracteres alfabéticos y espacios
+ *          - Campo 3 (Teléfono): Valida formato de teléfono
+ *          - Campo 4 (Email): Valida formato de email
  */
 bool validar_valor_busqueda(int campo, const std::string& valor) {
     switch (campo) {
-        case 1: // DNI
+        case 0: // DNI
             return validarCedulaEcuatoriana(valor);
-        case 2: // Nombre
+        case 1: // Nombre
             return !valor.empty() && std::all_of(valor.begin(), valor.end(), [](char c){ return std::isalpha(c) || std::isspace(c); });
-        case 3: // Apellido
+        case 2: // Apellido
             return !valor.empty() && std::all_of(valor.begin(), valor.end(), [](char c){ return std::isalpha(c) || std::isspace(c); });
-        case 4: // Teléfono
+        case 3: // Teléfono
             return validar_telefono(valor);
+        case 4: // Email
+            return validar_email(valor);
         default:
             return false;
     }
